@@ -183,7 +183,7 @@ def shell(private=False):
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/patient/login", "/patient/register", "/patient/dashboard"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard"):
+for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
 for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login")):
     app.add_api_route(_r, (lambda to: (lambda: RedirectResponse(to)))(_to), methods=["GET"], include_in_schema=False)
@@ -651,6 +651,80 @@ async def d_accepting(request: Request, u=Depends(auth("doctor"))):
     await pool.execute("UPDATE doctors SET is_accepting_bookings=$2 WHERE id=$1", u["id"], b.get("accepting") is True)
     await changed()
     return await dq(u["id"])
+
+
+# ---------- الملف الشخصي للطبيب ----------
+@app.get("/api/doctor/profile")
+async def d_profile(u=Depends(auth("doctor"))):
+    d = await pool.fetchrow("""SELECT name,specialty,description,profile_image,username,average_consultation_time AS avg,
+      is_accepting_bookings AS accepting FROM doctors WHERE id=$1""", u["id"])
+    s = await pool.fetchrow("""SELECT count(*)::int AS total,
+      count(*) FILTER (WHERE status='Completed')::int AS completed,
+      count(*) FILTER (WHERE status='Cancelled')::int AS cancelled,
+      count(*) FILTER (WHERE booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress'))::int AS waiting_today,
+      count(*) FILTER (WHERE booking_date=CURRENT_DATE AND status='Completed')::int AS done_today,
+      count(*) FILTER (WHERE booking_date>=CURRENT_DATE-6 AND status='Completed')::int AS week
+      FROM bookings WHERE doctor_id=$1""", u["id"])
+    rows = await pool.fetch("""SELECT id,queue_number,patient_name,status,booking_date FROM bookings
+      WHERE doctor_id=$1 ORDER BY booking_date DESC,queue_number DESC LIMIT 30""", u["id"])
+    return {"profile": dict(d), "stats": dict(s), "recent": [dict(x) for x in rows]}
+
+
+@app.put("/api/doctor/profile")
+async def d_profile_update(request: Request, u=Depends(auth("doctor"))):
+    """تحديث جزئي: بيانات العرض (الاسم/التخصص/النبذة/الصورة/المدة) و/أو بيانات الدخول (اسم المستخدم/كلمة المرور).
+    تغيير بيانات الدخول يتطلب كلمة المرور الحالية."""
+    b = await body(request)
+    g = lambda k: str(b.get(k) or "").strip()
+    sets, args = [], [u["id"]]
+
+    def add(col, val):  # أسماء الأعمدة ثابتة داخل الكود فقط، والقيم تمر كمعاملات
+        args.append(val)
+        sets.append(f"{col}=${len(args)}")
+
+    if "name" in b:
+        name, spec, desc, img = g("name"), g("specialty"), g("description")[:300], g("profile_image")
+        try:
+            avg = int(b.get("average_consultation_time"))
+        except Exception:
+            avg = 0
+        if not 2 <= len(name) <= 80: raise Fail(400, "الاسم غير صالح")
+        if not spec or len(spec) > 80: raise Fail(400, "التخصص مطلوب")
+        if not 1 <= avg <= 240: raise Fail(400, "متوسط الكشف بين 1 و240 دقيقة")
+        if img and (not re.match(r"(https?://|data:image/)", img) or len(img) > 800000): raise Fail(400, "الصورة غير صالحة")
+        add("name", name); add("specialty", spec); add("description", desc); add("average_consultation_time", avg)
+        add("profile_image", img or None)
+
+    if "username" in b or "password" in b:
+        row = await pool.fetchrow("SELECT username,password_hash FROM doctors WHERE id=$1", u["id"])
+        new_user, new_pw = g("username").lower(), str(b.get("password") or "")
+        change_user = bool(new_user) and new_user != row["username"]
+        if change_user or new_pw:
+            key = f"{u['id']}:profile-pw"
+            n, at = tries.get(key, (0, time.time()))
+            if time.time() - at > 900:
+                n, at = 0, time.time()
+            if n >= 10: raise Fail(429, "محاولات كثيرة، حاول بعد 15 دقيقة")
+            ok = await asyncio.to_thread(bcrypt.checkpw, str(b.get("current_password") or "").encode()[:72], row["password_hash"].encode())
+            if not ok:
+                tries[key] = (n + 1, at)
+                raise Fail(403, "كلمة المرور الحالية غير صحيحة")
+            tries.pop(key, None)
+            if change_user:
+                if not re.fullmatch(r"[a-z0-9_.]{3,30}", new_user): raise Fail(400, "اسم المستخدم: 3-30 حرفاً إنجليزياً أو أرقاماً")
+                add("username", new_user)
+            if new_pw:
+                if len(new_pw) < 6: raise Fail(400, "كلمة المرور 6 أحرف على الأقل")
+                add("password_hash", await asyncio.to_thread(hashpw, new_pw))
+
+    if not sets:
+        return {"ok": True}
+    try:
+        await pool.execute(f"UPDATE doctors SET {', '.join(sets)} WHERE id=$1", *args)
+    except asyncpg.UniqueViolationError:
+        raise Fail(409, "اسم المستخدم مستخدم بالفعل")
+    await changed()
+    return {"ok": True}
 
 
 # ---------- admin ----------
