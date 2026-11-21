@@ -10,7 +10,9 @@
   6. الأطباء والحجز العام
   7. لوحة الطبيب (الطابور، التقرير والروشتة، ملف المريض)
   8. لوحة الأدمن (إدارة الأطباء)
+  9. موظف الاستقبال (الطابور الموحّد)، وإدارته من الأدمن، وسجل العمليات (queue_audit)
 
+إدارة الطابور (استدعاء/بدء/إنهاء/تخطي/إلغاء/ترتيب) لموظف الاستقبال فقط؛ الطبيب يقرأ الطابور ويكتب التقرير.
 قواعد الخصوصية: تقرير الكشف والملفات لا يراها إلا المريض صاحب الحجز وطبيب الحجز فقط.
 
 نسخة Vercel: لا WebSocket (الواجهة تحدّث نفسها كل 5 ثوانٍ)، والـ Pool يُنشأ عند أول طلب،
@@ -160,7 +162,8 @@ def auth(role):
         # التحقق من أن الحساب ما زال موجوداً وفعّالاً (حتى لو التوكن سليم)
         ok = await pool.fetchval({"doctor": "SELECT 1 FROM doctors WHERE id=$1 AND is_active",
                                   "admin": "SELECT 1 FROM admins WHERE id=$1",
-                                  "patient": "SELECT 1 FROM patients WHERE id=$1"}[role], u["id"])
+                                  "patient": "SELECT 1 FROM patients WHERE id=$1",
+                                  "receptionist": "SELECT 1 FROM receptionists r JOIN doctors d ON d.id=r.doctor_id WHERE r.id=$1 AND r.is_active AND d.is_active"}[role], u["id"])
         if not ok:
             raise Fail(401, "الحساب غير موجود أو معطّل")
         return u
@@ -183,16 +186,17 @@ def shell(private=False):
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/doctors", "/patient/login", "/patient/register", "/patient/dashboard"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile"):
+for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/receptionist/login", "/receptionist/dashboard"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
-for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login")):
+for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login"), ("/receptionist", "/receptionist/login")):
     app.add_api_route(_r, (lambda to: (lambda: RedirectResponse(to)))(_to), methods=["GET"], include_in_schema=False)
 
 
 # ---------- login (بوابة منفصلة لكل دور؛ الدور يحدده المسار وليس ما يرسله العميل) ----------
 LOGIN_SQL = {"doctor": "SELECT id,password_hash,is_active FROM doctors WHERE username=$1",
              "admin": "SELECT id,password_hash,TRUE AS is_active FROM admins WHERE username=$1",
-             "patient": "SELECT id,password_hash,TRUE AS is_active FROM patients WHERE login_id=$1"}
+             "patient": "SELECT id,password_hash,TRUE AS is_active FROM patients WHERE login_id=$1",
+             "receptionist": "SELECT r.id,r.password_hash,(r.is_active AND d.is_active) AS is_active FROM receptionists r JOIN doctors d ON d.id=r.doctor_id WHERE r.email=$1"}
 DUMMY_HASH = bcrypt.hashpw(b"dawrak-dummy", bcrypt.gensalt(10)).decode()  # لتساوي زمن الرد سواء وُجد المستخدم أم لا
 
 
@@ -232,6 +236,11 @@ async def doctor_login(request: Request):
 @app.post("/api/patient/login")
 async def patient_login(request: Request):
     return await do_login(request, "patient")
+
+
+@app.post("/api/receptionist/login")
+async def receptionist_login(request: Request):
+    return await do_login(request, "receptionist")
 
 
 def make_token(role, uid):
@@ -335,7 +344,7 @@ async def me(u=Depends(auth("patient"))):
     p = await pool.fetchrow("SELECT name,phone,whatsapp,age,login_id,chronic_conditions,other_conditions,notes FROM patients WHERE id=$1", u["id"])
     if not p:
         raise Fail(401, "الحساب غير موجود")
-    rows = await pool.fetch("""SELECT b.id,b.queue_number,b.status,b.booking_date,b.created_at,b.completed_at,r.report,r.medications,r.follow_up_days,(b.booking_date + r.follow_up_days) AS follow_up_date,b.member_id,m.name AS member_name,m.relation,d.name AS doctor_name,
+    rows = await pool.fetch("""SELECT b.id,b.queue_number,b.status,b.booking_date,b.created_at,b.completed_at,r.report,r.medications,r.follow_up_days,(b.booking_date + r.follow_up_days) AS follow_up_date,b.member_id,(b.called_at IS NOT NULL AND b.status='Waiting') AS called,m.name AS member_name,m.relation,d.name AS doctor_name,
       d.specialty,d.average_consultation_time AS avg,
       CASE WHEN b.status='Waiting' THEN (SELECT count(*) FROM bookings x WHERE x.doctor_id=b.doctor_id AND x.booking_date=b.booking_date
         AND x.status='Waiting' AND x.queue_number<b.queue_number)::int ELSE 0 END AS ahead
@@ -427,7 +436,7 @@ async def postpone_booking(bid: int, u=Depends(auth("patient"))):  # التأج�
         mx = await c.fetchval("SELECT MAX(queue_number) FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE", b["doctor_id"])
         if not await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' AND queue_number>$2", b["doctor_id"], b["queue_number"]):
             raise Fail(409, "أنت بالفعل آخر شخص في الطابور")
-        await c.execute("UPDATE bookings SET queue_number=$2 WHERE id=$1", bid, mx + 1)
+        await c.execute("UPDATE bookings SET queue_number=$2,called_at=NULL WHERE id=$1", bid, mx + 1)
     await changed()
     return {"ok": True}
 
@@ -540,14 +549,20 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
 
 # ---------- doctor ----------
 async def dq(did):
+    """حالة طابور طبيب (يستعملها الطبيب للقراءة وموظف الاستقبال للإدارة): الحالي + المنتظرون (موحّدون أونلاين/حضور) + منتهي اليوم."""
     d = await pool.fetchrow(STATS + " WHERE d.id=$1", did)
     if not d:
         raise Fail(404, "غير موجود")
-    rows = [dict(x) for x in await pool.fetch("""SELECT id,patient_id,member_id,queue_number,patient_name,patient_phone,status,created_at,
+    rows = [dict(x) for x in await pool.fetch("""SELECT id,patient_id,member_id,queue_number,patient_name,patient_phone,status,created_at,source,
+      (called_at IS NOT NULL) AS called,EXISTS(SELECT 1 FROM visit_reports v WHERE v.booking_id=bookings.id) AS has_report,
+      (SELECT r.name FROM receptionists r WHERE r.id=bookings.created_by_receptionist) AS added_by,
       (SELECT count(*) FROM booking_files f WHERE f.booking_id=bookings.id)::int AS files FROM bookings
       WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress') ORDER BY queue_number""", did)]
+    done = [dict(x) for x in await pool.fetch("""SELECT id,queue_number,patient_name,source,completed_at,
+      EXISTS(SELECT 1 FROM visit_reports v WHERE v.booking_id=bookings.id) AS has_report FROM bookings
+      WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Completed' ORDER BY completed_at DESC NULLS LAST LIMIT 20""", did)]
     return {"doctor": view(d), "current": next((x for x in rows if x["status"] == "In Progress"), None),
-            "waiting": [x for x in rows if x["status"] == "Waiting"]}
+            "waiting": [x for x in rows if x["status"] == "Waiting"], "done": done}
 
 
 @app.get("/api/doctor/queue")
@@ -594,6 +609,14 @@ async def d_report(bid: int, request: Request, u=Depends(auth("doctor"))):  # ا
     return {"ok": True}
 
 
+@app.get("/api/doctor/report/{bid}")
+async def d_report_get(bid: int, u=Depends(auth("doctor"))):  # لتعديل تقرير كتبه الطبيب نفسه
+    r = await pool.fetchrow("SELECT r.report,r.medications,r.follow_up_days FROM visit_reports r JOIN bookings b ON b.id=r.booking_id WHERE r.booking_id=$1 AND b.doctor_id=$2", bid, u["id"])
+    if not r:
+        return {"report": None, "medications": [], "follow_up_days": None}
+    return {"report": r["report"], "medications": jl(r["medications"]), "follow_up_days": r["follow_up_days"]}
+
+
 @app.get("/api/doctor/patient/{pid}")
 async def d_patient(pid: int, m: int = 0, u=Depends(auth("doctor"))):  # m = فرد العيلة (0 = المريض نفسه)
     visits = await pool.fetch("""SELECT b.id,b.booking_date,b.status,r.report,r.medications,r.follow_up_days,(b.booking_date + r.follow_up_days) AS follow_up_date
@@ -619,30 +642,11 @@ async def d_file(fid: int, u=Depends(auth("doctor"))):  # ملفات الحجو�
     return file_resp(f)
 
 
+# إدارة الطابور (استدعاء/بدء/إنهاء) من اختصاص موظف الاستقبال فقط، والرفض هنا من الباك اند وليس من الواجهة.
 @app.post("/api/doctor/start")
-async def d_start(u=Depends(auth("doctor"))):
-    async with pool.acquire() as c, c.transaction():
-        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", u["id"])
-        if await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='In Progress'", u["id"]):
-            raise Fail(409, "أنهِ الكشف الحالي أولاً")
-        r = await c.fetchval("""UPDATE bookings SET status='In Progress',started_at=now() WHERE id=(SELECT id FROM bookings
-          WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' ORDER BY queue_number LIMIT 1) RETURNING id""", u["id"])
-        if not r:
-            raise Fail(409, "لا يوجد مرضى في الانتظار")
-    await changed()
-    return await dq(u["id"])
-
-
 @app.post("/api/doctor/finish")
-async def d_finish(u=Depends(auth("doctor"))):
-    cur = await pool.fetchval("SELECT id FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='In Progress'", u["id"])
-    if not cur:
-        raise Fail(409, "لا يوجد كشف جارٍ")
-    if not await pool.fetchval("SELECT 1 FROM visit_reports WHERE booking_id=$1", cur):
-        raise Fail(409, "اكتب تقرير الكشف والروشتة أولاً")
-    await pool.execute("UPDATE bookings SET status='Completed',completed_at=now() WHERE id=$1", cur)
-    await changed()
-    return await dq(u["id"])
+async def d_queue_locked(u=Depends(auth("doctor"))):
+    raise Fail(403, "إدارة الطابور من اختصاص موظف الاستقبال")
 
 
 @app.post("/api/doctor/accepting")
@@ -800,6 +804,270 @@ async def a_delete(did: int, u=Depends(auth("admin"))):
         raise Fail(404, "الطبيب غير موجود")
     await changed()
     return {"ok": True}
+
+
+# ---------- موظف الاستقبال: إدارة الطابور الموحّد (أونلاين + حضور مباشر) ----------
+# الطبيب يُقرأ من القاعدة (receptionists.doctor_id) في كل طلب ولا يُقبل أبداً من العميل، وكل استعلام مقيّد به؛
+# فلا يستطيع الموظف رؤية أو تعديل حجز طبيب آخر حتى لو عرف رقمه. وكل عملية تُسجَّل في queue_audit.
+def toint(v):
+    try:
+        return int(v)
+    except Exception:
+        return None
+
+
+async def rec_ctx(u=Depends(auth("receptionist"))):
+    r = await pool.fetchrow("SELECT id,name,doctor_id FROM receptionists WHERE id=$1", u["id"])
+    if not r:
+        raise Fail(401, "الحساب غير موجود أو معطّل")
+    return dict(r)
+
+
+async def r_state(rec, **extra):
+    q = await dq(rec["doctor_id"])
+    q["receptionist"] = {"name": rec["name"]}
+    return {**q, **extra}
+
+
+async def audit(c, rec, bid, action, **details):
+    await c.execute("INSERT INTO queue_audit(doctor_id,receptionist_id,receptionist_name,booking_id,action,details) VALUES($1,$2,$3,$4,$5,$6::jsonb)",
+                    rec["doctor_id"], rec["id"], rec["name"], bid, action, json.dumps(details, ensure_ascii=False))
+
+
+async def lock_get(c, rec, bid, states):
+    """يقفل صف الطبيب (يسلسل كل عمليات طابوره) ثم يجلب الحجز بشرط أنه لنفس الطبيب ولليوم الحالي."""
+    await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", rec["doctor_id"])
+    b = await c.fetchrow("SELECT id,queue_number,patient_name,status FROM bookings WHERE id=$1 AND doctor_id=$2 AND booking_date=CURRENT_DATE", bid, rec["doctor_id"])
+    if not b:
+        raise Fail(404, "الحجز غير موجود في طابور طبيبك اليوم")
+    if b["status"] not in states:
+        raise Fail(409, "لا يمكن تنفيذ هذا الإجراء على حالة الحجز الحالية")
+    return b
+
+
+@app.get("/api/reception/queue")
+async def r_queue(rec=Depends(rec_ctx)):
+    await cleanup_if_due()
+    return await r_state(rec)
+
+
+@app.get("/api/reception/patients")
+async def r_search(q: str = "", rec=Depends(rec_ctx)):
+    """بحث عن مريض مسجّل (حساب أونلاين أو حضور سابق) لتجنب التكرار. يرجع الحد الأدنى من البيانات فقط (لا بيانات طبية)."""
+    q = q.strip()
+    if not 3 <= len(q) <= 40:
+        raise Fail(400, "اكتب 3 أحرف أو أرقام على الأقل للبحث")
+    esc_like = lambda t: re.sub(r"([\\%_])", r"\\\1", t)
+    digits = re.sub(r"[\s-]", "", q)
+    name_like = "%" + esc_like(q) + "%"
+    phone_like = "%" + esc_like(digits) + "%" if re.fullmatch(r"\+?\d+", digits) else name_like
+    act = "b.doctor_id=$3 AND b.booking_date=CURRENT_DATE AND b.status IN ('Waiting','In Progress')"
+    rows = await pool.fetch(f"""(SELECT 'account' AS kind,p.id,p.name,p.phone,p.age,
+        EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.patient_id=p.id AND b.member_id IS NULL) AS booked
+        FROM patients p WHERE p.name ILIKE $1 OR p.phone LIKE $2)
+      UNION ALL
+      (SELECT 'walkin',w.id,w.name,w.phone,w.age,
+        EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.walkin_id=w.id) AS booked
+        FROM walkin_patients w WHERE w.name ILIKE $1 OR w.phone LIKE $2)
+      ORDER BY name LIMIT 10""", name_like, phone_like, rec["doctor_id"])
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/reception/bookings", status_code=201)
+async def r_book(request: Request, rec=Depends(rec_ctx)):
+    """تسجيل مريض حضور مباشر وإدخاله في نفس الطابور الموحّد (المصدر = Walk-in).
+    kind: account (مريض له حساب) | walkin (سجل حضور سابق) | new (مريض جديد: name,phone,age)"""
+    b, did = await body(request), rec["doctor_id"]
+    kind, pid, wid = b.get("kind"), None, None
+    if kind == "new":
+        name, phone, age = str(b.get("name") or "").strip(), re.sub(r"[\s-]", "", str(b.get("phone") or "")), toint(b.get("age"))
+        if not 2 <= len(name) <= 60: raise Fail(400, "اكتب اسم المريض (حرفان على الأقل)")
+        if not re.fullmatch(r"\+?\d{8,15}", phone): raise Fail(400, "رقم الهاتف غير صحيح")
+        if age is None or not 0 <= age <= 120: raise Fail(400, "العمر غير صحيح")
+    elif kind in ("account", "walkin") and toint(b.get("id")):
+        pass
+    else:
+        raise Fail(400, "بيانات المريض غير مكتملة")
+    async with pool.acquire() as c, c.transaction():
+        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", did)  # نفس قفل الحجز الأونلاين: لا يتكرر رقم الدور
+        if kind == "account":
+            p = await c.fetchrow("SELECT id,name,phone FROM patients WHERE id=$1", toint(b.get("id")))
+            if not p: raise Fail(404, "المريض غير موجود")
+            pid, name, phone = p["id"], p["name"], p["phone"]
+        elif kind == "walkin":
+            w = await c.fetchrow("SELECT id,name,phone FROM walkin_patients WHERE id=$1", toint(b.get("id")))
+            if not w: raise Fail(404, "المريض غير موجود")
+            wid, name, phone = w["id"], w["name"], w["phone"]
+        else:
+            if await c.fetchval("SELECT 1 FROM patients WHERE phone=$1 AND lower(name)=lower($2)", phone, name):
+                raise Fail(409, "هذا المريض مسجّل بحساب أونلاين، اختره من نتائج البحث بدل تسجيله من جديد")
+            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE phone=$1 AND lower(name)=lower($2) ORDER BY id LIMIT 1", phone, name)
+            if not wid:
+                wid = await c.fetchval("INSERT INTO walkin_patients(name,phone,age,created_by) VALUES($1,$2,$3,$4) RETURNING id", name, phone, age, rec["id"])
+        if await c.fetchval("""SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')
+                AND (($2::int IS NOT NULL AND patient_id=$2 AND member_id IS NULL) OR ($3::int IS NOT NULL AND walkin_id=$3))""", did, pid, wid):
+            raise Fail(409, "لدى هذا المريض حجز نشط عند الطبيب اليوم")
+        row = await c.fetchrow("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,walkin_id,queue_number,source,created_by_receptionist)
+          SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1,'Walk-in',$6::int FROM bookings
+          WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE RETURNING id,queue_number""", did, name, phone, pid, wid, rec["id"])
+        await audit(c, rec, row["id"], "add", patient=name, queue=row["queue_number"])
+    return await r_state(rec, booking={"id": row["id"], "queue_number": row["queue_number"]})
+
+
+@app.post("/api/reception/call-next")
+async def r_call(rec=Depends(rec_ctx)):
+    """استدعاء المريض التالي (أول منتظر بالترتيب): يظهر له في تطبيقه «تم استدعاؤك». الحالة تبقى Waiting حتى بدء الكشف."""
+    did = rec["doctor_id"]
+    async with pool.acquire() as c, c.transaction():
+        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", did)
+        n = await c.fetchrow("SELECT id,queue_number,patient_name FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' ORDER BY queue_number LIMIT 1", did)
+        if not n:
+            raise Fail(409, "لا يوجد مرضى في الانتظار")
+        await c.execute("""UPDATE bookings SET called_at=CASE WHEN id=$2 THEN now() END WHERE doctor_id=$1 AND booking_date=CURRENT_DATE
+          AND status='Waiting' AND (id=$2 OR called_at IS NOT NULL)""", did, n["id"])
+        await audit(c, rec, n["id"], "call", patient=n["patient_name"], queue=n["queue_number"])
+    return await r_state(rec)
+
+
+@app.post("/api/reception/bookings/{bid}/start")
+async def r_start(bid: int, rec=Depends(rec_ctx)):
+    async with pool.acquire() as c, c.transaction():
+        b = await lock_get(c, rec, bid, ("Waiting",))
+        if await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='In Progress'", rec["doctor_id"]):
+            raise Fail(409, "أنهِ الكشف الحالي أولاً")
+        await c.execute("UPDATE bookings SET status='In Progress',started_at=now(),called_at=COALESCE(called_at,now()) WHERE id=$1", bid)
+        await audit(c, rec, bid, "start", patient=b["patient_name"], queue=b["queue_number"])
+    return await r_state(rec)
+
+
+@app.post("/api/reception/bookings/{bid}/complete")
+async def r_complete(bid: int, rec=Depends(rec_ctx)):
+    # لا نشترط وجود تقرير: الطبيب يكتبه/يعدّله من لوحته (وتظهر حالة التقرير للموظف قبل الإنهاء)
+    async with pool.acquire() as c, c.transaction():
+        b = await lock_get(c, rec, bid, ("In Progress",))
+        has = await c.fetchval("SELECT EXISTS(SELECT 1 FROM visit_reports WHERE booking_id=$1)", bid)
+        await c.execute("UPDATE bookings SET status='Completed',completed_at=now() WHERE id=$1", bid)
+        await audit(c, rec, bid, "complete", patient=b["patient_name"], queue=b["queue_number"], has_report=has)
+    return await r_state(rec)
+
+
+@app.post("/api/reception/bookings/{bid}/skip")
+async def r_skip(bid: int, rec=Depends(rec_ctx)):
+    """تخطي مريض (لم يحضر/غير جاهز): يعود لآخر الطابور برقم جديد وتُسجَّل المرة، ويمكن استدعاؤه لاحقاً."""
+    did = rec["doctor_id"]
+    async with pool.acquire() as c, c.transaction():
+        b = await lock_get(c, rec, bid, ("Waiting", "In Progress"))
+        if b["status"] == "Waiting" and not await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' AND id<>$2", did, bid):
+            raise Fail(409, "لا يوجد مرضى آخرون في الانتظار")
+        mx = await c.fetchval("SELECT MAX(queue_number) FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE", did)
+        await c.execute("UPDATE bookings SET status='Waiting',queue_number=$2,started_at=NULL,called_at=NULL,skipped_count=skipped_count+1 WHERE id=$1", bid, mx + 1)
+        await audit(c, rec, bid, "skip", patient=b["patient_name"], queue=b["queue_number"], new_queue=mx + 1)
+    return await r_state(rec)
+
+
+@app.post("/api/reception/bookings/{bid}/cancel")
+async def r_cancel(bid: int, request: Request, rec=Depends(rec_ctx)):
+    reason = str((await body(request)).get("reason") or "").strip()[:200]
+    async with pool.acquire() as c, c.transaction():
+        b = await lock_get(c, rec, bid, ("Waiting", "In Progress"))
+        await c.execute("UPDATE bookings SET status='Cancelled' WHERE id=$1", bid)
+        await audit(c, rec, bid, "cancel", patient=b["patient_name"], queue=b["queue_number"], reason=reason)
+    return await r_state(rec)
+
+
+@app.post("/api/reception/bookings/{bid}/move")
+async def r_move(bid: int, request: Request, rec=Depends(rec_ctx)):
+    """تعديل الترتيب: نقل منتظر إلى موضع (1 = أول الطابور). نعيد توزيع نفس مجموعة أرقام المنتظرين بالترتيب الجديد،
+    فلا يتعارض مع أرقام غيرهم، والقيد DEFERRABLE يسمح بالتبديل داخل المعاملة."""
+    pos = toint((await body(request)).get("position"))
+    did = rec["doctor_id"]
+    async with pool.acquire() as c, c.transaction():
+        b = await lock_get(c, rec, bid, ("Waiting",))
+        rows = await c.fetch("SELECT id,queue_number FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' ORDER BY queue_number", did)
+        ids, nums = [r["id"] for r in rows], [r["queue_number"] for r in rows]
+        if pos is None or not 1 <= pos <= len(ids):
+            raise Fail(400, "الموضع غير صحيح")
+        old = ids.index(bid) + 1
+        if old != pos:
+            ids.remove(bid)
+            ids.insert(pos - 1, bid)
+            await c.execute("SET CONSTRAINTS uq_queue_number DEFERRED")
+            await c.execute("UPDATE bookings x SET queue_number=v.n FROM unnest($1::int[],$2::int[]) AS v(id,n) WHERE x.id=v.id", ids, nums)
+            await audit(c, rec, bid, "move", patient=b["patient_name"], queue=b["queue_number"], **{"from": old, "to": pos})
+    return await r_state(rec)
+
+
+# ---------- admin: موظفو الاستقبال وسجل العمليات ----------
+def vrec(b, create):
+    g = lambda k: str(b.get(k) or "").strip()
+    o = {"name": g("name"), "email": g("email").lower(), "phone": re.sub(r"[\s-]", "", g("phone")),
+         "password": str(b.get("password") or ""), "doctor_id": toint(b.get("doctor_id")), "active": b.get("is_active") is not False}
+    if not 2 <= len(o["name"]) <= 60: raise Fail(400, "اسم الموظف غير صالح")
+    if len(o["email"]) > 80 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", o["email"]): raise Fail(400, "البريد الإلكتروني غير صالح")
+    if not re.fullmatch(r"\+?\d{8,15}", o["phone"]): raise Fail(400, "رقم الهاتف غير صحيح")
+    if not o["doctor_id"]: raise Fail(400, "اختر الطبيب المرتبط بالموظف")
+    if (create or o["password"]) and len(o["password"]) < 8: raise Fail(400, "كلمة المرور 8 أحرف على الأقل")
+    return o
+
+
+RECS = """SELECT r.id,r.name,r.email,r.phone,r.is_active,r.doctor_id,d.name AS doctor_name,d.specialty,r.created_at
+  FROM receptionists r JOIN doctors d ON d.id=r.doctor_id"""
+
+
+@app.get("/api/admin/receptionists")
+async def a_rlist(u=Depends(auth("admin"))):
+    return {"receptionists": [dict(r) for r in await pool.fetch(RECS + " ORDER BY r.id")]}
+
+
+@app.post("/api/admin/receptionists", status_code=201)
+async def a_rcreate(request: Request, u=Depends(auth("admin"))):
+    o = vrec(await body(request), True)
+    if not await pool.fetchval("SELECT 1 FROM doctors WHERE id=$1", o["doctor_id"]):
+        raise Fail(404, "الطبيب غير موجود")
+    try:
+        await pool.execute("INSERT INTO receptionists(doctor_id,name,email,phone,password_hash,is_active,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
+                           o["doctor_id"], o["name"], o["email"], o["phone"], await asyncio.to_thread(hashpw, o["password"]), o["active"], u["id"])
+    except asyncpg.UniqueViolationError:
+        raise Fail(409, "البريد الإلكتروني مستخدم بالفعل")
+    return {"ok": True}
+
+
+@app.put("/api/admin/receptionists/{rid}")
+async def a_rupdate(rid: int, request: Request, u=Depends(auth("admin"))):
+    o = vrec(await body(request), False)
+    if not await pool.fetchval("SELECT 1 FROM doctors WHERE id=$1", o["doctor_id"]):
+        raise Fail(404, "الطبيب غير موجود")
+    h = await asyncio.to_thread(hashpw, o["password"]) if o["password"] else None
+    try:
+        r = await pool.fetchval("""UPDATE receptionists SET doctor_id=$2,name=$3,email=$4,phone=$5,password_hash=COALESCE($6,password_hash),is_active=$7
+          WHERE id=$1 RETURNING id""", rid, o["doctor_id"], o["name"], o["email"], o["phone"], h, o["active"])
+    except asyncpg.UniqueViolationError:
+        raise Fail(409, "البريد الإلكتروني مستخدم بالفعل")
+    if not r:
+        raise Fail(404, "الموظف غير موجود")
+    return {"ok": True}
+
+
+@app.patch("/api/admin/receptionists/{rid}")
+async def a_rpatch(rid: int, request: Request, u=Depends(auth("admin"))):
+    b = await body(request)
+    if not await pool.fetchval("UPDATE receptionists SET is_active=$2 WHERE id=$1 RETURNING id", rid, b.get("is_active") is True):
+        raise Fail(404, "الموظف غير موجود")
+    return {"ok": True}
+
+
+@app.delete("/api/admin/receptionists/{rid}")
+async def a_rdelete(rid: int, u=Depends(auth("admin"))):
+    if not await pool.fetchval("DELETE FROM receptionists WHERE id=$1 RETURNING id", rid):
+        raise Fail(404, "الموظف غير موجود")
+    return {"ok": True}
+
+
+@app.get("/api/admin/audit")
+async def a_audit(doctor_id: int = 0, u=Depends(auth("admin"))):
+    rows = await pool.fetch("""SELECT a.id,a.action,a.details,a.created_at,a.receptionist_name,d.name AS doctor_name FROM queue_audit a
+      JOIN doctors d ON d.id=a.doctor_id WHERE ($1=0 OR a.doctor_id=$1) ORDER BY a.id DESC LIMIT 200""", doctor_id)
+    return {"audit": [{**dict(r), "details": jl(r["details"])} for r in rows]}
 
 
 if __name__ == "__main__":
