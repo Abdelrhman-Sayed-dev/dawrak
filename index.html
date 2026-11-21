@@ -627,6 +627,14 @@ html,body{overflow-x:clip}
 .hv .hi b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hv .hi small{font-size:.78rem;color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hv .btn{white-space:nowrap;padding:6px 10px;font-size:.78rem;gap:4px}.hv .btn svg{width:14px;height:14px}
+
+/* صفحة الأطباء */
+.ds2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;margin-bottom:18px}
+.ds2f{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--b);border-radius:16px;padding:0 14px;box-shadow:var(--sh);min-width:0}
+.ds2f svg{color:var(--m);width:20px;height:20px}
+.ds2f input,.ds2f select{flex:1;min-width:0;width:100%;border:0;background:none;outline:0;padding:14px 0;font-size:1rem}
+.ds2f:focus-within{border-color:var(--p)}
+@media(max-width:620px){.ds2{grid-template-columns:1fr;gap:8px}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -673,7 +681,7 @@ Object.assign(IC, { 'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/patient/dashboard': '/me' };
+  '/admin/dashboard': '/admin', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/patient/dashboard': '/me' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -681,7 +689,7 @@ function nav(u) { history.pushState(null, '', u); route(); scrollTo(0, 0); retur
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('a[href]'); if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || a.target) return;
   const h = a.getAttribute('href');
-  const to = { '#/': '/', '#/login': LOGIN.patient, '#/register': '/patient/register', '#/me': DASH.patient, '#/doctor': DASH.doctor, '#/admin': DASH.admin }[h]
+  const to = { '#/': '/', '#/doctors': '/doctors', '#/login': LOGIN.patient, '#/register': '/patient/register', '#/me': DASH.patient, '#/doctor': DASH.doctor, '#/admin': DASH.admin }[h]
     || (/^\/(patient|doctor|admin)\//.test(h) ? h : null);
   if (to) { e.preventDefault(); nav(to); }
 });
@@ -737,7 +745,7 @@ Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8
 // شريط أيقونات سفلي بدل الفوتر (زي تطبيقات الموبايل)
 function foot() {
   const r = localStorage.role, at = R();
-  const H = ['home', 'الرئيسية', '#/', at === '/', "return go('top')"], D = ['stethoscope', 'الأطباء', '#/', false, "return go('doctors')"];
+  const H = ['home', 'الرئيسية', '#/', at === '/', "return go('top')"], D = ['stethoscope', 'الأطباء', '#/doctors', at === '/doctors'];
   if (r === 'doctor') {
     const DT = [['users', 'الطابور', '/doctor/dashboard', at === '/doctor'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
     return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${DT.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
@@ -774,7 +782,7 @@ function route() {
     loginPage(lr); done(); return;
   }
   $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/admin': admin }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/admin': admin }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -819,10 +827,21 @@ function loginPage(role) {
 /* ---------- الصفحة العامة ---------- */
 // الصفحة الرئيسية: الهيرو + البحث + كروت الأطباء
 function pub() {
-  $('#m').innerHTML = `<section class="hx" id="top"><div class="hx-t"><span class="eb">${ic('heart-pulse')} رعاية صحية أسهل</span><h1>احجز كشفك.. ووفّر وقتك.</h1><p class="hp">اختار طبيبك وميعادك، وتابع دورك من موبايلك بكل سهولة.</p><div class="hx-cta"><button class="btn p cta" onclick="$('#s').scrollIntoView({behavior:'smooth',block:'center'});$('#s').focus({preventScroll:true})">احجز موعدك</button><button class="btn o cta" onclick="go('doctors')">استكشف الأطباء</button></div><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" aria-label="بحث" onclick="grid()">${ic('search')} <span class="sbt">بحث</span></button></div><div class="hb">${[['shield-check', 'أطباء معتمدون'], ['calendar-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['timer', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hx-v">${HERO_ART}</div></section><h2 class="sec2" id="doctors">الأطباء المتاحين</h2><div class="tabs" id="tb" role="tablist" aria-label="التخصصات"></div><div class="grid" id="g"></div>`;
+  $('#m').innerHTML = `<section class="hx" id="top"><div class="hx-t"><span class="eb">${ic('heart-pulse')} رعاية صحية أسهل</span><h1>احجز كشفك.. ووفّر وقتك.</h1><p class="hp">اختار طبيبك وميعادك، وتابع دورك من موبايلك بكل سهولة.</p><div class="hx-cta"><button class="btn p cta" onclick="$('#s').scrollIntoView({behavior:'smooth',block:'center'});$('#s').focus({preventScroll:true})">احجز موعدك</button><button class="btn o cta" onclick="nav('/doctors')">استكشف الأطباء</button></div><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" aria-label="بحث" onclick="sgo()">${ic('search')} <span class="sbt">بحث</span></button></div><div class="hb">${[['shield-check', 'أطباء معتمدون'], ['calendar-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['timer', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hx-v">${HERO_ART}</div></section>`;
+  $('#s').onkeydown = e => { if (e.key === 'Enter') sgo(); };
+  $('#sp').onchange = e => { spec = e.target.value; };
+  cur = async () => { try { docs = await api('/doctors'); specs(); } catch (e) { /* القائمة تُحمَّل لملء التخصصات فقط */ } };
+  cur();
+}
+// البحث من الرئيسية ينقل لصفحة الأطباء بنفس النص والتخصص
+function sgo() { q = $('#s').value; nav('/doctors'); }
+// صفحة الأطباء: كل الأطباء مع بحث وفلتر تخصص
+function docsPage() {
+  document.title = 'الأطباء — دورك';
+  $('#m').innerHTML = `<h2 class="sec2">الأطباء</h2><div class="ds2"><label class="ds2f">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></label><label class="ds2f">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></label></div><div class="grid" id="g"></div>`;
   $('#s').oninput = e => { q = e.target.value; grid(); };
-  $('#sp').onchange = e => { spec = e.target.value; grid(); specs(); };
-  cur = async () => { try { docs = await api('/doctors'); grid(); specs(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين وأنك فاتح الموقع من localhost:3000.</p>'; } };
+  $('#sp').onchange = e => { spec = e.target.value; grid(); };
+  cur = async () => { try { docs = await api('/doctors'); specs(); grid(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين.</p>'; } };
   cur();
 }
 function specs() {
