@@ -494,6 +494,27 @@ body{background:var(--bg)}
 @media(prefers-reduced-motion:reduce){.fl1{animation:none}}
 @media(max-width:860px){.hx{grid-template-columns:1fr;gap:20px;border-radius:24px}.hx-v{max-width:320px}}
 .ft .fi{grid-template-columns:1.6fr 1fr}@media(max-width:700px){.ft .fi{grid-template-columns:1fr}}
+.top{max-width:1256px}
+.hx{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:40px}
+.hx-v{max-width:540px}
+.hb{display:grid;grid-template-columns:repeat(2,max-content);justify-content:start;gap:12px 32px}
+@media(max-width:520px){.hb{grid-template-columns:1fr}}
+/* بحث الهيرو: يلتف بدل ما يتزاحم */
+.hx .sbox{flex-wrap:wrap;border-radius:28px;max-width:640px}
+.hx .sbox .search{flex:1 1 220px;min-width:0;padding:0 14px}
+.hx .sbox .search input{min-width:0;width:100%}
+.hx .sbox .sel{flex:0 1 190px;min-width:0;border:0;border-inline-start:1px solid var(--b);border-radius:0;padding:0 12px}
+.hx .sbox .sel select{width:100%;max-width:none;padding:12px 0;text-overflow:ellipsis}
+.hx .sbox .sbtn{flex:0 0 auto}
+@media(max-width:1000px){.hx{grid-template-columns:1fr;gap:24px}.hx-v{max-width:360px}}
+@media(max-width:620px){.hx .sbox{border-radius:22px}.hx .sbox .search{flex:1 1 100%}.hx .sbox .sel{display:none}.hx .sbox .sbtn{flex:1 1 100%}}
+@media(max-width:1000px){.hx-v{display:none}}
+/* نافبار الموبايل: زر قائمة يفتح dropdown */
+@media(max-width:859px){.top .mn,.top .au{display:none}.top{justify-content:space-between}}
+.mb{border-radius:999px}
+.dd{top:calc(100% + 8px);inset-inline:0;border:1px solid var(--b);border-radius:20px;box-shadow:0 16px 36px rgba(15,23,42,.12);padding:8px 16px 16px}
+.dd .l{border-radius:12px;padding:12px;border-bottom:0}.dd .l:hover{background:var(--pl);color:var(--p)}
+.dd .da{border-top:1px solid var(--b);padding-top:14px}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -523,12 +544,12 @@ const done = () => {};
 const LOGO = `<svg class="lm" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 42S6 31 6 18.5A9.5 9.5 0 0 1 24 13.6 9.5 9.5 0 0 1 42 18.5C42 31 24 42 24 42Z" fill="currentColor"/><path d="M10 24h8l3-6 4 11 3-5h10" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="38" cy="38" r="8" fill="#16A34A" stroke="#fff" stroke-width="2"/><path d="m34.5 38 2.5 2.5 4.5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const HERO_ART = `<svg viewBox="0 0 480 420" role="img" aria-label="تقويم مواعيد وتذكرة حجز مؤكد وساعة توفر الوقت"><defs><linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2563EB"/></linearGradient><linearGradient id="hg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF6FF"/><stop offset="1" stop-color="#DBEAFE"/></linearGradient><filter id="hsh" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#2563EB" flood-opacity=".22"/></filter></defs>
 <circle cx="240" cy="210" r="192" fill="url(#hg2)"/><circle cx="410" cy="64" r="52" fill="#BFDBFE" opacity=".4"/>
-<path d="M18 338h108l24-52 36 100 30-80 16 32h248" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".3"/>
+<path d="M40 350h80l22-30 30 62 26-50 16 18h196" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".3"/>
 <g transform="rotate(-4 220 200)"><rect x="90" y="80" width="260" height="240" rx="28" fill="#fff" filter="url(#hsh)"/><path d="M90 108a28 28 0 0 1 28-28h204a28 28 0 0 1 28 28v34H90z" fill="url(#hg1)"/>
 <rect x="143" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="213" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="283" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/>
 <g fill="#EFF6FF"><rect x="112" y="162" width="44" height="38" rx="11"/><rect x="168" y="162" width="44" height="38" rx="11"/><rect x="224" y="162" width="44" height="38" rx="11"/><rect x="280" y="162" width="44" height="38" rx="11"/><rect x="112" y="210" width="44" height="38" rx="11"/><rect x="168" y="210" width="44" height="38" rx="11"/><rect x="280" y="210" width="44" height="38" rx="11"/><rect x="112" y="258" width="44" height="38" rx="11"/><rect x="168" y="258" width="44" height="38" rx="11"/><rect x="224" y="258" width="44" height="38" rx="11"/><rect x="280" y="258" width="44" height="38" rx="11"/></g>
 <rect x="224" y="210" width="44" height="38" rx="11" fill="url(#hg1)"/><path d="M236 229l8 8 16-17" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
-<g class="fl1"><rect x="226" y="274" width="212" height="84" rx="20" fill="#fff" filter="url(#hsh)"/><circle cx="268" cy="316" r="22" fill="#16A34A"/><path d="M258 316l8 8 14-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="418" y="311" text-anchor="end" font-size="16" font-weight="700" fill="#0B2D5B" font-family="Cairo,sans-serif">تم تأكيد الحجز</text><rect x="354" y="324" width="64" height="8" rx="4" fill="#BFDBFE"/></g>
+<g class="fl1"><rect x="226" y="274" width="212" height="84" rx="20" fill="#fff" filter="url(#hsh)"/><circle cx="268" cy="316" r="22" fill="#16A34A"/><path d="M258 316l8 8 14-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="358" y="311" text-anchor="middle" font-size="16" font-weight="700" fill="#0B2D5B" font-family="Cairo,sans-serif">تم تأكيد الحجز</text><rect x="326" y="324" width="64" height="8" rx="4" fill="#BFDBFE"/></g>
 <g class="fl1 fl2"><circle cx="396" cy="122" r="46" fill="#fff" stroke="#BFDBFE" stroke-width="8" filter="url(#hsh)"/><path d="M396 122v-22M396 122l16 10" stroke="#0B2D5B" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="396" cy="122" r="5" fill="#2563EB"/></g>
 <path d="M66 100v34M49 117h34" stroke="#60A5FA" stroke-width="8" stroke-linecap="round" opacity=".6"/><path d="M452 232v18M443 241h18" stroke="#93C5FD" stroke-width="5" stroke-linecap="round"/><circle cx="58" cy="236" r="8" fill="#93C5FD"/><circle cx="446" cy="372" r="6" fill="#BFDBFE"/></svg>`;
 
