@@ -1,3 +1,74 @@
+-- ترحيل شامل وآمن (لا يحذف أي بيانات) يطابق قاعدة موجودة مع database.sql الحالي.
+-- التشغيل:  psql "$DATABASE_URL" -f migration_full.sql    (أو الصقه في SQL Editor في Neon)
+-- يمكن تشغيله أكثر من مرة بلا ضرر.
+BEGIN;
+
+-- ===== المرضى والأطباء: أعمدة قد تكون ناقصة في القواعد القديمة =====
+ALTER TABLE patients
+  ADD COLUMN IF NOT EXISTS chronic_conditions TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS other_conditions VARCHAR(300) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS notes VARCHAR(1000) NOT NULL DEFAULT '';
+
+ALTER TABLE doctors
+  ADD COLUMN IF NOT EXISTS description VARCHAR(300) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS profile_image TEXT,
+  ADD COLUMN IF NOT EXISTS average_consultation_time INT NOT NULL DEFAULT 10,
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS is_accepting_bookings BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- ===== أفراد العيلة =====
+CREATE TABLE IF NOT EXISTS family_members (
+  id SERIAL PRIMARY KEY,
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  name VARCHAR(60) NOT NULL,
+  relation VARCHAR(20) NOT NULL,
+  age INT NOT NULL CHECK (age BETWEEN 0 AND 120),
+  chronic_conditions TEXT[] NOT NULL DEFAULT '{}',
+  other_conditions VARCHAR(300) NOT NULL DEFAULT '',
+  notes VARCHAR(1000) NOT NULL DEFAULT '',
+  archived BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE family_members
+  ADD COLUMN IF NOT EXISTS chronic_conditions TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS other_conditions VARCHAR(300) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS notes VARCHAR(1000) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ===== الحجوزات: الربط بأفراد العيلة =====
+ALTER TABLE bookings
+  ADD COLUMN IF NOT EXISTS member_id INT REFERENCES family_members(id) ON DELETE SET NULL;
+
+-- ===== تقارير الكشف =====
+CREATE TABLE IF NOT EXISTS visit_reports (
+  booking_id INT PRIMARY KEY REFERENCES bookings(id) ON DELETE CASCADE,
+  report TEXT NOT NULL,
+  medications JSONB NOT NULL DEFAULT '[]',
+  follow_up_days INT CHECK (follow_up_days BETWEEN 1 AND 365),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE visit_reports
+  ADD COLUMN IF NOT EXISTS medications JSONB NOT NULL DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS follow_up_days INT;
+
+-- ===== ملفات التحاليل والأشعة =====
+CREATE TABLE IF NOT EXISTS booking_files (
+  id SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  kind VARCHAR(10) NOT NULL CHECK (kind IN ('lab','xray','other')),
+  filename VARCHAR(120) NOT NULL,
+  mime VARCHAR(60) NOT NULL,
+  size INT NOT NULL,
+  data BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_booking_files ON booking_files (booking_id);
+CREATE INDEX IF NOT EXISTS idx_patient_bookings ON bookings (patient_id, booking_date DESC);
+CREATE INDEX IF NOT EXISTS idx_queue ON bookings (doctor_id, booking_date, status, queue_number);
+
+COMMIT;
+
 -- ترحيل آمن (لا يحذف أي بيانات) لإضافة نظام موظفي الاستقبال على قاعدة موجودة.
 -- التشغيل:  psql "$DATABASE_URL" -f migration_receptionists.sql
 -- يمكن تشغيله أكثر من مرة. (للتثبيت الجديد استخدم database.sql فقط)
