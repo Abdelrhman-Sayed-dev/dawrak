@@ -941,7 +941,7 @@ const baseVals = f => ({ name: f.fname.value, phone: f.phone.value, whatsapp: f.
 // صفحة إنشاء حساب مريض
 function register() {
   $('#m').innerHTML = `<form class="card lg-card wide" id="rf"><h2>إنشاء حساب جديد</h2><div id="gb" class="gb"></div><div class="gsep">أو أنشئ حسابك يدوياً</div>${baseFields()}
-  <label>اسم المستخدم أو الإيميل<input name="lid" required dir="ltr" autocomplete="username"></label>
+  <label>اسم المستخدم<input name="lid" required dir="ltr" autocomplete="username" pattern="[A-Za-z0-9_.]{3,30}" minlength="3" maxlength="30" placeholder="مثال: ahmed_22" title="حروف إنجليزية وأرقام و _ . فقط (3-30)"></label>
   <label>كلمة المرور<input name="pw" type="password" required minlength="6" dir="ltr" autocomplete="new-password"></label>
   ${medFields()}
   <div class="err" id="er"></div><button class="btn p lg">إنشاء الحساب</button>

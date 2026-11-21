@@ -31,7 +31,7 @@ python main.py                           # http://localhost:3000
 |---|---|
 | `DATABASE_URL` | رابط PostgreSQL (لـ Neon: بدون `&channel_binding=require`) |
 | `JWT_SECRET` | سر توقيع التوكن (إجباري في الإنتاج؛ Render يولّده) |
-| `GOOGLE_CLIENT_ID` | اختياري، لتسجيل الدخول بجوجل (للمرضى فقط) |
+| `GOOGLE_CLIENT_ID` | اختياري، لتسجيل الدخول بجوجل (للمرضى فقط). لو تُرك فارغاً يختفي زر جوجل |
 
 ## فحص سريع للصلاحيات (بعد التشغيل)
 ```
@@ -39,3 +39,14 @@ curl -i localhost:3000/api/admin/doctors                       # 401 بدون ت
 curl -i -XPOST localhost:3000/api/admin/login -H 'content-type: application/json' -d '{"username":"x","password":"y"}'   # 401
 # توكن طبيب على /api/admin/doctors => 401 ، توكن مريض على /api/doctor/queue => 401
 ```
+
+## تسجيل الدخول بجوجل (للمرضى فقط)
+1. Google Cloud Console ← Google Auth Platform ← Clients ← Create client ← **Web application**.
+2. في **Authorized JavaScript origins** أضف `http://localhost:3000` ورابط الموقع (مثل `https://dawrak.onrender.com`) بدون `/` في آخره. اترك Redirect URIs فارغاً.
+3. انسخ الـ Client ID وضعه في المتغير `GOOGLE_CLIENT_ID` (لا حاجة لـ Client Secret).
+4. من **Audience**: اضغط Publish app (أو أضف Test users أثناء التجربة).
+5. المكتبات `google-auth` و`requests` موجودة في `requirements.txt`.
+
+ملاحظات أمان:
+- المريض الجديد بجوجل يكمل بياناته (هاتف/عمر...) ثم يُنشأ حسابه، وكلمة مروره عشوائية (يدخل بجوجل فقط).
+- التسجيل اليدوي لا يقبل إيميلاً كاسم مستخدم (حروف/أرقام/_/. فقط)، حتى لا يستطيع أحد حجز إيميل غيره والاستيلاء على حسابه عند دخوله بجوجل.

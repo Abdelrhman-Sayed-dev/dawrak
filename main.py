@@ -275,8 +275,12 @@ async def register(request: Request):
     b = await body(request)
     o = vpat(b)
     lid, pw = str(b.get("login_id") or "").strip().lower(), str(b.get("password") or "")
-    if not (re.fullmatch(r"[a-z0-9_.]{3,30}", lid) or (len(lid) <= 80 and re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", lid))):
-        raise Fail(400, "اسم المستخدم أو الإيميل غير صالح")
+    # الإيميل لا يُقبل كاسم مستخدم يدوي: إيميلات المرضى تُسجَّل عبر Google فقط (مؤكَّدة)،
+    # وإلا يستطيع أي شخص حجز إيميل غيره ثم الاستيلاء على حسابه عند دخوله بجوجل.
+    if "@" in lid:
+        raise Fail(400, "للتسجيل بالإيميل استخدم زر Google، أو اختر اسم مستخدم بدون @")
+    if not re.fullmatch(r"[a-z0-9_.]{3,30}", lid):
+        raise Fail(400, "اسم المستخدم 3-30 حرفاً: حروف إنجليزية صغيرة وأرقام و _ . فقط")
     if len(pw) < 6: raise Fail(400, "كلمة المرور 6 أحرف على الأقل")
     try:
         uid = await pool.fetchval("""INSERT INTO patients(name,phone,whatsapp,age,login_id,password_hash,chronic_conditions,other_conditions,notes)
