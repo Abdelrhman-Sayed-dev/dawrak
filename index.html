@@ -404,26 +404,35 @@ h1,h2,h3,h4,.dn,.logo b{color:var(--navy)}
 .ft{background:var(--pd);color:#CBD9EE}.ft .logo{color:#fff}.ft .logo b{color:#fff}.ft .logo .lm{color:var(--lb)}
 .toast{background:var(--err)}.toast.ok{background:var(--ok)}
 .chip.ok{background:#DCFCE7;color:var(--ok)}
-/* ===== بوابات الدخول المنفصلة ===== */
-.auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);background:var(--bg)}
-.aside{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:40px;color:#fff}
-.aside .logo,.aside .logo b{color:#fff}.aside .logo small{color:#DBEAFE}.aside .logo .lm{color:#fff}
-.aside .ai{width:56px;height:56px;border-radius:var(--r);display:grid;place-items:center;background:rgba(255,255,255,.14);margin-top:24px}.aside .ai svg{width:28px;height:28px}
-.aside h1{color:#fff;font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.3}.aside p{color:#DBEAFE;max-width:34ch}
-.auth.adm .aside{background:var(--pd)}.auth.doc .aside{background:var(--p)}
-.auth.pat .aside{background:var(--pl);color:var(--navy)}.auth.pat .aside .logo b,.auth.pat .aside h1{color:var(--navy)}.auth.pat .aside p,.auth.pat .aside .logo small{color:var(--m)}
-.auth.pat .aside .logo .lm{color:var(--p)}.auth.pat .aside .ai{background:#fff;color:var(--p);border:1px solid var(--lb)}
-.am{display:grid;place-items:center;padding:24px}
-.af{width:100%;max-width:400px;background:#fff;border:1px solid var(--b);border-radius:var(--r);box-shadow:var(--sh);padding:28px}
-.af h2{font-size:1.4rem;margin-bottom:8px}
-.af label{display:block;margin-top:14px;font-weight:600;font-size:.9rem}
-.af input{display:block;width:100%;margin-top:4px;padding:11px 12px;border:1px solid #CBD5E1;border-radius:var(--r2);background:#fff}
-.af input:focus{outline:0;border-color:var(--p);box-shadow:0 0 0 3px rgba(37,99,235,.18)}
-.af input[aria-invalid=true]{border-color:var(--err)}
-.pw{position:relative}.pw input{padding-left:44px}
-.pwt{position:absolute;left:6px;top:50%;transform:translateY(-35%);border:0;background:none;color:var(--m);cursor:pointer;padding:8px;border-radius:8px;display:grid}.pwt:hover{color:var(--p)}
-.af .btn.lg{margin-top:12px}.btn.ld{opacity:.8}
-@media(max-width:800px){.auth{grid-template-columns:1fr}.aside{padding:22px 20px;gap:8px}.aside .ai{display:none}.aside h1{font-size:1.3rem}.aside p{display:none}.am{align-items:start}}
+/* ===== بوابات الدخول المنفصلة (تصميم موحّد للأدوار الثلاثة) ===== */
+.auth{--a1:#2563EB;--a2:#1D4ED8;--tx:#fff;--mu:#DBEAFE;min-height:100vh;display:grid;grid-template-columns:3fr 2fr;background:var(--bg)}
+.auth.adm{--a1:#0B2D5B;--a2:#1E4FBF}.auth.pat{--a1:#EFF6FF;--a2:#BFDBFE;--tx:#0B2D5B;--mu:#475569}
+.am{display:grid;place-items:center;padding:32px}
+.af{width:100%;max-width:440px;background:#fff;border:1px solid var(--b);border-radius:20px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 16px 40px rgba(15,23,42,.07);padding:36px 32px}
+.af h2{font-size:1.5rem;margin:0}.af .aw{color:var(--m);margin:4px 0 8px}
+#lf label{display:block;margin-top:18px;font-weight:600;font-size:.9rem;color:var(--t)}
+.fld{position:relative;margin-top:6px}
+.fi{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--m);display:grid;pointer-events:none}.fi svg{width:20px;height:20px}
+#lf input.in{display:block;width:100%;height:54px;margin:0;padding:0 48px;border:1px solid #CBD5E1;border-radius:14px;background:#fff;font-size:1rem;text-align:right;transition:border-color .15s,box-shadow .15s}
+#lf input.in:hover{border-color:#94A3B8}
+#lf input.in:focus{outline:0;border-color:var(--p);box-shadow:0 0 0 4px rgba(37,99,235,.15)}
+#lf input.in[aria-invalid=true]{border-color:var(--err);box-shadow:0 0 0 4px rgba(220,38,38,.1)}
+.fld:focus-within .fi{color:var(--p)}
+.pwt{position:absolute;left:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--m);cursor:pointer;padding:8px;border-radius:10px;display:grid}.pwt svg{width:20px;height:20px}.pwt:hover{color:var(--p);background:var(--pl)}
+#lf .err{margin-top:12px}
+#lf .btn.lg{height:54px;padding:0;margin-top:8px;border-radius:14px;font-size:1.05rem;box-shadow:0 6px 16px rgba(37,99,235,.28);transition:background .15s,transform .15s,box-shadow .15s}
+#lf .btn.lg:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 22px rgba(37,99,235,.34)}
+#lf .btn.ld{opacity:1;background:#1D4ED8}#lf .btn.ld::before{content:"";width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.aside{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:24px;padding:44px 44px 0;background:linear-gradient(160deg,var(--a1),var(--a2));color:var(--tx)}
+.aside .logo,.aside .logo b{color:var(--tx)}.aside .logo small{color:var(--mu)}.aside .logo .lm{color:var(--tx)}.auth.pat .aside .logo .lm{color:var(--p)}
+.at{position:relative;z-index:1}.aside .ai{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:rgba(255,255,255,.16);margin-bottom:18px}.aside .ai svg{width:28px;height:28px}
+.auth.pat .aside .ai{background:#fff;color:var(--p);box-shadow:0 4px 14px rgba(37,99,235,.15)}
+.aside h1{color:var(--tx);font-size:clamp(1.6rem,2.6vw,2.2rem);line-height:1.35;margin:0}.aside .at p{color:var(--mu);margin-top:10px;max-width:30ch;font-size:1.05rem}
+.art{margin:0 -44px;height:190px;color:var(--tx)}.art svg{display:block;width:100%;height:100%}.auth.pat .art{color:var(--p)}
+@media(max-width:860px){.auth{grid-template-columns:1fr;grid-template-rows:auto 1fr}.aside{order:-1;background:none;padding:22px 20px 0;color:var(--navy)}
+.aside .at,.aside .art{display:none}.aside .logo b{color:var(--navy)}.aside .logo small{color:var(--m)}.aside .logo .lm{color:var(--p)}.am{padding:16px 16px 32px;align-items:start}.af{padding:28px 22px}}
+@media(prefers-reduced-motion:reduce){#lf .btn.lg,.fld input{transition:none}#lf .btn.ld::before{animation-duration:2s}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -452,7 +461,7 @@ const ic = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const done = () => {};
 const LOGO = `<svg class="lm" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 42S6 31 6 18.5A9.5 9.5 0 0 1 24 13.6 9.5 9.5 0 0 1 42 18.5C42 31 24 42 24 42Z" fill="currentColor"/><path d="M10 24h8l3-6 4 11 3-5h10" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="38" cy="38" r="8" fill="#16A34A" stroke="#fff" stroke-width="2"/><path d="m34.5 38 2.5 2.5 4.5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-Object.assign(IC, { 'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+Object.assign(IC, { 'lock': '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off': '<path d="m3 3 18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7A17 17 0 0 0 2 12s3.5 6 10 6a9.7 9.7 0 0 0 4-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   'shield-check': '<path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
   'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' });
@@ -558,19 +567,23 @@ addEventListener('hashchange', route);
 
 /* ---------- صفحات الدخول المنفصلة: admin / doctor / patient ---------- */
 const PORTAL = {
-  admin: { t: 'بوابة الإدارة', s: 'دخول مسؤولي النظام فقط', u: 'اسم المستخدم', i: 'shield-check', c: 'adm' },
-  doctor: { t: 'بوابة الأطباء', s: 'سجّل دخولك لإدارة طابور مرضاك وكتابة التقارير', u: 'اسم المستخدم', i: 'stethoscope', c: 'doc' },
-  patient: { t: 'تسجيل دخول المريض', s: 'تابع حجوزاتك ودورك في الطابور', u: 'اسم المستخدم أو الإيميل', i: 'user', c: 'pat' } };
+  admin: { t: 'بوابة الإدارة', s: 'إدارة النظام ومتابعة العمليات من مكان واحد.', w: 'سجّل دخولك لمتابعة لوحة الإدارة.', u: 'اسم المستخدم', i: 'shield-check', c: 'adm' },
+  doctor: { t: 'بوابة الطبيب', s: 'تابع مواعيدك ومرضـاك وأدر عيادتك بسهولة.', w: 'أهلاً بك، سجّل دخولك لمتابعة طابور مرضاك.', u: 'اسم المستخدم', i: 'stethoscope', c: 'doc' },
+  patient: { t: 'مرحباً بك في دورك', s: 'احجز مواعيدك الطبية وتابع رحلتك الصحية بسهولة.', w: 'سعداء برؤيتك، سجّل دخولك لمتابعة حجوزاتك.', u: 'اسم المستخدم أو الإيميل', i: 'user', c: 'pat' } };
+// مكوّنات مشتركة للصفحات الثلاث: الرسمة الزخرفية (نبض + صليب + دوائر) وحقل الإدخال
+const AUTH_ART = `<svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><circle cx="330" cy="40" r="90" fill="currentColor" opacity=".08"/><circle cx="60" cy="150" r="70" fill="currentColor" opacity=".07"/><path d="M180 20v34M163 37h34" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity=".22"/><path d="M0 128h110l22-46 34 92 28-70 18 24h188" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
+const authField = (id, label, icon, extra = '') => `<label for="${id}">${label}</label><div class="fld"><span class="fi" aria-hidden="true">${ic(icon)}</span>${extra}</div>`;
 function loginPage(role) {
   const P = PORTAL[role]; document.title = P.t + ' — دورك';
-  $('#app').innerHTML = `<div class="auth ${P.c}"><aside class="aside"><a href="/" class="logo" ${role === 'patient' ? '' : 'tabindex="-1" style="pointer-events:none"'}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><div class="ai">${ic(P.i)}</div><h1>${P.t}</h1><p>${P.s}</p></aside>
-  <main class="am"><form class="af" id="lf" novalidate><h2>${P.t}</h2>
-  <label for="lu">${P.u}</label><input id="lu" name="u" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="er">
-  <label for="lp">كلمة المرور</label><div class="pw"><input id="lp" name="p" type="password" dir="ltr" autocomplete="current-password" aria-describedby="er"><button type="button" class="pwt" id="pwt" aria-label="إظهار كلمة المرور" aria-pressed="false">${ic('eye')}</button></div>
+  $('#app').innerHTML = `<div class="auth ${P.c}"><main class="am"><form class="af" id="lf" novalidate><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
+  ${authField('lu', P.u, 'user', '<input class="in" id="lu" name="u" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="er">')}
+  ${authField('lp', 'كلمة المرور', 'lock', `<input class="in" id="lp" name="p" type="password" dir="ltr" autocomplete="current-password" aria-describedby="er"><button type="button" class="pwt" id="pwt" aria-label="إظهار كلمة المرور" aria-pressed="false">${ic('eye')}</button>`)}
   <div class="err" id="er" role="alert" aria-live="polite"></div>
   <button class="btn p lg" id="lb">دخول</button>
-  ${role === 'patient' ? `<p class="mt" style="text-align:center;margin-top:14px">ليس لديك حساب؟ <a href="/patient/register" style="color:var(--p);font-weight:700">أنشئ حساباً جديداً</a></p><div class="gsep">أو</div><div id="gb" class="gb"></div><p class="mt" style="text-align:center;margin-top:10px"><a href="/" style="color:var(--m)">العودة للموقع</a></p>` : ''}
-  </form></main></div>`;
+  ${role === 'patient' ? `<p class="mt" style="text-align:center;margin-top:16px">ليس لديك حساب؟ <a href="/patient/register" style="color:var(--p);font-weight:700">أنشئ حساباً جديداً</a></p><div class="gsep">أو</div><div id="gb" class="gb"></div>` : ''}
+  </form></main>
+  <aside class="aside"><a href="/" class="logo" ${role === 'patient' ? '' : 'tabindex="-1" style="pointer-events:none"'}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>
+  <div class="at"><div class="ai">${ic(P.i)}</div><h1>${P.t}</h1><p>${P.s}</p></div><div class="art">${AUTH_ART}</div></aside></div>`;
   if (role === 'patient') gbtn();
   const f = $('#lf'), er = $('#er'), lb = $('#lb');
   $('#pwt').onclick = e => { const p = $('#lp'), show = p.type === 'password'; p.type = show ? 'text' : 'password'; e.currentTarget.innerHTML = ic(show ? 'eye-off' : 'eye'); e.currentTarget.setAttribute('aria-pressed', show); e.currentTarget.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'); };
