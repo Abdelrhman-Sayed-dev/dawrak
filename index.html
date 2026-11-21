@@ -587,6 +587,18 @@ body{background:var(--bg)}
 
 .ft.ft2 .f2-brand .logo>svg{color:#F3E7D6!important}
 .ft.ft2 .f2-brand .logo>svg>path:nth-of-type(2){stroke:#0B2D5B!important}
+
+/* ملف الطبيب */
+.dp{display:grid;gap:14px;max-width:760px;margin:0 auto;grid-template-columns:minmax(0,1fr)}
+.dp .card h3{margin-bottom:4px}
+.dpc{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.av.xl{width:96px;height:96px;font-size:2.4rem}
+.dpt{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px}.dpt h2{font-size:1.35rem;line-height:1.3}
+.dpu{margin:0!important}
+.dps{grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+.dps .st{border-radius:16px;text-align:center}.dps .st b{display:block;font-size:1.5rem;color:var(--navy)}.dps .st small{color:var(--m);font-size:.8rem}
+.bs{font-weight:700}.bs.c{color:var(--ok)}.bs.x{color:var(--err)}.bs.p{color:var(--p)}.bs.w{color:var(--m)}
+@media(max-width:520px){.dpc{flex-direction:column;text-align:center}.dpu{width:100%}.dps{gap:8px}.dps .st{padding:10px 4px}.dps .st b{font-size:1.3rem}.dp .ql li{flex-wrap:wrap}.dp .ql time{margin-inline-start:0;width:100%}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -600,7 +612,7 @@ body{background:var(--bg)}
      2. التنقل       : head, foot, route
      3. الصفحة العامة: pub, grid, book
      4. الحسابات     : login, register, Google, profile
-     5. المريض       : me (تتبع جدولي)، التحاليل والأشعة، أفراد العيلة، الروشتة
+     5. المريض       : me (حجوزاتي)، التحاليل والأشعة، أفراد العيلة، الروشتة
      6. الطبيب       : doctor, تقرير الكشف fin, ملف المريض pf
      7. الأدمن       : admin, إدارة الأطباء
      8. التحديث الدوري (Polling كل 5 ثوانٍ)
@@ -633,7 +645,7 @@ Object.assign(IC, { 'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/doctor/dashboard': '/doctor', '/patient/dashboard': '/me' };
+  '/admin/dashboard': '/admin', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/patient/dashboard': '/me' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -687,17 +699,24 @@ const tm = t => new Date(t).toLocaleTimeString('ar-EG', { hour: '2-digit', minut
 // الهيدر: الشعار + الروابط + أزرار الحساب + قائمة الموبايل
 function head() {
   const r = localStorage.role, home = R() === '/';
-  const L = [['top', 'الرئيسية'], ['doctors', 'الأطباء'], ['about', 'عن دورك']];
+  if (r === 'doctor') { // الطبيب لا يرى الموقع العام: لوحته وملفه فقط
+    const at = R(), D = [['/doctor/dashboard', 'الطابور', '/doctor'], ['/doctor/profile', 'ملفي الشخصي', '/dprofile']];
+    const lk = D.map(([h, l, k]) => `<a href="${h}" class="${at === k ? 'on' : ''}">${l}</a>`).join('');
+    const dl = D.map(([h, l]) => `<a href="${h}" class="l">${l}</a>`).join('');
+    const out = `<button class="btn o sm" onclick="logout()">${ic('log-out')} خروج</button>`;
+    return `<header class="top"><a href="/doctor/dashboard" class="logo">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><nav class="mn">${lk}</nav><div class="au">${out}</div><button class="mb" aria-label="القائمة" aria-expanded="false" onclick="tmenu()">${ic('menu')}</button><div class="dd" id="dd">${dl}<div class="da">${out}</div></div></header>`;
+  }
+  const L = [['top', 'الرئيسية'], ['doctors', 'الأطباء']];
   const links = L.map(([k, l], i) => `<a href="#/" class="${i === 0 && home ? 'on' : ''}" onclick="return go('${k}')">${l}</a>`).join('');
   const dl = L.map(([k, l]) => `<a href="#/" class="l" onclick="return go('${k}')">${l}</a>`).join('');
-  const auth = r ? `${r === 'patient' ? `<a class="btn o sm" href="#/profile">${ic('user')} ملفي</a>` : ''}<a class="btn o sm" href="#/${r === 'patient' ? 'me' : r}">${ic('layout-dashboard')} ${r === 'patient' ? 'تتبع جدولي' : 'لوحتي'}</a><button class="btn o sm" onclick="logout()">${ic('log-out')} خروج</button>` : `<a class="btn p sm" href="/patient/register">إنشاء حساب</a><a class="btn o sm" href="/patient/login">${ic('user')} تسجيل الدخول</a>`;
+  const auth = r ? `${r === 'patient' ? `<a class="btn o sm" href="#/profile">${ic('user')} ملفي</a>` : ''}<a class="btn o sm" href="#/${r === 'patient' ? 'me' : r}">${ic('layout-dashboard')} ${r === 'patient' ? 'حجوزاتي' : 'لوحتي'}</a><button class="btn o sm" onclick="logout()">${ic('log-out')} خروج</button>` : `<a class="btn p sm" href="/patient/register">إنشاء حساب</a><a class="btn o sm" href="/patient/login">${ic('user')} تسجيل الدخول</a>`;
   return `<header class="top"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><nav class="mn">${links}</nav><div class="au">${auth}</div><button class="mb" aria-label="القائمة" aria-expanded="false" onclick="tmenu()">${ic('menu')}</button><div class="dd" id="dd">${dl}<div class="da">${auth}</div></div></header>`;
 }
 function goMe() { closeModal(); nav(DASH.patient); }
 function foot() {
   const r = localStorage.role;
   const acct = r === 'patient'
-    ? '<a href="#/me">تتبع جدولي</a><a href="#/profile">ملفي الشخصي</a>'
+    ? '<a href="#/me">حجوزاتي</a><a href="#/profile">ملفي الشخصي</a>'
     : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>';
   return `<footer class="ft ft2" id="about"><div class="f2-in">
 <div class="f2-cta"><div><h3>جاهز تحجز كشفك؟</h3><p>اختار الدكتور المناسب واحجز دورك في دقيقة.</p></div><a href="#/" class="f2-btn" onclick="return go('doctors')">احجز موعدك ${ic('calendar-check')}</a></div>
@@ -726,16 +745,18 @@ function route() {
   const lh = location.hash.slice(1);
   if (LEGACY[lh]) history.replaceState(null, '', LEGACY[lh]);
   const h = R(); cur = null; closeModal();
-  const need = { '/admin': 'admin', '/doctor': 'doctor', '/me': 'patient', '/profile': 'patient' }[h], role = localStorage.role;
+  const need = { '/admin': 'admin', '/doctor': 'doctor', '/dprofile': 'doctor', '/me': 'patient', '/profile': 'patient' }[h], role = localStorage.role;
   // مستخدم بدور آخر ← بوابته الخاصة، وغير المسجّل ← صفحة الدخول المناسبة (والـ API يرفض أي وصول غير مصرح به على أي حال)
+  // الطبيب المسجّل لا يفتح أي صفحة عامة: يعود دائماً للوحته
+  if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile') { nav(DASH.doctor); return; }
   if (need && role !== need) { nav(role && DASH[role] ? DASH[role] : LOGIN[need]); return; }
   if (h.startsWith('L:')) {
     const lr = h.slice(2);
     if (role === lr && localStorage.tok) { nav(DASH[lr]); return; }
     loginPage(lr); done(); return;
   }
-  $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/doctor' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/admin': admin }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/doctor' || h === '/dprofile' ? '' : foot());
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/admin': admin }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -889,7 +910,7 @@ async function profile() {
   } catch (e) { toast(e.message); }
 }
 let prev = {}, HB = [], PN = '', FAM = [];
-// صفحة تتبع جدولي (تتحدث لحظياً من WebSocket)
+// صفحة حجوزاتي (تتحدث لحظياً من WebSocket)
 function me() { cur = async () => { try { mview(await api('/me')); } catch (e) { toast(e.message); } }; cur(); }
 // رسم الحجوزات النشطة (مع إلغاء/تأجيل/ملفات) والكشوفات السابقة
 function mview({ profile: p, bookings: b }) {
@@ -900,7 +921,7 @@ function mview({ profile: p, bookings: b }) {
     else if (o && x.status === 'Waiting' && x.ahead === 0 && o.a > 0) { toast('أنت التالي في الدور، استعد', 1); navigator.vibrate?.(200); }
     prev[x.id] = { s: x.status, a: x.ahead };
   });
-  $('#m').innerHTML = `<h2 class="sec2">تتبع جدولي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p>` +
+  $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p>` +
     (live.length ? `<div class="grid">${live.map(x => `<article class="card tk2 ${x.status === 'In Progress' || x.ahead === 0 ? 'hot' : ''}"><div class="num">${x.queue_number}</div><div class="fl"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}</small>${x.member_name ? `<small>الحجز باسم: ${esc(x.member_name)} (${esc(x.relation)})</small>` : ''}<div class="info">${x.status === 'In Progress' ? '<b>دورك الآن! توجّه إلى الطبيب</b>' : `${aheadTxt(x.ahead)} — ${waitTxt(x.ahead * x.avg)}`}</div><div class="acts"><button class="btn o sm" onclick="upl(${x.id})">${ic('paperclip')} تحاليل وأشعة${x.files.length ? ' (' + x.files.length + ')' : ''}</button>${x.status === 'Waiting' ? `<button class="btn o sm" onclick="pp(${x.id})">تأجيل لآخر الطابور</button><button class="btn d sm" onclick="cx(${x.id})">إلغاء الحجز</button>` : ''}</div></div></article>`).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
     (hist.length ? `<div class="card"><ul class="ql">${hist.map(x => `<li><span class="n">${x.queue_number}</span><div><b>${esc(x.doctor_name)}</b><br><small class="mt">${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><time>${new Date(x.booking_date).toLocaleDateString('ar-EG')} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</time>${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">التقرير والروشتة</button>` : ''}</li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
@@ -922,6 +943,57 @@ function dview({ doctor: d, current: c, waiting: w }) {
 }
 const act = a => api('/doctor/' + a, { method: 'POST' }).then(cur).catch(e => toast(e.message));
 const tg = v => api('/doctor/accepting', { method: 'POST', body: { accepting: v } }).then(cur).catch(e => toast(e.message));
+
+/* ---------- الملف الشخصي للطبيب ---------- */
+let dimg = '';
+async function dprofile() {
+  cur = null; document.title = 'ملفي الشخصي — دورك';
+  try { const r = await api('/doctor/profile'); dpview(r.profile, r.stats, r.recent); }
+  catch (e) { toast(e.message); }
+}
+function dpview(p, s, recent) {
+  dimg = p.profile_image || '';
+  const stl = { Waiting: 'w', 'In Progress': 'p', Completed: 'c', Cancelled: 'x' };
+  $('#m').innerHTML = `<div class="dp">
+  <section class="card dpc"><div class="dpa" id="dpa">${av({ name: p.name, profile_image: dimg }, 'xl')}</div>
+    <div class="dpt"><h2>${esc(p.name)}</h2><span class="sp">${esc(p.specialty)}</span><small class="mt" dir="ltr">@${esc(p.username)}</small></div>
+    <label class="btn o sm dpu">${ic('image')} تغيير الصورة<input type="file" accept="image/*" hidden id="dfi"></label></section>
+  <div class="stats dps">
+    <div class="st"><b>${s.waiting_today}</b><small>منتظرون اليوم</small></div><div class="st"><b>${s.done_today}</b><small>أنهوا اليوم</small></div>
+    <div class="st"><b>${s.week}</b><small>كشوفات آخر 7 أيام</small></div><div class="st"><b>${s.completed}</b><small>إجمالي المكتملة</small></div>
+    <div class="st"><b>${s.total}</b><small>كل الحجوزات</small></div><div class="st"><b>${s.cancelled}</b><small>الملغية</small></div></div>
+  <section class="card"><h3>بياناتي</h3><form id="dpi">
+    <label>الاسم<input name="name" required maxlength="80" value="${esc(p.name)}"></label>
+    <label>التخصص<input name="specialty" required maxlength="80" value="${esc(p.specialty)}"></label>
+    <label>نبذة مختصرة<textarea name="description" rows="3" maxlength="300">${esc(p.description)}</textarea></label>
+    <label>متوسط مدة الكشف (دقيقة)<input name="avg" type="number" min="1" max="240" required value="${p.avg}"></label>
+    <div class="err" id="er1"></div><button class="btn p lg">حفظ البيانات</button></form></section>
+  <section class="card"><h3>بيانات الدخول</h3><p class="mt">تحتاج كلمة المرور الحالية لتغيير اسم المستخدم أو كلمة المرور.</p><form id="dpa2">
+    <label>اسم المستخدم<input name="username" dir="ltr" required pattern="[A-Za-z0-9_.]{3,30}" autocapitalize="none" autocomplete="username" value="${esc(p.username)}"></label>
+    <label>كلمة مرور جديدة (اتركها فارغة بدون تغيير)<input name="password" type="password" dir="ltr" minlength="6" autocomplete="new-password"></label>
+    <label>تأكيد كلمة المرور الجديدة<input name="password2" type="password" dir="ltr" autocomplete="new-password"></label>
+    <label>كلمة المرور الحالية<input name="current" type="password" dir="ltr" required autocomplete="current-password"></label>
+    <div class="err" id="er2"></div><button class="btn p lg">حفظ بيانات الدخول</button></form></section>
+  <section class="card"><h3>آخر الحجوزات</h3>${recent.length ? `<ul class="ql">${recent.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b><time>${fds(x.booking_date)} · <span class="bs ${stl[x.status] || ''}">${SL[x.status] || x.status}</span></time></li>`).join('')}</ul>` : '<p class="mt">لا توجد حجوزات بعد.</p>'}</section></div>`;
+  $('#dfi').onchange = e => {
+    const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => { const i = new Image(); i.onerror = () => toast('صورة غير صالحة'); i.onload = () => { const z = 256, c = document.createElement('canvas'), m = Math.min(i.width, i.height); c.width = c.height = z; c.getContext('2d').drawImage(i, (i.width - m) / 2, (i.height - m) / 2, m, m, 0, 0, z, z); dimg = c.toDataURL('image/jpeg', .82); $('#dpa').innerHTML = `<img class="av xl" src="${dimg}" alt="">`; toast('اضغط «حفظ البيانات» لتثبيت الصورة', 1); }; i.src = r.result; };
+    r.readAsDataURL(f);
+  };
+  $('#dpi').onsubmit = async e => {
+    e.preventDefault(); const f = e.target; $('#er1').textContent = '';
+    try { await api('/doctor/profile', { method: 'PUT', body: { name: f.name.value, specialty: f.specialty.value, description: f.description.value, average_consultation_time: f.avg.value, profile_image: dimg } }); toast('تم حفظ البيانات', 1); dprofile(); }
+    catch (x) { $('#er1').textContent = x.message; }
+  };
+  $('#dpa2').onsubmit = async e => {
+    e.preventDefault(); const f = e.target; $('#er2').textContent = '';
+    if (f.password.value && f.password.value !== f.password2.value) { $('#er2').textContent = 'كلمتا المرور غير متطابقتين'; return; }
+    if (f.username.value.trim().toLowerCase() === p.username && !f.password.value) { $('#er2').textContent = 'لم تغيّر اسم المستخدم ولا كلمة المرور'; return; }
+    try { await api('/doctor/profile', { method: 'PUT', body: { username: f.username.value, password: f.password.value, current_password: f.current.value } }); toast('تم حفظ بيانات الدخول', 1); dprofile(); }
+    catch (x) { $('#er2').textContent = x.message; }
+  };
+  done();
+}
 
 const fdn = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const fds = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG');
