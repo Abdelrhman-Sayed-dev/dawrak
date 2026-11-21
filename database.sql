@@ -1,6 +1,5 @@
 -- الإنشاء:  createdb clinic_queue  ثم  psql -d clinic_queue -f database.sql
 -- تنبيه: الملف يعيد إنشاء الجداول (يحذف البيانات الحالية).
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 DROP TABLE IF EXISTS booking_files, visit_reports, bookings, family_members, patients, doctors, admins CASCADE;
 
 CREATE TABLE admins (
@@ -97,11 +96,7 @@ CREATE INDEX idx_booking_files ON booking_files (booking_id);
 CREATE INDEX idx_patient_bookings ON bookings (patient_id, booking_date DESC);
 CREATE INDEX idx_queue ON bookings (doctor_id, booking_date, status, queue_number);
 
--- بيانات تجريبية (كلمات المرور مشفرة بـ bcrypt)
-INSERT INTO admins (username, password_hash)
-VALUES ('admin', crypt('Admin@123', gen_salt('bf', 10)));
-
-INSERT INTO doctors (name, specialty, description, username, password_hash, average_consultation_time) VALUES
- ('د. أحمد منصور', 'باطنة وغدد صماء', 'استشاري الباطنة والسكر بخبرة تزيد على 15 عاماً.', 'ahmed', crypt('Doctor@123', gen_salt('bf', 10)), 15),
- ('د. سارة الجمال', 'أطفال وحديثي الولادة', 'متابعة نمو الأطفال والتطعيمات والأمراض الشائعة.', 'sara', crypt('Doctor@123', gen_salt('bf', 10)), 10),
- ('د. خالد عبد الرحمن', 'جراحة العظام والمفاصل', 'علاج إصابات الملاعب وآلام المفاصل والعمود الفقري.', 'khaled', crypt('Doctor@123', gen_salt('bf', 10)), 20);
+-- لا توجد حسابات افتراضية ولا كلمات مرور داخل الملف عمداً:
+--   * المدير:  python create_admin.py <username>   (جهة السيرفر فقط، كلمة المرور تُدخل وقت التنفيذ)
+--   * الأطباء: يضيفهم المدير من لوحة الإدارة (اسم مستخدم + كلمة مرور لكل طبيب)
+--   * المرضى:  يسجّلون بأنفسهم من /patient/register

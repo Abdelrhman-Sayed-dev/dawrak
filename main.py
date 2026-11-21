@@ -23,10 +23,14 @@ from pathlib import Path
 
 import asyncpg, bcrypt, jwt
 from fastapi import FastAPI, Depends, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 
 DSN = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/clinic_queue")
-SECRET = os.getenv("JWT_SECRET", "change-this-secret-in-production")
+# سر التوقيع: لا يوجد قيمة افتراضية معروفة. لو JWT_SECRET غير مضبوط نولّد سراً عشوائياً لهذه العملية فقط
+# (آمن، لكن تنتهي الجلسات عند إعادة التشغيل) — اضبط JWT_SECRET في الإنتاج.
+SECRET = os.getenv("JWT_SECRET") or secrets.token_urlsafe(48)
+if not os.getenv("JWT_SECRET"):
+    print("WARNING: JWT_SECRET is not set; using a random per-process secret.")
 PORT = int(os.getenv("PORT", "3000"))
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
@@ -153,43 +157,81 @@ def auth(role):
                 raise ValueError
         except Exception:
             raise Fail(401, "غير مصرح، سجّل الدخول من جديد")
-        if role == "doctor" and not await pool.fetchval("SELECT 1 FROM doctors WHERE id=$1 AND is_active", u["id"]):
-            raise Fail(401, "الحساب معطّل")
+        # التحقق من أن الحساب ما زال موجوداً وفعّالاً (حتى لو التوكن سليم)
+        ok = await pool.fetchval({"doctor": "SELECT 1 FROM doctors WHERE id=$1 AND is_active",
+                                  "admin": "SELECT 1 FROM admins WHERE id=$1",
+                                  "patient": "SELECT 1 FROM patients WHERE id=$1"}[role], u["id"])
+        if not ok:
+            raise Fail(401, "الحساب غير موجود أو معطّل")
         return u
     return dep
 
 
 # ---------- pages & realtime ----------
-@app.get("/")
-async def index():
-    return FileResponse(Path(__file__).parent / "index.html", headers={"Cross-Origin-Opener-Policy": "same-origin-allow-popups"})
+# كل بوابة لها رابط صفحة مستقل. الصفحة نفسها قالب فارغ لا يحتوي أي بيانات؛ الحماية الحقيقية في الـ API (auth(role)).
+PAGE_HEADERS = {"Cross-Origin-Opener-Policy": "same-origin-allow-popups", "Cache-Control": "no-store",
+                "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin"}
 
 
-# ---------- login ----------
-@app.post("/api/login")
-async def login(request: Request):
+def shell(private=False):
+    async def page():
+        h = {**PAGE_HEADERS, **({"X-Robots-Tag": "noindex, nofollow"} if private else {})}
+        return FileResponse(Path(__file__).parent / "index.html", headers=h)
+    return page
+
+
+app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
+for _p in ("/patient/login", "/patient/register", "/patient/dashboard"):
+    app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
+for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard"):
+    app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
+for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login")):
+    app.add_api_route(_r, (lambda to: (lambda: RedirectResponse(to)))(_to), methods=["GET"], include_in_schema=False)
+
+
+# ---------- login (بوابة منفصلة لكل دور؛ الدور يحدده المسار وليس ما يرسله العميل) ----------
+LOGIN_SQL = {"doctor": "SELECT id,password_hash,is_active FROM doctors WHERE username=$1",
+             "admin": "SELECT id,password_hash,TRUE AS is_active FROM admins WHERE username=$1",
+             "patient": "SELECT id,password_hash,TRUE AS is_active FROM patients WHERE login_id=$1"}
+DUMMY_HASH = bcrypt.hashpw(b"dawrak-dummy", bcrypt.gensalt(10)).decode()  # لتساوي زمن الرد سواء وُجد المستخدم أم لا
+
+
+async def do_login(request: Request, role: str):
     ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()
-    n, at = tries.get(ip, (0, time.time()))
+    key = f"{ip}:{role}"
+    n, at = tries.get(key, (0, time.time()))
     if time.time() - at > 900:
         n, at = 0, time.time()
     if n >= 10:
         raise Fail(429, "محاولات كثيرة، حاول بعد 15 دقيقة")
     b = await body(request)
-    role, username, password = b.get("role"), b.get("username"), b.get("password")
-    if role not in ("admin", "doctor", "patient") or not username or not password:
+    username, password = b.get("username"), b.get("password")
+    if not isinstance(username, str) or not isinstance(password, str) or not username.strip() or not password:
         raise Fail(400, "أدخل اسم المستخدم وكلمة المرور")
-    sql = {"doctor": "SELECT id,password_hash,is_active FROM doctors WHERE username=$1",
-           "admin": "SELECT id,password_hash,TRUE AS is_active FROM admins WHERE username=$1",
-           "patient": "SELECT id,password_hash,TRUE AS is_active FROM patients WHERE login_id=$1"}[role]
-    u = await pool.fetchrow(sql, str(username).lower())
-    ok = bool(u) and await asyncio.to_thread(bcrypt.checkpw, str(password).encode(), u["password_hash"].encode())
-    if not ok:
-        tries[ip] = (n + 1, at)
+    u = await pool.fetchrow(LOGIN_SQL[role], username.strip().lower())
+    good = await asyncio.to_thread(bcrypt.checkpw, password.encode()[:72], (u["password_hash"] if u else DUMMY_HASH).encode())
+    if not (u and good):
+        tries[key] = (n + 1, at)
         raise Fail(401, "بيانات الدخول غير صحيحة")
     if not u["is_active"]:
         raise Fail(403, "هذا الحساب معطّل")
-    tries.pop(ip, None)
+    tries.pop(key, None)
     return {"token": make_token(role, u["id"]), "role": role}
+
+
+@app.post("/api/admin/login")
+async def admin_login(request: Request):
+    return await do_login(request, "admin")
+
+
+@app.post("/api/doctor/login")
+async def doctor_login(request: Request):
+    return await do_login(request, "doctor")
+
+
+@app.post("/api/patient/login")
+async def patient_login(request: Request):
+    return await do_login(request, "patient")
 
 
 def make_token(role, uid):
