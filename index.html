@@ -618,6 +618,15 @@ html,body{overflow-x:clip}
 .bn{left:0!important;right:0!important;margin-inline:auto;transform:none!important;width:min(440px,calc(100% - 20px));grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 .bn a span{white-space:nowrap}
 @media(max-width:380px){.bn a{font-size:.66rem}}
+
+/* كشوفاتي السابقة: صفوف مدمجة */
+.hcard{padding:4px 12px}
+.ql li.hv{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0}
+.hv .n{width:32px;height:32px;border-radius:10px;font-size:.9rem}
+.hv .hi{min-width:0;display:flex;flex-direction:column;line-height:1.4}
+.hv .hi b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hv .hi small{font-size:.78rem;color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hv .btn{white-space:nowrap;padding:6px 10px;font-size:.78rem;gap:4px}.hv .btn svg{width:14px;height:14px}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -933,7 +942,7 @@ function mview({ profile: p, bookings: b }) {
   $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p>` +
     (live.length ? `<div class="grid">${live.map(x => `<article class="card tk2 ${x.status === 'In Progress' || x.ahead === 0 ? 'hot' : ''}"><div class="num">${x.queue_number}</div><div class="fl"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}</small>${x.member_name ? `<small>الحجز باسم: ${esc(x.member_name)} (${esc(x.relation)})</small>` : ''}<div class="info">${x.status === 'In Progress' ? '<b>دورك الآن! توجّه إلى الطبيب</b>' : `${aheadTxt(x.ahead)} — ${waitTxt(x.ahead * x.avg)}`}</div><div class="acts"><button class="btn o sm" onclick="upl(${x.id})">${ic('paperclip')} تحاليل وأشعة${x.files.length ? ' (' + x.files.length + ')' : ''}</button>${x.status === 'Waiting' ? `<button class="btn o sm" onclick="pp(${x.id})">تأجيل لآخر الطابور</button><button class="btn d sm" onclick="cx(${x.id})">إلغاء الحجز</button>` : ''}</div></div></article>`).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
-    (hist.length ? `<div class="card"><ul class="ql">${hist.map(x => `<li><span class="n">${x.queue_number}</span><div><b>${esc(x.doctor_name)}</b><br><small class="mt">${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><time>${new Date(x.booking_date).toLocaleDateString('ar-EG')} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</time>${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">التقرير والروشتة</button>` : ''}</li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
+    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div>${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : ''}</li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
 }
 
 /* ---------- لوحة الطبيب ---------- */
