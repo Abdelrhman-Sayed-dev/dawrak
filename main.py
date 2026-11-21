@@ -181,7 +181,7 @@ def shell(private=False):
 
 
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/patient/login", "/patient/register", "/patient/dashboard"):
+for _p in ("/doctors", "/patient/login", "/patient/register", "/patient/dashboard"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
