@@ -431,8 +431,68 @@ h1,h2,h3,h4,.dn,.logo b{color:var(--navy)}
 .aside h1{color:var(--tx);font-size:clamp(1.6rem,2.6vw,2.2rem);line-height:1.35;margin:0}.aside .at p{color:var(--mu);margin-top:10px;max-width:30ch;font-size:1.05rem}
 .art{margin:0 -44px;height:190px;color:var(--tx)}.art svg{display:block;width:100%;height:100%}.auth.pat .art{color:var(--p)}
 @media(max-width:860px){.auth{grid-template-columns:1fr;grid-template-rows:auto 1fr}.aside{order:-1;background:none;padding:22px 20px 0;color:var(--navy)}
-.aside .at,.aside .art{display:none}.aside .logo b{color:var(--navy)}.aside .logo small{color:var(--m)}.aside .logo .lm{color:var(--p)}.am{padding:16px 16px 32px;align-items:start}.af{padding:28px 22px}}
+.aside .at,.aside .art{display:none}.aside .logo b{color:var(--navy)}.aside .logo small{color:var(--m)}.aside .logo .lm{color:var(--p)}.am{padding:8px 16px 32px;align-items:center}.aside{align-items:center;padding:28px 20px 8px}.auth{min-height:100vh;min-height:100dvh}.af{padding:28px 22px}}
 @media(prefers-reduced-motion:reduce){#lf .btn.lg,.fld input{transition:none}#lf .btn.ld::before{animation-duration:2s}}
+/* ===== DAWRAK Clean: واجهة بسيطة وهادئة (نافبار عايم، أزرار pill، كروت نظيفة) ===== */
+body{background:var(--bg)}
+.btn{border-radius:999px}.btn.sm{padding:7px 16px}
+.chip,.pl2,.fb,.fch,.pt-pill,.pt-s{border-radius:999px}
+.card{border-radius:20px}.mdl{border-radius:24px 24px 0 0}@media(min-width:600px){.mdl{border-radius:24px}}
+.seg{border-radius:999px}.seg span{border-radius:999px}
+.st,.stats .st{border-radius:18px;background:#fff}.stats .st b{color:var(--navy);font-size:1.35rem}
+.sbar{background:#fff;border:1px solid var(--b);border-radius:20px;padding:8px}.sbar button{border-radius:999px;padding:10px 14px}.sbar button.on{background:var(--pl);color:var(--p)}
+/* نافبار عايم */
+.top{position:sticky;top:12px;z-index:20;margin:12px auto 0;width:calc(100% - 24px);max-width:1180px;border:1px solid var(--b);border-radius:999px;background:rgba(255,255,255,.96);box-shadow:var(--sh);padding:8px 14px}
+.top .mn{display:flex;gap:2px;background:#F1F5F9;border-radius:999px;padding:4px}
+.top .mn a{padding:7px 18px;border-radius:999px;color:var(--m);font-weight:600}.top .mn a.on,.top .mn a:hover{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+@media(max-width:760px){.top{border-radius:20px;top:8px}}
+/* الهيرو */
+.hero{background:linear-gradient(180deg,#EAF2FF 0%,#F4F8FF 60%,#F8FAFC 100%);border:1px solid #DCE8FB;border-radius:32px;margin:16px 0 28px;padding:clamp(28px,5vw,56px)}
+.htx{display:flex;flex-direction:column;align-items:flex-start}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;line-height:1.25;letter-spacing:-.01em;color:var(--navy)}.hero h1 em{color:var(--p);font-style:normal;font-weight:800}
+.hero .hp{font-size:1.1rem;color:var(--m);max-width:46ch;margin:12px 0 24px}
+.feat{order:-1;display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.feat div{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--b);border-radius:999px;padding:5px 14px 5px 6px;font-weight:600;font-size:.88rem;color:var(--navy)}
+.feat span{width:26px;height:26px;border:0;border-radius:50%;background:var(--pl);color:var(--p);display:grid;place-items:center}
+.sbox{display:flex;align-items:center;gap:6px;width:100%;max-width:640px;background:#fff;border:1px solid var(--lb);border-radius:999px;padding:6px;box-shadow:0 10px 30px rgba(37,99,235,.1)}
+.sbox .search{flex:1;min-width:0;border:0;background:none;padding:0 14px;max-width:none}.sbox .sel{display:flex;align-items:center;gap:4px;border-inline-start:1px solid var(--b);padding-inline:12px;color:var(--m)}
+.sbox .sel select{border:0;background:none;outline:0;max-width:130px;font-weight:600;color:var(--navy)}
+.sbox .sbtn{border-radius:999px;padding:11px 24px;white-space:nowrap}
+@media(max-width:620px){.sbox{border-radius:24px;flex-wrap:wrap}.sbox .sel{display:none}.sbox .search{flex:1 1 100%;padding:6px 12px}.sbox .sbtn{flex:1 1 100%}}
+.hart{border-radius:24px;border-color:var(--lb);box-shadow:0 14px 36px rgba(37,99,235,.12)}
+/* تبويبات التخصصات */
+.sec2{margin:8px 0 14px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;background:#fff;border:1px solid var(--b);border-radius:999px;padding:6px;margin-bottom:22px;box-shadow:var(--sh)}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:0;background:none;padding:9px 22px;border-radius:999px;font-weight:600;color:var(--m);cursor:pointer;transition:background .15s,color .15s}
+.tabs button:hover{background:var(--pl);color:var(--p)}.tabs button.on{background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+/* كارت الطبيب */
+.grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.dc3{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:34px 20px 0;border-radius:24px;transition:border-color .15s,box-shadow .15s}
+.dc3:hover{border-color:var(--lb);box-shadow:0 14px 32px rgba(37,99,235,.12)}
+.rb{position:absolute;top:16px;right:0;padding:4px 14px 4px 18px;border-radius:999px 0 0 999px;font-size:.8rem;font-weight:700}
+.rb.ok{background:#DCFCE7;color:#15803D}.rb.warn{background:#FEF3C7;color:#B45309}.rb.off{background:#F1F5F9;color:#64748B}
+.av3{width:104px;height:104px;border-radius:50%;padding:4px;background:#fff;box-shadow:0 0 0 1px var(--lb),0 8px 22px rgba(37,99,235,.18);overflow:hidden;margin-bottom:8px}
+.av3>*{width:100%;height:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:var(--pl);color:var(--p);font-weight:800;font-size:2rem}
+.dc3 .dn{font-size:1.15rem;margin:0}
+.sp3{display:inline-flex;align-items:center;gap:6px;background:var(--pl);color:var(--p);font-weight:700;font-size:.85rem;padding:5px 14px;border-radius:999px}
+.dc3 .ds{flex:0 0 auto;font-size:.9rem;min-height:2.9em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px}
+.ft3{align-self:stretch;display:flex;align-items:center;gap:12px;margin:14px -20px 0;padding:14px 16px;background:#F8FAFC;border-top:1px solid var(--b)}
+.ft3 .tm{display:inline-flex;align-items:center;gap:6px;color:var(--m);font-size:.85rem;font-weight:600;white-space:nowrap}
+.ft3 .bk{flex:1;padding:11px 14px;box-shadow:0 4px 12px rgba(37,99,235,.22)}
+.ft{border-radius:32px 32px 0 0;margin-top:40px}
+/* ===== الهيرو الجديد ===== */
+.hx{display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center;background:linear-gradient(180deg,#EEF4FF,#F8FAFC);border:1px solid #DCE8FB;border-radius:32px;padding:clamp(24px,4vw,52px);margin:16px 0 28px;overflow:hidden}
+.hx-t{min-width:0}
+.hx .eb{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--lb);color:var(--p);font-weight:700;font-size:.9rem;border-radius:999px;padding:6px 14px}
+.hx h1{font-size:clamp(2rem,4.4vw,3.3rem);line-height:1.25;font-weight:800;color:var(--navy);margin:16px 0 10px}
+.hx .hp{font-size:1.1rem;color:var(--m);max-width:42ch;margin:0 0 22px}
+.hx-cta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}.btn.cta{padding:13px 28px;font-size:1rem}
+.hb{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:22px}.hb div{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.92rem;color:var(--navy)}
+.hb span{width:32px;height:32px;border-radius:10px;background:#fff;border:1px solid var(--lb);color:var(--p);display:grid;place-items:center}
+.hx-v{width:100%;max-width:470px;justify-self:center}.hx-v svg{display:block;width:100%;height:auto}
+.fl1{animation:fl 6s ease-in-out infinite}.fl2{animation-delay:-3s}@keyframes fl{50%{transform:translateY(-8px)}}
+@media(prefers-reduced-motion:reduce){.fl1{animation:none}}
+@media(max-width:860px){.hx{grid-template-columns:1fr;gap:20px;border-radius:24px}.hx-v{max-width:320px}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -460,8 +520,18 @@ const IC = {"heart-pulse": "<path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 
 const ic = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
 const done = () => {};
 const LOGO = `<svg class="lm" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 42S6 31 6 18.5A9.5 9.5 0 0 1 24 13.6 9.5 9.5 0 0 1 42 18.5C42 31 24 42 24 42Z" fill="currentColor"/><path d="M10 24h8l3-6 4 11 3-5h10" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="38" cy="38" r="8" fill="#16A34A" stroke="#fff" stroke-width="2"/><path d="m34.5 38 2.5 2.5 4.5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const HERO_ART = `<svg viewBox="0 0 480 420" role="img" aria-label="تقويم مواعيد وتذكرة حجز مؤكد وساعة توفر الوقت"><defs><linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2563EB"/></linearGradient><linearGradient id="hg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF6FF"/><stop offset="1" stop-color="#DBEAFE"/></linearGradient><filter id="hsh" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#2563EB" flood-opacity=".22"/></filter></defs>
+<circle cx="240" cy="210" r="192" fill="url(#hg2)"/><circle cx="410" cy="64" r="52" fill="#BFDBFE" opacity=".4"/>
+<path d="M18 338h108l24-52 36 100 30-80 16 32h248" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".3"/>
+<g transform="rotate(-4 220 200)"><rect x="90" y="80" width="260" height="240" rx="28" fill="#fff" filter="url(#hsh)"/><path d="M90 108a28 28 0 0 1 28-28h204a28 28 0 0 1 28 28v34H90z" fill="url(#hg1)"/>
+<rect x="143" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="213" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="283" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/>
+<g fill="#EFF6FF"><rect x="112" y="162" width="44" height="38" rx="11"/><rect x="168" y="162" width="44" height="38" rx="11"/><rect x="224" y="162" width="44" height="38" rx="11"/><rect x="280" y="162" width="44" height="38" rx="11"/><rect x="112" y="210" width="44" height="38" rx="11"/><rect x="168" y="210" width="44" height="38" rx="11"/><rect x="280" y="210" width="44" height="38" rx="11"/><rect x="112" y="258" width="44" height="38" rx="11"/><rect x="168" y="258" width="44" height="38" rx="11"/><rect x="224" y="258" width="44" height="38" rx="11"/><rect x="280" y="258" width="44" height="38" rx="11"/></g>
+<rect x="224" y="210" width="44" height="38" rx="11" fill="url(#hg1)"/><path d="M236 229l8 8 16-17" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g class="fl1"><rect x="226" y="274" width="212" height="84" rx="20" fill="#fff" filter="url(#hsh)"/><circle cx="268" cy="316" r="22" fill="#16A34A"/><path d="M258 316l8 8 14-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="418" y="311" text-anchor="end" font-size="16" font-weight="700" fill="#0B2D5B" font-family="Cairo,sans-serif">تم تأكيد الحجز</text><rect x="354" y="324" width="64" height="8" rx="4" fill="#BFDBFE"/></g>
+<g class="fl1 fl2"><circle cx="396" cy="122" r="46" fill="#fff" stroke="#BFDBFE" stroke-width="8" filter="url(#hsh)"/><path d="M396 122v-22M396 122l16 10" stroke="#0B2D5B" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="396" cy="122" r="5" fill="#2563EB"/></g>
+<path d="M66 100v34M49 117h34" stroke="#60A5FA" stroke-width="8" stroke-linecap="round" opacity=".6"/><path d="M452 232v18M443 241h18" stroke="#93C5FD" stroke-width="5" stroke-linecap="round"/><circle cx="58" cy="236" r="8" fill="#93C5FD"/><circle cx="446" cy="372" r="6" fill="#BFDBFE"/></svg>`;
 
-Object.assign(IC, { 'lock': '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+Object.assign(IC, { 'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 'lock': '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off': '<path d="m3 3 18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7A17 17 0 0 0 2 12s3.5 6 10 6a9.7 9.7 0 0 0 4-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   'shield-check': '<path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
   'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' });
@@ -606,7 +676,7 @@ function loginPage(role) {
 /* ---------- الصفحة العامة ---------- */
 // الصفحة الرئيسية: الهيرو + البحث + كروت الأطباء
 function pub() {
-  $('#m').innerHTML = `<section class="hero" id="top"><div class="hg"><div class="htx"><h1>احجز دورك عند طبيبك<br><em>بسهولة وبدون انتظار</em></h1><p class="hp">نظام حجز ذكي لتنظيم مواعيد الأطباء في العيادات بسهولة وسرعة.</p><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" onclick="grid()">${ic('search')} بحث</button></div><div class="feat">${[['building', 'أطباء معتمدون'], ['shield-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['calendar', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hart" aria-hidden="true"></div></div></section><h2 class="sec2" id="doctors">الأطباء المتاحين</h2><div class="grid" id="g"></div>`;
+  $('#m').innerHTML = `<section class="hx" id="top"><div class="hx-t"><span class="eb">${ic('heart-pulse')} رعاية صحية أسهل</span><h1>احجز كشفك.. ووفّر وقتك.</h1><p class="hp">اختار طبيبك وميعادك، وتابع دورك من موبايلك بكل سهولة.</p><div class="hx-cta"><button class="btn p cta" onclick="$('#s').scrollIntoView({behavior:'smooth',block:'center'});$('#s').focus({preventScroll:true})">احجز موعدك</button><button class="btn o cta" onclick="go('doctors')">استكشف الأطباء</button></div><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" onclick="grid()">${ic('search')} بحث</button></div><div class="hb">${[['shield-check', 'أطباء معتمدون'], ['calendar-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['timer', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hx-v">${HERO_ART}</div></section><h2 class="sec2" id="doctors">الأطباء المتاحين</h2><div class="tabs" id="tb" role="tablist" aria-label="التخصصات"></div><div class="grid" id="g"></div>`;
   $('#s').oninput = e => { q = e.target.value; grid(); };
   $('#sp').onchange = e => { spec = e.target.value; grid(); specs(); };
   cur = async () => { try { docs = await api('/doctors'); grid(); specs(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين وأنك فاتح الموقع من localhost:3000.</p>'; } };
@@ -614,13 +684,15 @@ function pub() {
 }
 function specs() {
   SP = [...new Set(docs.map(d => d.specialty))];
+  const tb = $('#tb');
+  if (tb) { tb.innerHTML = ['', ...SP].map(x => `<button type="button" role="tab" aria-selected="${x === spec}" class="${x === spec ? 'on' : ''}" data-s="${esc(x)}">${x ? esc(x) : 'الكل'}</button>`).join(''); tb.onclick = e => { const b = e.target.closest('button'); if (!b) return; spec = b.dataset.s; grid(); specs(); }; }
   const sel = $('#sp'); if (!sel) return;
   sel.innerHTML = '<option value="">كل التخصصات</option>' + SP.map(x => `<option ${x === spec ? 'selected' : ''}>${esc(x)}</option>`).join('');
 }
 // رسم كروت الأطباء بعد تطبيق البحث وفلتر التخصص
 function grid() {
   const k = q.trim().toLowerCase(), l = docs.filter(d => (!k || (d.name + ' ' + d.specialty).toLowerCase().includes(k)) && (!spec || d.specialty === spec));
-  $('#g').innerHTML = l.length ? l.map(d => `<article class="card dc2"><div class="top2"><div class="inf"><span class="pl2 ${PL[d.status][1]}">${PL[d.status][0]}</span><h3 class="dn">${esc(d.name)}</h3><span class="spc">${ic('stethoscope')} ${esc(d.specialty)}</span><i class="ln"></i><p class="ds">${esc(d.description)}</p></div><div class="ph2">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div></div><div class="stat2">${ic('clock')}<div><small>متوسط وقت الكشف</small><b>${d.avg} دقيقة</b></div></div><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${ic('calendar-check')}<span>${d.accepting ? 'احجز مقعدك الآن' : 'الحجز مغلق حالياً'}</span>${ic('chevron')}</button></article>`).join('') : '<p class="empty">لا يوجد طبيب مطابق. جرّب اسماً أو تخصصاً آخر.</p>';
+  $('#g').innerHTML = l.length ? l.map(d => `<article class="card dc3"><span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span><p class="ds">${esc(d.description)}</p><div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div></article>`).join('') : '<p class="empty">لا يوجد طبيب مطابق. جرّب اسماً أو تخصصاً آخر.</p>';
   done();
 }
 async function book(id, pick = 0) {
