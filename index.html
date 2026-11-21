@@ -572,6 +572,21 @@ body{background:var(--bg)}
   .grid{gap:14px}
 }
 @media(max-width:360px){.hx-cta .btn.cta{font-size:.88rem;padding-inline:4px}}
+
+/* ===== تعديلات: إخفاء تابات التخصصات على الموبايل + كارت الفوتر بلون كافيه ===== */
+@media(max-width:620px){.tabs{display:none!important}}
+.f2-cta{background:linear-gradient(135deg,#F3E7D6,#FBF6EE)!important;color:#0B2D5B!important;box-shadow:none!important;border:1px solid #E7D6BE;padding:16px 20px!important;border-radius:20px!important}
+.f2-cta h3{color:#0B2D5B!important;font-size:1.1rem!important}
+.f2-cta p{color:#7a6a55!important;font-size:.88rem!important}
+.f2-btn{background:#0B2D5B!important;color:#fff!important;font-weight:700!important;padding:10px 22px!important}
+.f2-btn svg{color:#E7D6BE!important}
+@media(max-width:700px){.f2-cta{padding:16px 16px!important;gap:10px!important}.f2-btn{padding:12px!important}}
+
+/* لوجو الفوتر بدون مربع خلفية */
+.ft.ft2 .f2-brand .logo>svg{background:none!important;padding:0!important;border-radius:0!important;width:46px!important;height:46px!important;color:#3B82F6!important}
+
+.ft.ft2 .f2-brand .logo>svg{color:#F3E7D6!important}
+.ft.ft2 .f2-brand .logo>svg>path:nth-of-type(2){stroke:#0B2D5B!important}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
