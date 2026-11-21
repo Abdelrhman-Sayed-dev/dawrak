@@ -515,6 +515,63 @@ body{background:var(--bg)}
 .dd{top:calc(100% + 8px);inset-inline:0;border:1px solid var(--b);border-radius:20px;box-shadow:0 16px 36px rgba(15,23,42,.12);padding:8px 16px 16px}
 .dd .l{border-radius:12px;padding:12px;border-bottom:0}.dd .l:hover{background:var(--pl);color:var(--p)}
 .dd .da{border-top:1px solid var(--b);padding-top:14px}
+
+/* ===== فوتر جديد ===== */
+.ft.ft2{background:linear-gradient(180deg,#0B2D5B,#081f40);color:#c7d7f0;border-radius:32px 32px 0 0;margin-top:48px}
+.f2-in{max-width:1248px;margin:0 auto;padding:0 20px;overflow:hidden;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.f2-cta{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:28px 0 8px;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;border-radius:24px;padding:22px 26px;box-shadow:0 18px 40px rgba(37,99,235,.35)}
+.f2-cta h3{color:#fff;font-size:1.3rem;font-weight:800;line-height:1.3}
+.f2-cta p{color:#dbe9ff;font-size:.95rem;margin-top:2px}
+.f2-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#0B2D5B;font-weight:800;border-radius:999px;padding:12px 24px;white-space:nowrap;transition:transform .15s}
+.f2-btn:hover{transform:translateY(-2px)}.f2-btn svg{color:#2563EB}
+.f2-grid{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:40px;padding:16px 0 32px}
+.f2-brand .logo{display:inline-flex;color:#fff}.f2-brand .logo b{color:#fff}.f2-brand .logo small{color:#8fb2ea}.f2-brand .logo>svg{background:#2563EB;color:#fff}
+.f2-brand p{color:#93afd8;font-size:.95rem;max-width:400px;margin-top:14px;line-height:1.9}
+.f2-col{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.f2-col h4{color:#fff;font-size:1rem;font-weight:800;margin-bottom:8px;padding-bottom:8px;position:relative}
+.f2-col h4::after{content:"";position:absolute;inset-inline-start:0;bottom:0;width:28px;height:3px;border-radius:3px;background:#3B82F6}
+.f2-col a{color:#b3c9ec;padding:6px 0;font-size:.95rem;transition:color .15s,transform .15s}
+.f2-col a:hover{color:#fff;transform:translateX(-4px)}
+.f2-bot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.12);padding:18px 0 6px;color:#869fc9;font-size:.85rem}
+.f2-doc{display:inline-flex;align-items:center;gap:6px;color:#b3c9ec;font-weight:600}.f2-doc:hover{color:#fff}
+@media(max-width:700px){
+  .ft.ft2{border-radius:24px 24px 0 0;margin-top:40px}
+  .f2-in{padding:0 14px max(16px,env(safe-area-inset-bottom))}
+  .f2-cta{flex-direction:column;align-items:stretch;text-align:center;padding:20px 18px;border-radius:20px;gap:14px;margin:20px 0 6px}
+  .f2-btn{width:100%;padding:14px}
+  .f2-grid{grid-template-columns:1fr 1fr;gap:22px 16px;padding:8px 0 22px}
+  .f2-brand{grid-column:1/-1}
+  .f2-col a{padding:9px 0}
+  .f2-bot{flex-direction:column;text-align:center;gap:10px}
+}
+
+/* ===== هيرو الموبايل ===== */
+@media(max-width:620px){
+  .wrap{padding:12px 12px 16px}
+  .hx{padding:20px 16px 18px;border-radius:24px;gap:0;margin:8px 0 20px}
+  .hx .eb{font-size:.82rem;padding:5px 12px}
+  .hx h1{font-size:clamp(1.65rem,7.6vw,2rem);line-height:1.3;margin:14px 0 8px}
+  .hx .hp{font-size:1rem;line-height:1.7;margin:0 0 18px}
+  .hx-cta{flex-wrap:nowrap;gap:10px;margin-bottom:14px}
+  .hx-cta .btn.cta{flex:1 1 0;min-width:0;padding:14px 8px;font-size:.95rem;font-weight:700;white-space:nowrap;border-radius:14px}
+  .hx-cta .btn.p{box-shadow:0 8px 18px rgba(37,99,235,.28)}
+  .hx-cta .btn.o{border-color:#BFDBFE;color:#0B2D5B;background:#fff}
+  .hx .sbox{flex-direction:row!important;align-items:center!important;justify-content:flex-start;flex-wrap:nowrap!important;gap:8px;padding:6px;border-radius:18px;margin:0;border:1px solid #DCE8FB;box-shadow:0 8px 22px rgba(37,99,235,.10)}
+  .hx .sbox .search{flex:1 1 0!important;width:auto;min-width:0;padding:0 10px;gap:8px;justify-content:flex-start;border:0;background:none}
+  .hx .sbox .search input{flex:1;min-width:0;text-align:start;font-size:1rem;padding:12px 0}
+  .hx .sbox .search svg{color:var(--m)}
+  .hx .sbox .sbtn{flex:0 0 48px!important;width:48px;height:48px;padding:0;margin:0;border-radius:14px;font-size:0;gap:0;display:flex;align-items:center;justify-content:center}
+  .hx .sbox .sbtn svg{width:22px;height:22px}
+  .hx .sbox .sbtn .sbt{display:none}
+  .hb{grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .hb div{flex-direction:column;justify-content:center;gap:8px;text-align:center;background:#fff;border:1px solid #DCE8FB;border-radius:16px;padding:12px 6px;font-size:.84rem;line-height:1.3}
+  .hb span{width:36px;height:36px;background:var(--pl);border:0;border-radius:12px}
+  .sec2{font-size:1.3rem}
+  .tabs{margin-inline:-2px}
+  .tabs button{padding:10px 18px;min-height:44px}
+  .grid{gap:14px}
+}
+@media(max-width:360px){.hx-cta .btn.cta{font-size:.88rem;padding-inline:4px}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -549,7 +606,6 @@ const HERO_ART = `<svg viewBox="0 0 480 420" role="img" aria-label="تقويم �
 <rect x="143" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="213" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/><rect x="283" y="62" width="14" height="42" rx="7" fill="#0B2D5B"/>
 <g fill="#EFF6FF"><rect x="112" y="162" width="44" height="38" rx="11"/><rect x="168" y="162" width="44" height="38" rx="11"/><rect x="224" y="162" width="44" height="38" rx="11"/><rect x="280" y="162" width="44" height="38" rx="11"/><rect x="112" y="210" width="44" height="38" rx="11"/><rect x="168" y="210" width="44" height="38" rx="11"/><rect x="280" y="210" width="44" height="38" rx="11"/><rect x="112" y="258" width="44" height="38" rx="11"/><rect x="168" y="258" width="44" height="38" rx="11"/><rect x="224" y="258" width="44" height="38" rx="11"/><rect x="280" y="258" width="44" height="38" rx="11"/></g>
 <rect x="224" y="210" width="44" height="38" rx="11" fill="url(#hg1)"/><path d="M236 229l8 8 16-17" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
-<g class="fl1"><rect x="226" y="274" width="212" height="84" rx="20" fill="#fff" filter="url(#hsh)"/><circle cx="268" cy="316" r="22" fill="#16A34A"/><path d="M258 316l8 8 14-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="358" y="311" text-anchor="middle" font-size="16" font-weight="700" fill="#0B2D5B" font-family="Cairo,sans-serif">تم تأكيد الحجز</text><rect x="326" y="324" width="64" height="8" rx="4" fill="#BFDBFE"/></g>
 <g class="fl1 fl2"><circle cx="396" cy="122" r="46" fill="#fff" stroke="#BFDBFE" stroke-width="8" filter="url(#hsh)"/><path d="M396 122v-22M396 122l16 10" stroke="#0B2D5B" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="396" cy="122" r="5" fill="#2563EB"/></g>
 <path d="M66 100v34M49 117h34" stroke="#60A5FA" stroke-width="8" stroke-linecap="round" opacity=".6"/><path d="M452 232v18M443 241h18" stroke="#93C5FD" stroke-width="5" stroke-linecap="round"/><circle cx="58" cy="236" r="8" fill="#93C5FD"/><circle cx="446" cy="372" r="6" fill="#BFDBFE"/></svg>`;
 
@@ -625,7 +681,18 @@ function head() {
 function goMe() { closeModal(); nav(DASH.patient); }
 function foot() {
   const r = localStorage.role;
-  return `<footer class="ft" id="about"><div class="fi"><div class="fc"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><p>منصة لحجز مواعيد الأطباء وتنظيم طوابير الانتظار. تابع دورك لحظة بلحظة من موبايلك بدون زحمة في العيادة.</p></div><div class="fc"><h4>روابط سريعة</h4><a href="#/" onclick="return go('top')">الرئيسية</a><a href="#/" onclick="return go('doctors')">الأطباء</a>${r === 'patient' ? '<a href="#/me">تتبع جدولي</a><a href="#/profile">ملفي الشخصي</a>' : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>'}</div></div><div class="fbot">© ${new Date().getFullYear()} دورك (DAWRAK) — جميع الحقوق محفوظة</div></footer>`;
+  const acct = r === 'patient'
+    ? '<a href="#/me">تتبع جدولي</a><a href="#/profile">ملفي الشخصي</a>'
+    : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>';
+  return `<footer class="ft ft2" id="about"><div class="f2-in">
+<div class="f2-cta"><div><h3>جاهز تحجز كشفك؟</h3><p>اختار الدكتور المناسب واحجز دورك في دقيقة.</p></div><a href="#/" class="f2-btn" onclick="return go('doctors')">احجز موعدك ${ic('calendar-check')}</a></div>
+<div class="f2-grid">
+<div class="f2-brand"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><p>منصة لحجز مواعيد الأطباء وتنظيم طوابير الانتظار. تابع دورك لحظة بلحظة من موبايلك بدون زحمة في العيادة.</p></div>
+<nav class="f2-col" aria-label="روابط سريعة"><h4>روابط سريعة</h4><a href="#/" onclick="return go('top')">الرئيسية</a><a href="#/" onclick="return go('doctors')">الأطباء</a></nav>
+<nav class="f2-col" aria-label="حسابي"><h4>حسابك</h4>${acct}</nav>
+</div>
+<div class="f2-bot"><span>© ${new Date().getFullYear()} دورك (DAWRAK) — جميع الحقوق محفوظة</span><a href="/doctor/login" class="f2-doc">${ic('stethoscope')} بوابة الأطباء</a></div>
+</div></footer>`;
 }
 function tmenu() { const o = $('#dd').classList.toggle('open'); $('.mb').setAttribute('aria-expanded', o); }
 // سكرول لقسم في الصفحة الرئيسية (ينتقل لها أولاً لو كنت في صفحة أخرى)
@@ -698,7 +765,7 @@ function loginPage(role) {
 /* ---------- الصفحة العامة ---------- */
 // الصفحة الرئيسية: الهيرو + البحث + كروت الأطباء
 function pub() {
-  $('#m').innerHTML = `<section class="hx" id="top"><div class="hx-t"><span class="eb">${ic('heart-pulse')} رعاية صحية أسهل</span><h1>احجز كشفك.. ووفّر وقتك.</h1><p class="hp">اختار طبيبك وميعادك، وتابع دورك من موبايلك بكل سهولة.</p><div class="hx-cta"><button class="btn p cta" onclick="$('#s').scrollIntoView({behavior:'smooth',block:'center'});$('#s').focus({preventScroll:true})">احجز موعدك</button><button class="btn o cta" onclick="go('doctors')">استكشف الأطباء</button></div><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" onclick="grid()">${ic('search')} بحث</button></div><div class="hb">${[['shield-check', 'أطباء معتمدون'], ['calendar-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['timer', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hx-v">${HERO_ART}</div></section><h2 class="sec2" id="doctors">الأطباء المتاحين</h2><div class="tabs" id="tb" role="tablist" aria-label="التخصصات"></div><div class="grid" id="g"></div>`;
+  $('#m').innerHTML = `<section class="hx" id="top"><div class="hx-t"><span class="eb">${ic('heart-pulse')} رعاية صحية أسهل</span><h1>احجز كشفك.. ووفّر وقتك.</h1><p class="hp">اختار طبيبك وميعادك، وتابع دورك من موبايلك بكل سهولة.</p><div class="hx-cta"><button class="btn p cta" onclick="$('#s').scrollIntoView({behavior:'smooth',block:'center'});$('#s').focus({preventScroll:true})">احجز موعدك</button><button class="btn o cta" onclick="go('doctors')">استكشف الأطباء</button></div><div class="sbox"><div class="search">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></div><div class="sel">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></div><button class="sbtn" aria-label="بحث" onclick="grid()">${ic('search')} <span class="sbt">بحث</span></button></div><div class="hb">${[['shield-check', 'أطباء معتمدون'], ['calendar-check', 'مواعيد مؤكدة'], ['bell', 'تذكير بالمواعيد'], ['timer', 'حجز سريع وسهل']].map(([i, l]) => `<div><span>${ic(i)}</span>${l}</div>`).join('')}</div></div><div class="hx-v">${HERO_ART}</div></section><h2 class="sec2" id="doctors">الأطباء المتاحين</h2><div class="tabs" id="tb" role="tablist" aria-label="التخصصات"></div><div class="grid" id="g"></div>`;
   $('#s').oninput = e => { q = e.target.value; grid(); };
   $('#sp').onchange = e => { spec = e.target.value; grid(); specs(); };
   cur = async () => { try { docs = await api('/doctors'); grid(); specs(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين وأنك فاتح الموقع من localhost:3000.</p>'; } };
