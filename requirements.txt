@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+asyncpg
+bcrypt
+PyJWT
+google-auth
+requests
