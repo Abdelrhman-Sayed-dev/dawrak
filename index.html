@@ -599,6 +599,25 @@ body{background:var(--bg)}
 .dps .st{border-radius:16px;text-align:center}.dps .st b{display:block;font-size:1.5rem;color:var(--navy)}.dps .st small{color:var(--m);font-size:.8rem}
 .bs{font-weight:700}.bs.c{color:var(--ok)}.bs.x{color:var(--err)}.bs.p{color:var(--p)}.bs.w{color:var(--m)}
 @media(max-width:520px){.dpc{flex-direction:column;text-align:center}.dpu{width:100%}.dps{gap:8px}.dps .st{padding:10px 4px}.dps .st b{font-size:1.3rem}.dp .ql li{flex-wrap:wrap}.dp .ql time{margin-inline-start:0;width:100%}}
+
+/* ===== شريط الأيقونات السفلي ===== */
+.bn-sp{height:calc(84px + env(safe-area-inset-bottom,0px))}
+.bn{position:fixed;z-index:30;bottom:max(10px,env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 20px));display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border:1px solid var(--b);border-radius:24px;padding:6px;box-shadow:0 10px 30px rgba(11,45,91,.16)}
+.bn a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;border-radius:18px;color:var(--m);font-size:.72rem;font-weight:700;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.bn a svg{width:24px;height:24px}
+.bn a:hover{color:var(--p)}
+.bn a.on{background:var(--pl);color:var(--p)}
+
+/* ===== هيدر التطبيق: لوجو فقط + شريط سفلي ثابت ===== */
+html,body{overflow-x:clip}
+.top.app{display:flex!important;justify-content:center;align-items:center;position:sticky;top:0;width:100%;max-width:none;margin:0;border:0;border-bottom:1px solid var(--b);border-radius:0;box-shadow:none;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;min-height:56px}
+.top.app .logo{justify-self:auto}
+.tb-out{position:absolute;inset-inline-end:12px;top:calc(50% + env(safe-area-inset-top,0px)/2);transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--b);border-radius:12px;background:#fff;color:var(--navy);cursor:pointer;padding:0}
+.tb-out svg{width:20px;height:20px}
+.out-btn{margin-top:14px}
+.bn{left:0!important;right:0!important;margin-inline:auto;transform:none!important;width:min(440px,calc(100% - 20px));grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.bn a span{white-space:nowrap}
+@media(max-width:380px){.bn a{font-size:.66rem}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -698,37 +717,27 @@ const tm = t => new Date(t).toLocaleTimeString('ar-EG', { hour: '2-digit', minut
 
 // الهيدر: الشعار + الروابط + أزرار الحساب + قائمة الموبايل
 function head() {
-  const r = localStorage.role, home = R() === '/';
-  if (r === 'doctor') { // الطبيب لا يرى الموقع العام: لوحته وملفه فقط
-    const at = R(), D = [['/doctor/dashboard', 'الطابور', '/doctor'], ['/doctor/profile', 'ملفي الشخصي', '/dprofile']];
-    const lk = D.map(([h, l, k]) => `<a href="${h}" class="${at === k ? 'on' : ''}">${l}</a>`).join('');
-    const dl = D.map(([h, l]) => `<a href="${h}" class="l">${l}</a>`).join('');
-    const out = `<button class="btn o sm" onclick="logout()">${ic('log-out')} خروج</button>`;
-    return `<header class="top"><a href="/doctor/dashboard" class="logo">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><nav class="mn">${lk}</nav><div class="au">${out}</div><button class="mb" aria-label="القائمة" aria-expanded="false" onclick="tmenu()">${ic('menu')}</button><div class="dd" id="dd">${dl}<div class="da">${out}</div></div></header>`;
-  }
-  const L = [['top', 'الرئيسية'], ['doctors', 'الأطباء']];
-  const links = L.map(([k, l], i) => `<a href="#/" class="${i === 0 && home ? 'on' : ''}" onclick="return go('${k}')">${l}</a>`).join('');
-  const dl = L.map(([k, l]) => `<a href="#/" class="l" onclick="return go('${k}')">${l}</a>`).join('');
-  const auth = r ? `${r === 'patient' ? `<a class="btn o sm" href="#/profile">${ic('user')} ملفي</a>` : ''}<a class="btn o sm" href="#/${r === 'patient' ? 'me' : r}">${ic('layout-dashboard')} ${r === 'patient' ? 'حجوزاتي' : 'لوحتي'}</a><button class="btn o sm" onclick="logout()">${ic('log-out')} خروج</button>` : `<a class="btn p sm" href="/patient/register">إنشاء حساب</a><a class="btn o sm" href="/patient/login">${ic('user')} تسجيل الدخول</a>`;
-  return `<header class="top"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><nav class="mn">${links}</nav><div class="au">${auth}</div><button class="mb" aria-label="القائمة" aria-expanded="false" onclick="tmenu()">${ic('menu')}</button><div class="dd" id="dd">${dl}<div class="da">${auth}</div></div></header>`;
+  const r = localStorage.role;
+  const href = r === 'doctor' ? '/doctor/dashboard' : r === 'admin' ? '/admin/dashboard' : '#/';
+  const oc = r === 'doctor' || r === 'admin' ? '' : ` onclick="return go('top')"`;
+  const out = r === 'admin' ? `<button class="tb-out" aria-label="خروج" onclick="logout()">${ic('log-out')}</button>` : '';
+  return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${out}</header>`;
 }
 function goMe() { closeModal(); nav(DASH.patient); }
+Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' });
+// شريط أيقونات سفلي بدل الفوتر (زي تطبيقات الموبايل)
 function foot() {
-  const r = localStorage.role;
-  const acct = r === 'patient'
-    ? '<a href="#/me">حجوزاتي</a><a href="#/profile">ملفي الشخصي</a>'
-    : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>';
-  return `<footer class="ft ft2" id="about"><div class="f2-in">
-<div class="f2-cta"><div><h3>جاهز تحجز كشفك؟</h3><p>اختار الدكتور المناسب واحجز دورك في دقيقة.</p></div><a href="#/" class="f2-btn" onclick="return go('doctors')">احجز موعدك ${ic('calendar-check')}</a></div>
-<div class="f2-grid">
-<div class="f2-brand"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><p>منصة لحجز مواعيد الأطباء وتنظيم طوابير الانتظار. تابع دورك لحظة بلحظة من موبايلك بدون زحمة في العيادة.</p></div>
-<nav class="f2-col" aria-label="روابط سريعة"><h4>روابط سريعة</h4><a href="#/" onclick="return go('top')">الرئيسية</a><a href="#/" onclick="return go('doctors')">الأطباء</a></nav>
-<nav class="f2-col" aria-label="حسابي"><h4>حسابك</h4>${acct}</nav>
-</div>
-<div class="f2-bot"><span>© ${new Date().getFullYear()} دورك (DAWRAK) — جميع الحقوق محفوظة</span><a href="/doctor/login" class="f2-doc">${ic('stethoscope')} بوابة الأطباء</a></div>
-</div></footer>`;
+  const r = localStorage.role, at = R();
+  const H = ['home', 'الرئيسية', '#/', at === '/', "return go('top')"], D = ['stethoscope', 'الأطباء', '#/', false, "return go('doctors')"];
+  if (r === 'doctor') {
+    const DT = [['users', 'الطابور', '/doctor/dashboard', at === '/doctor'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
+    return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${DT.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
+  }
+  const T = r === 'patient'
+    ? [H, D, ['calendar-check', 'حجوزاتي', '#/me', at === '/me'], ['user', 'ملفي', '#/profile', at === '/profile']]
+    : [H, D, ['user-plus', 'حساب جديد', '/patient/register', at === '/register'], ['log-in', 'دخول', '/patient/login', at === 'L:patient']];
+  return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${T.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
 }
-function tmenu() { const o = $('#dd').classList.toggle('open'); $('.mb').setAttribute('aria-expanded', o); }
 // سكرول لقسم في الصفحة الرئيسية (ينتقل لها أولاً لو كنت في صفحة أخرى)
 function go(id) {
   $('#dd')?.classList.remove('open');
@@ -755,7 +764,7 @@ function route() {
     if (role === lr && localStorage.tok) { nav(DASH[lr]); return; }
     loginPage(lr); done(); return;
   }
-  $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/doctor' || h === '/dprofile' ? '' : foot());
+  $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' ? '' : foot());
   try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/admin': admin }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
@@ -902,7 +911,7 @@ function register() {
 async function profile() {
   try {
     const { profile: p, family } = await api('/me'); FAM = family;
-    $('#m').innerHTML = `<form class="card lg-card wide" id="pfm"><h2>ملفي الشخصي</h2>${baseFields(p)}${medFields(p)}<div class="err" id="er"></div><button class="btn p lg">حفظ التعديلات</button></form>${famCard(family)}`;
+    $('#m').innerHTML = `<form class="card lg-card wide" id="pfm"><h2>ملفي الشخصي</h2>${baseFields(p)}${medFields(p)}<div class="err" id="er"></div><button class="btn p lg">حفظ التعديلات</button></form>${famCard(family)}<button class="btn o lg out-btn" onclick="logout()">${ic('log-out')} تسجيل الخروج</button>`;
     $('#pfm').onsubmit = async e => {
       e.preventDefault();
       try { await api('/me', { method: 'PUT', body: baseVals(e.target) }); toast('تم حفظ ملفك', 1); } catch (x) { $('#er').textContent = x.message; }
