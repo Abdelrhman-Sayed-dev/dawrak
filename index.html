@@ -412,12 +412,12 @@ h1,h2,h3,h4,.dn,.logo b{color:var(--navy)}
 .af h2{font-size:1.5rem;margin:0}.af .aw{color:var(--m);margin:4px 0 8px}
 #lf label{display:block;margin-top:18px;font-weight:600;font-size:.9rem;color:var(--t)}
 .fld{position:relative;margin-top:6px}
-.fi{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--m);display:grid;pointer-events:none}.fi svg{width:20px;height:20px}
+.fico{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--m);display:grid;pointer-events:none}.fico svg{width:20px;height:20px}
 #lf input.in{display:block;width:100%;height:54px;margin:0;padding:0 48px;border:1px solid #CBD5E1;border-radius:14px;background:#fff;font-size:1rem;text-align:right;transition:border-color .15s,box-shadow .15s}
 #lf input.in:hover{border-color:#94A3B8}
 #lf input.in:focus{outline:0;border-color:var(--p);box-shadow:0 0 0 4px rgba(37,99,235,.15)}
 #lf input.in[aria-invalid=true]{border-color:var(--err);box-shadow:0 0 0 4px rgba(220,38,38,.1)}
-.fld:focus-within .fi{color:var(--p)}
+.fld:focus-within .fico{color:var(--p)}
 .pwt{position:absolute;left:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--m);cursor:pointer;padding:8px;border-radius:10px;display:grid}.pwt svg{width:20px;height:20px}.pwt:hover{color:var(--p);background:var(--pl)}
 #lf .err{margin-top:12px}
 #lf .btn.lg{height:54px;padding:0;margin-top:8px;border-radius:14px;font-size:1.05rem;box-shadow:0 6px 16px rgba(37,99,235,.28);transition:background .15s,transform .15s,box-shadow .15s}
@@ -484,7 +484,7 @@ body{background:var(--bg)}
 .hx{display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center;background:linear-gradient(180deg,#EEF4FF,#F8FAFC);border:1px solid #DCE8FB;border-radius:32px;padding:clamp(24px,4vw,52px);margin:16px 0 28px;overflow:hidden}
 .hx-t{min-width:0}
 .hx .eb{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--lb);color:var(--p);font-weight:700;font-size:.9rem;border-radius:999px;padding:6px 14px}
-.hx h1{font-size:clamp(2rem,4.4vw,3.3rem);line-height:1.25;font-weight:800;color:var(--navy);margin:16px 0 10px}
+.hx h1{font-size:clamp(1.9rem,3.7vw,2.9rem);line-height:1.25;font-weight:800;color:var(--navy);margin:16px 0 10px}
 .hx .hp{font-size:1.1rem;color:var(--m);max-width:42ch;margin:0 0 22px}
 .hx-cta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}.btn.cta{padding:13px 28px;font-size:1rem}
 .hb{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:22px}.hb div{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.92rem;color:var(--navy)}
@@ -493,6 +493,7 @@ body{background:var(--bg)}
 .fl1{animation:fl 6s ease-in-out infinite}.fl2{animation-delay:-3s}@keyframes fl{50%{transform:translateY(-8px)}}
 @media(prefers-reduced-motion:reduce){.fl1{animation:none}}
 @media(max-width:860px){.hx{grid-template-columns:1fr;gap:20px;border-radius:24px}.hx-v{max-width:320px}}
+.ft .fi{grid-template-columns:1.6fr 1fr}@media(max-width:700px){.ft .fi{grid-template-columns:1fr}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -603,7 +604,7 @@ function head() {
 function goMe() { closeModal(); nav(DASH.patient); }
 function foot() {
   const r = localStorage.role;
-  return `<footer class="ft" id="about"><div class="fi"><div class="fc"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><p>منصة لحجز مواعيد الأطباء وتنظيم طوابير الانتظار. تابع دورك لحظة بلحظة من موبايلك بدون زحمة في العيادة.</p></div><div class="fc"><h4>روابط سريعة</h4><a href="#/" onclick="return go('top')">الرئيسية</a><a href="#/" onclick="return go('doctors')">الأطباء</a>${r === 'patient' ? '<a href="#/me">تتبع جدولي</a><a href="#/profile">ملفي الشخصي</a>' : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>'}</div><div class="fc"><h4>للأطباء</h4><a href="/patient/login">دخول الأطباء</a><p>لوحة خاصة لإدارة الطابور وكتابة تقارير الكشف والروشتات.</p></div></div><div class="fbot">© ${new Date().getFullYear()} دورك (DAWRAK) — جميع الحقوق محفوظة</div></footer>`;
+  return `<footer class="ft" id="about"><div class="fi"><div class="fc"><a href="#/" class="logo" onclick="return go('top')">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a><p>منصة لحجز مواعيد الأطباء وتنظيم طوابير الانتظار. تابع دورك لحظة بلحظة من موبايلك بدون زحمة في العيادة.</p></div><div class="fc"><h4>روابط سريعة</h4><a href="#/" onclick="return go('top')">الرئيسية</a><a href="#/" onclick="return go('doctors')">الأطباء</a>${r === 'patient' ? '<a href="#/me">تتبع جدولي</a><a href="#/profile">ملفي الشخصي</a>' : '<a href="/patient/register">إنشاء حساب</a><a href="/patient/login">تسجيل الدخول</a>'}</div></div><div class="fbot">© ${new Date().getFullYear()} دورك (DAWRAK) — جميع الحقوق محفوظة</div></footer>`;
 }
 function tmenu() { const o = $('#dd').classList.toggle('open'); $('.mb').setAttribute('aria-expanded', o); }
 // سكرول لقسم في الصفحة الرئيسية (ينتقل لها أولاً لو كنت في صفحة أخرى)
@@ -642,7 +643,7 @@ const PORTAL = {
   patient: { t: 'مرحباً بك في دورك', s: 'احجز مواعيدك الطبية وتابع رحلتك الصحية بسهولة.', w: 'سعداء برؤيتك، سجّل دخولك لمتابعة حجوزاتك.', u: 'اسم المستخدم أو الإيميل', i: 'user', c: 'pat' } };
 // مكوّنات مشتركة للصفحات الثلاث: الرسمة الزخرفية (نبض + صليب + دوائر) وحقل الإدخال
 const AUTH_ART = `<svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><circle cx="330" cy="40" r="90" fill="currentColor" opacity=".08"/><circle cx="60" cy="150" r="70" fill="currentColor" opacity=".07"/><path d="M180 20v34M163 37h34" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity=".22"/><path d="M0 128h110l22-46 34 92 28-70 18 24h188" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
-const authField = (id, label, icon, extra = '') => `<label for="${id}">${label}</label><div class="fld"><span class="fi" aria-hidden="true">${ic(icon)}</span>${extra}</div>`;
+const authField = (id, label, icon, extra = '') => `<label for="${id}">${label}</label><div class="fld"><span class="fico" aria-hidden="true">${ic(icon)}</span>${extra}</div>`;
 function loginPage(role) {
   const P = PORTAL[role]; document.title = P.t + ' — دورك';
   $('#app').innerHTML = `<div class="auth ${P.c}"><main class="am"><form class="af" id="lf" novalidate><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
