@@ -1,6 +1,6 @@
 -- الإنشاء:  createdb clinic_queue  ثم  psql -d clinic_queue -f database.sql
 -- تنبيه: الملف يعيد إنشاء الجداول (يحذف البيانات الحالية).
-DROP TABLE IF EXISTS auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
+DROP TABLE IF EXISTS medicine_doses, medicine_reminders, favorite_doctors, doctor_reviews, auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
 
 CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
@@ -153,6 +153,50 @@ CREATE TABLE auth_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_auth_log_id ON auth_log (id DESC);
+
+-- تقييمات الأطباء + الأطباء المفضلون + تذكير الأدوية (السيرفر ينشئها تلقائياً لو لم توجد)
+CREATE TABLE doctor_reviews (
+  id SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+  doctor_id INT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment VARCHAR(500) NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_reviews_doctor ON doctor_reviews (doctor_id, id DESC);
+CREATE TABLE favorite_doctors (
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  doctor_id INT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (patient_id, doctor_id)
+);
+CREATE TABLE medicine_reminders (
+  id SERIAL PRIMARY KEY,
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  med_index INT NOT NULL CHECK (med_index >= 0),
+  medicine_name VARCHAR(120) NOT NULL,
+  dose_note VARCHAR(120) NOT NULL DEFAULT '',
+  for_name VARCHAR(80) NOT NULL DEFAULT '',
+  times TEXT[] NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_reminder_med UNIQUE (booking_id, med_index)
+);
+CREATE INDEX idx_reminders_patient ON medicine_reminders (patient_id);
+CREATE TABLE medicine_doses (
+  id BIGSERIAL PRIMARY KEY,
+  reminder_id INT NOT NULL REFERENCES medicine_reminders(id) ON DELETE CASCADE,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  status VARCHAR(10) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending','Taken','Skipped')),
+  responded_at TIMESTAMPTZ,
+  notified_at TIMESTAMPTZ,
+  CONSTRAINT uq_dose UNIQUE (reminder_id, scheduled_at)
+);
+CREATE INDEX idx_doses_due ON medicine_doses (scheduled_at) WHERE status = 'Pending';
 
 CREATE INDEX idx_patient_bookings ON bookings (patient_id, booking_date DESC);
 CREATE INDEX idx_queue ON bookings (doctor_id, booking_date, status, queue_number);

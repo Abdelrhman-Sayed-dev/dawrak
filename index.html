@@ -652,6 +652,20 @@ html,body{overflow-x:clip}
 .rs{display:grid;gap:8px;margin:10px 0 14px}
 .rsi{display:flex;align-items:center;gap:10px;border:1px solid var(--b);border-radius:14px;padding:10px 12px}.rsi .fl{min-width:0}
 @media(max-width:620px){.rbar{grid-template-columns:1fr}.ql li.rq{grid-template-columns:auto minmax(0,1fr)}.rqa{grid-column:1/-1;justify-content:flex-start}}
+
+/* ---- تقييمات / مفضلة / تذكير الأدوية ---- */
+.fv{position:absolute;top:12px;left:12px;width:38px;height:38px;border-radius:50%;border:1px solid var(--b);background:#fff;color:var(--m);display:grid;place-items:center;cursor:pointer;padding:0;transition:.15s}
+.fv svg{width:20px;height:20px}.fv:hover{color:#e11d48;border-color:#fecdd3}.fv.on{color:#e11d48;background:#fff1f2;border-color:#fecdd3}.fv.on svg{fill:currentColor}
+.stars{display:inline-block;direction:ltr;letter-spacing:2px;font-size:1.05rem;line-height:1;background:linear-gradient(90deg,#f59e0b calc(var(--v,0)*20%),#d6dce8 0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rt{display:inline-flex;align-items:center;gap:6px;border:0;background:none;cursor:pointer;font:inherit;color:var(--t);padding:2px 8px;border-radius:8px}.rt:hover{background:var(--pl)}.rt small,.rt0{color:var(--m);font-size:.8rem}
+.rstar{display:flex;gap:6px;direction:ltr;justify-content:center;margin:8px 0}.rstar button{border:0;background:none;font-size:2.2rem;line-height:1;color:#d6dce8;cursor:pointer;padding:0 2px}.rstar button.on{color:#f59e0b}
+.rv{border-top:1px solid var(--b);padding:10px 0}.rv:first-of-type{border-top:0}.rv p{margin:4px 0 0}
+.hacts{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
+.disc{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 14px;color:#92400e;font-size:.9rem;margin:10px 0}
+.dz{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px;border:1px solid var(--b);border-radius:12px;background:#fff;margin-bottom:8px}
+.dz .tmx{font-weight:800;color:var(--p);min-width:64px}.dz .dzi{flex:1;min-width:150px}.dz.late{border-color:#fcd34d;background:#fffbeb}.dz.done{opacity:.7}
+.tms{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.tms span{display:inline-flex;align-items:center;gap:4px}.tms input{width:auto}
+.rmc{margin-bottom:10px}.rmc .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -698,7 +712,7 @@ Object.assign(IC, { 'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', receptionist: '/receptionist/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', receptionist: '/receptionist/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/receptionist/login': 'L:receptionist', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/patient/dashboard': '/me' };
+  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -768,7 +782,7 @@ function foot() {
     return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${DT.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
   }
   const T = r === 'patient'
-    ? [H, D, ['calendar-check', 'حجوزاتي', '#/me', at === '/me'], ['user', 'ملفي', '#/profile', at === '/profile']]
+    ? [H, D, ['calendar-check', 'حجوزاتي', '#/me', at === '/me'], ['heart', 'المفضلة', '/patient/favorites', at === '/favorites'], ['user', 'ملفي', '#/profile', at === '/profile']]
     : [H, D, ['user-plus', 'حساب جديد', '/patient/register', at === '/register'], ['log-in', 'دخول', '/patient/login', at === 'L:patient']];
   return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${T.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
 }
@@ -790,7 +804,7 @@ function route() {
   const lh = location.hash.slice(1);
   if (LEGACY[lh]) history.replaceState(null, '', LEGACY[lh]);
   const h = R(); cur = null; closeModal();
-  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/me': 'patient', '/profile': 'patient' }[h], role = localStorage.role;
+  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/me': 'patient', '/profile': 'patient', '/favorites': 'patient', '/reminders': 'patient' }[h], role = localStorage.role;
   // مستخدم بدور آخر ← بوابته الخاصة، وغير المسجّل ← صفحة الدخول المناسبة (والـ API يرفض أي وصول غير مصرح به على أي حال)
   // الطبيب المسجّل لا يفتح أي صفحة عامة: يعود دائماً للوحته
   if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile') { nav(DASH.doctor); return; }
@@ -803,7 +817,7 @@ function route() {
     loginPage(lr); done(); return;
   }
   $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/receptionist' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/admin': admin, '/receptionist': reception }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -863,7 +877,7 @@ function docsPage() {
   $('#m').innerHTML = `<h2 class="sec2">الأطباء</h2><div class="ds2"><label class="ds2f">${ic('search')}<input id="s" placeholder="ابحث عن طبيب أو تخصص..." value="${esc(q)}"></label><label class="ds2f">${ic('stethoscope')}<select id="sp" aria-label="التخصص"><option value="">كل التخصصات</option></select></label></div><div class="grid" id="g"></div>`;
   $('#s').oninput = e => { q = e.target.value; grid(); };
   $('#sp').onchange = e => { spec = e.target.value; grid(); };
-  cur = async () => { try { docs = await api('/doctors'); specs(); grid(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين.</p>'; } };
+  cur = async () => { try { docs = await api('/doctors'); await loadFavs(); specs(); grid(); } catch (e) { toast(e.message); $('#g').innerHTML = '<p class="empty">تعذر تحميل الأطباء. تأكد أن السيرفر وقاعدة البيانات شغالين.</p>'; } };
   cur();
 }
 function specs() {
@@ -876,7 +890,7 @@ function specs() {
 // رسم كروت الأطباء بعد تطبيق البحث وفلتر التخصص
 function grid() {
   const k = q.trim().toLowerCase(), l = docs.filter(d => (!k || (d.name + ' ' + d.specialty).toLowerCase().includes(k)) && (!spec || d.specialty === spec));
-  $('#g').innerHTML = l.length ? l.map(d => `<article class="card dc3"><span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span><p class="ds">${esc(d.description)}</p><div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div></article>`).join('') : '<p class="empty">لا يوجد طبيب مطابق. جرّب اسماً أو تخصصاً آخر.</p>';
+  $('#g').innerHTML = l.length ? l.map(dcard).join('') : '<p class="empty">لا يوجد طبيب مطابق. جرّب اسماً أو تخصصاً آخر.</p>';
   done();
 }
 async function book(id, pick = 0) {
@@ -982,10 +996,10 @@ function mview({ profile: p, bookings: b }) {
     else if (o && x.status === 'Waiting' && x.ahead === 0 && o.a > 0) { toast('أنت التالي في الدور، استعد', 1); navigator.vibrate?.(200); }
     prev[x.id] = { s: x.status, a: x.ahead, c: x.called };
   });
-  $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p>` +
+  $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p><div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="btn o sm" href="/patient/favorites">${ic('heart')} أطبائي المفضلون</a><a class="btn o sm" href="/patient/reminders">${ic('bell')} تذكير الأدوية</a></div>` +
     (live.length ? `<div class="grid">${live.map(x => `<article class="card tk2 ${x.status === 'In Progress' || x.ahead === 0 ? 'hot' : ''}"><div class="num">${x.queue_number}</div><div class="fl"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}</small>${x.member_name ? `<small>الحجز باسم: ${esc(x.member_name)} (${esc(x.relation)})</small>` : ''}<div class="info">${x.status === 'In Progress' ? '<b>دورك الآن! توجّه إلى الطبيب</b>' : x.called ? '<b>تم استدعاؤك، توجّه إلى العيادة الآن</b>' : `${aheadTxt(x.ahead)} — ${waitTxt(x.ahead * x.avg)}`}</div><div class="acts"><button class="btn o sm" onclick="upl(${x.id})">${ic('paperclip')} تحاليل وأشعة${x.files.length ? ' (' + x.files.length + ')' : ''}</button>${x.status === 'Waiting' ? `<button class="btn o sm" onclick="pp(${x.id})">تأجيل لآخر الطابور</button><button class="btn d sm" onclick="cx(${x.id})">إلغاء الحجز</button>` : ''}</div></div></article>`).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
-    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div>${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : ''}</li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
+    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
 }
 
 /* ---------- لوحة الطبيب ---------- */
@@ -1009,10 +1023,10 @@ const tg = v => api('/doctor/accepting', { method: 'POST', body: { accepting: v 
 let dimg = '';
 async function dprofile() {
   cur = null; document.title = 'ملفي الشخصي — دورك';
-  try { const r = await api('/doctor/profile'); dpview(r.profile, r.stats, r.recent); }
+  try { const r = await api('/doctor/profile'); dpview(r.profile, r.stats, r.recent, r.reviews || []); }
   catch (e) { toast(e.message); }
 }
-function dpview(p, s, recent) {
+function dpview(p, s, recent, reviews = []) {
   dimg = p.profile_image || '';
   const stl = { Waiting: 'w', 'In Progress': 'p', Completed: 'c', Cancelled: 'x' };
   $('#m').innerHTML = `<div class="dp">
@@ -1022,7 +1036,9 @@ function dpview(p, s, recent) {
   <div class="stats dps">
     <div class="st"><b>${s.waiting_today}</b><small>منتظرون اليوم</small></div><div class="st"><b>${s.done_today}</b><small>أنهوا اليوم</small></div>
     <div class="st"><b>${s.week}</b><small>كشوفات آخر 7 أيام</small></div><div class="st"><b>${s.completed}</b><small>إجمالي المكتملة</small></div>
-    <div class="st"><b>${s.total}</b><small>كل الحجوزات</small></div><div class="st"><b>${s.cancelled}</b><small>الملغية</small></div></div>
+    <div class="st"><b>${s.total}</b><small>كل الحجوزات</small></div><div class="st"><b>${s.cancelled}</b><small>الملغية</small></div>
+    <div class="st"><b>${s.reviews ? s.rating : '—'}</b><small>متوسط التقييم (${s.reviews || 0} تقييم)</small></div></div>
+  ${reviews.length ? `<section class="card"><h3>آخر التقييمات ${stars(s.rating)}</h3>${reviews.map(v => `<div class="rv"><div class="row sb">${stars(v.rating)}<small class="mt">${fdd(v.created_at)}</small></div>${v.comment ? `<p>${esc(v.comment)}</p>` : ''}</div>`).join('')}</section>` : ''}
   <section class="card"><h3>بياناتي</h3><form id="dpi">
     <label>الاسم<input name="name" required maxlength="80" value="${esc(p.name)}"></label>
     <label>التخصص<input name="specialty" required maxlength="80" value="${esc(p.specialty)}"></label>
@@ -1126,7 +1142,7 @@ function rpt(id) {
   <div class="rx-n"><b>ملاحظات الطبيب (تقرير الكشف):</b><p>${esc(x.report)}</p></div>
   ${x.follow_up_date ? `<div class="rx-fu">${ic('calendar-check')} <b>موعد الاستشارة (المتابعة):</b> ${fuTxt(x)}</div>` : ''}
   <div class="rx-f">(مع تمنياتنا لك بالشفاء العاجل)</div></div>
-  <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF</button><button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
+  <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF</button>${rows ? `<button class="btn o" onclick="remPick(${x.id})">${ic('bell')} تذكير بالأدوية</button>` : ''}<button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
 }
 // طباعة الروشتة فقط (CSS للطباعة يخفي باقي الصفحة)
 function printRx() {
@@ -1326,6 +1342,132 @@ function rcForm(id) {
     catch (x) { $('#er').textContent = x.message; }
   };
 }
+
+/* ---------- التقييمات + المفضلة + تذكير الأدوية ---------- */
+Object.assign(IC, {
+  'heart': '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  'star': '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' });
+const fdd = t => new Date(t).toLocaleDateString('ar-EG');
+const stars = v => `<span class="stars" style="--v:${+v || 0}" aria-hidden="true">★★★★★</span>`;
+const rateLine = d => d.reviews ? `<button class="rt" onclick="revs(${d.id})" aria-label="عرض التقييمات، المتوسط ${d.rating} من 5">${stars(d.rating)}<b>${d.rating}</b><small>(${d.reviews})</small></button>` : '<span class="rt0">لا توجد تقييمات بعد</span>';
+let FAVS = new Set();
+const heartBtn = d => { const on = FAVS.has(d.id); return `<button class="fv ${on ? 'on' : ''}" onclick="fav(${d.id})" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}">${ic('heart')}</button>`; };
+const dcard = d => `<article class="card dc3">${heartBtn(d)}<span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span>${rateLine(d)}<p class="ds">${esc(d.description)}</p><div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div></article>`;
+async function loadFavs() {
+  FAVS = new Set();
+  if (localStorage.role !== 'patient' || !localStorage.tok) return [];
+  try { const l = (await api('/me/favorites')).favorites; FAVS = new Set(l.map(d => d.id)); return l; } catch (e) { return []; }
+}
+async function fav(id) {
+  if (localStorage.role !== 'patient') { toast('سجّل دخولك كمريض لحفظ الأطباء المفضلين'); nav(LOGIN.patient); return; }
+  const on = FAVS.has(id);
+  try { await api('/me/favorites/' + id, { method: on ? 'DELETE' : 'PUT' }); on ? FAVS.delete(id) : FAVS.add(id); toast(on ? 'تمت الإزالة من المفضلة' : 'تمت الإضافة إلى المفضلة', 1); if (cur) cur(); } catch (e) { toast(e.message); }
+}
+function favsPage() {
+  document.title = 'أطبائي المفضلون — دورك';
+  $('#m').innerHTML = '<h2 class="sec2">أطبائي المفضلون</h2><div class="grid" id="g"></div>';
+  cur = async () => { try { const l = await loadFavs(); docs = l; $('#g').innerHTML = l.length ? l.map(dcard).join('') : '<p class="empty card">لم تضف أي طبيب للمفضلة بعد. اضغط على القلب في كارت الطبيب لحفظه هنا.</p>'; } catch (e) { toast(e.message); } };
+  cur();
+}
+async function revs(id) {
+  try {
+    const r = await api('/doctors/' + id + '/reviews'), d = docs.find(x => x.id === id) || {};
+    modal(`<h3>تقييمات ${esc(d.name || 'الطبيب')}</h3><p>${stars(r.avg)} <b>${r.avg ?? '—'}</b> <small class="mt">(${r.count} تقييم)</small></p>${r.reviews.length ? r.reviews.map(v => `<div class="rv"><div class="row sb">${stars(v.rating)}<small class="mt">${fdd(v.created_at)}</small></div>${v.comment ? `<p>${esc(v.comment)}</p>` : ''}</div>`).join('') : '<p class="mt">لا توجد تقييمات بعد.</p>'}<button class="btn o lg" style="margin-top:12px" onclick="closeModal()">إغلاق</button>`);
+  } catch (e) { toast(e.message); }
+}
+function rate(bid) {
+  const x = HB.find(v => v.id === bid); if (!x) return; let v = 0;
+  modal(`<h3>قيّم زيارتك</h3><p class="mt">${esc(x.doctor_name)} · ${fds(x.booking_date)}</p>
+    <div class="rstar" id="rs">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-v="${n}" aria-label="${n} من 5">★</button>`).join('')}</div>
+    <label>تعليق (اختياري)<textarea id="rc" rows="3" maxlength="500" placeholder="احكِ تجربتك مع الطبيب"></textarea></label>
+    <div class="err" id="er"></div><button class="btn p lg" id="rsb">إرسال التقييم</button>
+    <p class="mt" style="margin-top:8px">لا يمكن تعديل التقييم بعد إرساله، ويظهر للآخرين دون اسمك.</p>`);
+  const paint = () => document.querySelectorAll('#rs button').forEach(b => b.classList.toggle('on', +b.dataset.v <= v));
+  $('#rs').onclick = e => { const b = e.target.closest('button'); if (b) { v = +b.dataset.v; paint(); } };
+  $('#rsb').onclick = async e => {
+    if (!v) { $('#er').textContent = 'اختر عدد النجوم'; return; }
+    const btn = e.currentTarget; btn.disabled = true;
+    try { await api('/me/bookings/' + bid + '/review', { method: 'POST', body: { rating: v, comment: $('#rc').value } }); closeModal(); toast('شكراً لتقييمك', 1); if (cur) cur(); }
+    catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
+  };
+}
+
+/* ----- تذكير الأدوية ----- */
+const DS = { Pending: ['قيد الانتظار', 'warn'], Taken: ['تم أخذها', 'ok'], Skipped: ['تم تخطيها', 'off'] };
+const DISC = '<div class="disc">التذكير لتنظيم المواعيد فقط. التزم بالجرعة وتعليمات طبيبك كما هي في الروشتة، والنظام لا يغيّر أي جرعة ولا يقدّم نصائح طبية.</div>';
+async function askNotif() {
+  try {
+    if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  } catch (e) { /* المتصفح لا يدعم الإشعارات: يبقى التنبيه داخل الموقع */ }
+}
+function pushNote(title, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const fall = () => { try { new Notification(title, { body }); } catch (e) { /* أندرويد يحتاج service worker */ } };
+    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, { body, tag: 'dawrak-med' }) : fall()).catch(fall); else fall();
+  } catch (e) { /* ignore */ }
+}
+function remPick(bid) {
+  const x = HB.find(v => v.id === bid); if (!x || !x.medications.length) return;
+  modal(`<h3>تذكير بالأدوية</h3><p class="mt">اختر الدواء الذي تريد تذكيراً به</p>${DISC}${x.medications.map((m, i) => `<div class="dz"><div class="dzi"><b>${esc(m.name)}</b><br><small class="mt">${esc([m.dose, m.freq].filter(Boolean).join(' — '))}</small></div><button class="btn p sm" onclick="remForm(${bid},${i})">${ic('bell')} تفعيل</button></div>`).join('')}<button class="btn o lg" style="margin-top:8px" onclick="closeModal()">إغلاق</button>`);
+}
+function remForm(bid, idx, r) {
+  const m = r ? null : (HB.find(v => v.id === bid) || { medications: [] }).medications[idx];
+  const name = r ? r.medicine_name : m && m.name; if (!name) return;
+  const note = r ? r.dose_note : [m.dose, m.freq].filter(Boolean).join(' — ');
+  modal(`<h3>${r ? 'تعديل التذكير' : 'تفعيل التذكير'}</h3><p><b>${esc(name)}</b></p>${note ? `<p class="mt">${esc(note)}</p>` : ''}${DISC}
+    <label>مواعيد الجرعات (من 1 إلى 6 مرات يومياً)</label><div class="tms" id="tms"></div>
+    <button type="button" class="btn o sm" id="addt">${ic('plus')} إضافة موعد</button>
+    <label style="margin-top:10px">مدة العلاج (بالأيام، من 1 إلى 90)<input id="rd" type="number" min="1" max="90" value="${r ? r.days_left : 7}"></label>
+    <div class="err" id="er"></div><button class="btn p lg" id="rsv">حفظ</button>`);
+  const box = $('#tms'), add = v => { if (box.children.length >= 6) return; box.insertAdjacentHTML('beforeend', `<span><input type="time" required value="${v}">${box.children.length ? `<button type="button" class="btn d sm" aria-label="حذف الموعد" onclick="this.parentElement.remove()">${ic('x')}</button>` : ''}</span>`); };
+  (r ? r.times : ['08:00']).forEach(add);
+  $('#addt').onclick = () => add('12:00');
+  $('#rsv').onclick = async e => {
+    const times = [...box.querySelectorAll('input')].map(i => i.value).filter(Boolean), days = Number($('#rd').value);
+    if (!times.length) { $('#er').textContent = 'أضف موعداً واحداً على الأقل'; return; }
+    const btn = e.currentTarget; btn.disabled = true;
+    try {
+      await api(r ? '/me/reminders/' + r.id : '/me/reminders', { method: r ? 'PUT' : 'POST', body: r ? { times, days } : { booking_id: bid, med_index: idx, times, days } });
+      await askNotif(); closeModal(); toast(r ? 'تم تعديل التذكير' : 'تم تفعيل التذكير', 1);
+      if (r) { if (cur) cur(); } else nav('/patient/reminders');
+    } catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
+  };
+}
+function remsPage() {
+  document.title = 'تذكير الأدوية — دورك';
+  $('#m').innerHTML = '<h2 class="sec2">تذكير الأدوية</h2><div id="rm"></div>';
+  cur = async () => { try { rview(await api('/me/reminders')); } catch (e) { toast(e.message); } };
+  cur();
+}
+let RM = [];
+function rview({ reminders, doses }) {
+  RM = reminders; const now = Date.now(), today = new Date().toDateString();
+  const day = t => { const d = new Date(t); return d.toDateString() === today ? 'اليوم' : d.toDateString() === new Date(now + 864e5).toDateString() ? 'غداً' : d.toDateString() === new Date(now - 864e5).toDateString() ? 'أمس' : fdd(t); };
+  let last = '';
+  const dz = doses.map(d => { const late = d.status === 'Pending' && new Date(d.scheduled_at) < now, lab = day(d.scheduled_at), hd = lab !== last ? `<h4 style="margin:12px 0 6px">${lab}</h4>` : ''; last = lab;
+    return `${hd}<div class="dz ${late ? 'late' : ''} ${d.status !== 'Pending' ? 'done' : ''}"><span class="tmx">${tm(d.scheduled_at)}</span><div class="dzi"><b>${esc(d.medicine_name)}</b>${d.dose_note ? `<br><small class="mt">${esc(d.dose_note)}</small>` : ''}${d.for_name ? `<br><small class="mt">لـ ${esc(d.for_name)}</small>` : ''}</div><span class="chip ${late ? 'warn' : DS[d.status][1]}">${late ? 'فائتة — لم تُسجَّل' : DS[d.status][0]}</span>
+      <div class="hacts">${d.status === 'Pending' ? `<button class="btn ok sm" onclick="dose(${d.id},'Taken')">${ic('check')} تم أخذها</button><button class="btn o sm" onclick="dose(${d.id},'Skipped')">تخطي</button>` : `<button class="btn o sm" onclick="dose(${d.id},'Pending')">تراجع</button>`}</div></div>`; }).join('');
+  const notif = 'Notification' in window && Notification.permission === 'default' ? `<button class="btn o sm" onclick="askNotif().then(()=>cur())">${ic('bell')} تفعيل إشعارات المتصفح</button><p class="mt" style="margin:6px 0 10px">الإشعارات تصل والموقع مفتوح (حتى في تبويب خلفي). لا يتم الإرسال والموقع مغلق تماماً.</p>` : '';
+  $('#rm').innerHTML = DISC + notif + `<h3 class="sec2" style="margin-top:14px">الجرعات القادمة</h3>${dz || '<p class="empty card">لا توجد جرعات في الـ 48 ساعة القادمة.</p>'}
+    <h3 class="sec2" style="margin-top:18px">تذكيراتي</h3>${reminders.length ? reminders.map(r => `<article class="card rmc"><div class="row sb"><b>${esc(r.medicine_name)}</b><span class="chip ${r.is_active ? 'ok' : 'off'}">${r.is_active ? 'مفعّل' : 'موقوف'}</span></div>${r.dose_note ? `<small class="mt">${esc(r.dose_note)}</small><br>` : ''}<small class="mt">${r.times.join(' · ')} — حتى ${fds(r.end_date)} — د. ${esc(r.doctor_name)}${r.for_name ? ' — لـ ' + esc(r.for_name) : ''}</small><br><small class="mt">أُخذت: ${r.taken} · تُخطّيت: ${r.skipped} · قادمة/معلّقة: ${r.pending}</small>
+      <div class="acts"><button class="btn o sm" onclick="remEdit(${r.id})">${ic('pencil')} تعديل</button><button class="btn o sm" onclick="remToggle(${r.id},${!r.is_active})">${ic(r.is_active ? 'pause' : 'play')} ${r.is_active ? 'إيقاف' : 'استئناف'}</button><button class="btn d sm" onclick="remDel(${r.id})">${ic('trash-2')} حذف</button></div></article>`).join('') : '<p class="empty card">لا توجد تذكيرات. افتح الروشتة من «حجوزاتي» واضغط «تذكير بالأدوية».</p>'}`;
+}
+const dose = (id, status) => api('/me/doses/' + id, { method: 'POST', body: { status } }).then(() => cur()).catch(e => toast(e.message));
+const remEdit = id => { const r = RM.find(x => x.id === id); if (r) remForm(0, 0, r); };
+const remToggle = (id, is_active) => api('/me/reminders/' + id, { method: 'PATCH', body: { is_active } }).then(() => { toast(is_active ? 'تم استئناف التذكير' : 'تم إيقاف التذكير', 1); cur(); }).catch(e => toast(e.message));
+const remDel = id => confirm('حذف هذا التذكير وكل جرعاته؟') && api('/me/reminders/' + id, { method: 'DELETE' }).then(() => cur()).catch(e => toast(e.message));
+// فحص دوري للجرعات التي حان موعدها (يعمل والموقع مفتوح، حتى في تبويب خلفي)
+async function remPoll() {
+  if (localStorage.role !== 'patient' || !localStorage.tok) return;
+  try {
+    const r = await api('/me/reminders/due');
+    r.due.forEach(d => { toast('حان موعد دواء ' + d.medicine_name, 1); pushNote('تذكير دواء', d.medicine_name + (d.dose_note ? ' — ' + d.dose_note : '') + (d.for_name ? ' (' + d.for_name + ')' : '')); navigator.vibrate?.(300); });
+    if (r.due.length && R() === '/reminders' && cur && !$('.ov')) cur();
+  } catch (e) { /* يُعاد المحاولة بعد 30 ثانية */ }
+}
+setInterval(remPoll, 30000); setTimeout(remPoll, 3000);
 
 /* ---------- التحديث الدوري (Polling) ---------- */
 // الدوال الخادمية على Vercel لا تضمن بثاً لحظياً بين النسخ، فنحدّث الصفحة الحالية كل 5 ثوانٍ.

@@ -21,11 +21,13 @@
 import os, re, json, base64, asyncio, secrets, time, traceback
 from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import asyncpg, bcrypt, jwt
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from asyncpg.exceptions import UniqueViolationError
 
 DSN = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/clinic_queue")
 # سر التوقيع: لا يوجد قيمة افتراضية معروفة. لو JWT_SECRET غير مضبوط نولّد سراً عشوائياً لهذه العملية فقط
@@ -226,7 +228,7 @@ def shell(private=False):
 
 
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/doctors", "/patient/login", "/patient/register", "/patient/dashboard"):
+for _p in ("/doctors", "/patient/login", "/patient/register", "/patient/dashboard", "/patient/favorites", "/patient/reminders"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/receptionist/login", "/receptionist/dashboard"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
@@ -420,8 +422,16 @@ async def me(u=Depends(auth("patient"))):
       FROM bookings b JOIN doctors d ON d.id=b.doctor_id LEFT JOIN visit_reports r ON r.booking_id=b.id LEFT JOIN family_members m ON m.id=b.member_id WHERE b.patient_id=$1 ORDER BY b.booking_date DESC,b.id DESC LIMIT 100""", u["id"])
     fl = await pool.fetch("SELECT id,booking_id,kind,filename,mime,size FROM booking_files WHERE booking_id=ANY($1::int[]) ORDER BY id", [r["id"] for r in rows])
     fam = await pool.fetch("SELECT id,name,relation,age,chronic_conditions,other_conditions,notes FROM family_members WHERE patient_id=$1 AND NOT archived ORDER BY id", u["id"])
+    rv = {}
+    try:
+        await ensure_features()
+        rv = {x["booking_id"]: {"rating": x["rating"], "comment": x["comment"]} for x in await pool.fetch(
+            "SELECT booking_id,rating,comment FROM doctor_reviews WHERE patient_id=$1", u["id"])}
+    except Exception as e:
+        print("reviews:", e)
     return {"profile": dict(p), "family": [dict(x) for x in fam],
-            "bookings": [{**dict(r), "medications": jl(r["medications"]), "files": [dict(f) for f in fl if f["booking_id"] == r["id"]]} for r in rows]}
+            "bookings": [{**dict(r), "medications": jl(r["medications"]), "review": rv.get(r["id"]),
+                          "files": [dict(f) for f in fl if f["booking_id"] == r["id"]]} for r in rows]}
 
 
 @app.put("/api/me")
@@ -563,7 +573,7 @@ async def del_file(fid: int, u=Depends(auth("patient"))):
 @app.get("/api/doctors")
 async def doctors():
     await cleanup_if_due()
-    return [view(r) for r in await pool.fetch(STATS + " WHERE d.is_active ORDER BY d.id")]
+    return await with_ratings([view(r) for r in await pool.fetch(STATS + " WHERE d.is_active ORDER BY d.id")])
 
 
 async def ticket(bid):
@@ -740,7 +750,17 @@ async def d_profile(u=Depends(auth("doctor"))):
       FROM bookings WHERE doctor_id=$1""", u["id"])
     rows = await pool.fetch("""SELECT id,queue_number,patient_name,status,booking_date FROM bookings
       WHERE doctor_id=$1 ORDER BY booking_date DESC,queue_number DESC LIMIT 30""", u["id"])
-    return {"profile": dict(d), "stats": dict(s), "recent": [dict(x) for x in rows]}
+    stats, reviews = dict(s), []
+    try:
+        await ensure_features()
+        agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1", u["id"])
+        stats.update(rating=agg["a"], reviews=agg["n"])
+        reviews = [dict(x) for x in await pool.fetch(
+            "SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 ORDER BY id DESC LIMIT 20", u["id"])]
+    except Exception as e:
+        print("doctor reviews:", e)
+        stats.update(rating=None, reviews=0)
+    return {"profile": dict(d), "stats": stats, "recent": [dict(x) for x in rows], "reviews": reviews}
 
 
 @app.put("/api/doctor/profile")
@@ -1145,6 +1165,290 @@ async def a_auth_log(role: str = "", event: str = "", u=Depends(auth("admin"))):
     rows = await pool.fetch("""SELECT id,role,user_id,username,event,method,ip,user_agent,created_at FROM auth_log
       WHERE ($1='' OR role=$1) AND ($2='' OR event=$2) ORDER BY id DESC LIMIT 300""", role[:15], event[:15])
     return {"log": [dict(r) for r in rows]}
+
+
+# ================= التقييمات + المفضلة + تذكير الأدوية =================
+# الجداول تُنشأ تلقائياً عند أول استخدام (وموجودة أيضاً في database.sql / migration_features.sql).
+FEATURES_DDL = """
+CREATE TABLE IF NOT EXISTS doctor_reviews (
+  id SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+  doctor_id INT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment VARCHAR(500) NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_doctor ON doctor_reviews (doctor_id, id DESC);
+CREATE TABLE IF NOT EXISTS favorite_doctors (
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  doctor_id INT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (patient_id, doctor_id)
+);
+CREATE TABLE IF NOT EXISTS medicine_reminders (
+  id SERIAL PRIMARY KEY,
+  patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  med_index INT NOT NULL CHECK (med_index >= 0),
+  medicine_name VARCHAR(120) NOT NULL,
+  dose_note VARCHAR(120) NOT NULL DEFAULT '',
+  for_name VARCHAR(80) NOT NULL DEFAULT '',
+  times TEXT[] NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_reminder_med UNIQUE (booking_id, med_index)
+);
+CREATE INDEX IF NOT EXISTS idx_reminders_patient ON medicine_reminders (patient_id);
+CREATE TABLE IF NOT EXISTS medicine_doses (
+  id BIGSERIAL PRIMARY KEY,
+  reminder_id INT NOT NULL REFERENCES medicine_reminders(id) ON DELETE CASCADE,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  status VARCHAR(10) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending','Taken','Skipped')),
+  responded_at TIMESTAMPTZ,
+  notified_at TIMESTAMPTZ,
+  CONSTRAINT uq_dose UNIQUE (reminder_id, scheduled_at)
+);
+CREATE INDEX IF NOT EXISTS idx_doses_due ON medicine_doses (scheduled_at) WHERE status = 'Pending';
+"""
+_features_ready, _features_lock = False, asyncio.Lock()
+CAIRO = ZoneInfo("Africa/Cairo")
+TIME_RE = re.compile(r"([01]\d|2[0-3]):[0-5]\d")
+
+
+async def ensure_features():
+    global _features_ready
+    if _features_ready:
+        return
+    async with _features_lock:
+        if not _features_ready:
+            await pool.execute(FEATURES_DDL)
+            _features_ready = True
+
+
+async def with_ratings(docs):
+    """يضيف rating (متوسط أو None) و reviews (العدد) لكل طبيب. أي عطل هنا لا يمنع عرض الأطباء."""
+    try:
+        await ensure_features()
+        rm = {r["doctor_id"]: (r["a"], r["n"]) for r in await pool.fetch(
+            "SELECT doctor_id,round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews GROUP BY doctor_id")}
+    except Exception as e:
+        print("ratings:", e)
+        rm = {}
+    return [{**d, "rating": rm.get(d["id"], (None, 0))[0], "reviews": rm.get(d["id"], (None, 0))[1]} for d in docs]
+
+
+# ---------- 1) التقييمات ----------
+@app.post("/api/me/bookings/{bid}/review", status_code=201)
+async def add_review(bid: int, request: Request, u=Depends(auth("patient"))):
+    await ensure_features()
+    b = await body(request)
+    rating, comment = b.get("rating"), str(b.get("comment") or "").strip()
+    if isinstance(rating, bool) or not isinstance(rating, int) or not 1 <= rating <= 5:
+        raise Fail(400, "التقييم من 1 إلى 5 نجوم")
+    if len(comment) > 500:
+        raise Fail(400, "التعليق أطول من 500 حرف")
+    bk = await pool.fetchrow("SELECT doctor_id,status FROM bookings WHERE id=$1 AND patient_id=$2", bid, u["id"])
+    if not bk:  # غير موجود أو ليس حجزك: نفس الرد حتى لا يُكشف وجود حجوزات الآخرين
+        raise Fail(404, "الحجز غير موجود")
+    if bk["status"] != "Completed":
+        raise Fail(409, "يمكن التقييم بعد انتهاء الكشف فقط")
+    try:
+        await pool.execute("INSERT INTO doctor_reviews(booking_id,doctor_id,patient_id,rating,comment) VALUES($1,$2,$3,$4,$5)",
+                           bid, bk["doctor_id"], u["id"], rating, comment)
+    except UniqueViolationError:
+        raise Fail(409, "قيّمت هذا الحجز من قبل")
+    return {"ok": True}
+
+
+@app.get("/api/doctors/{did}/reviews")
+async def doctor_reviews(did: int):
+    """تقييمات طبيب (مجهولة الهوية: التقييم والتعليق والتاريخ فقط)."""
+    await ensure_features()
+    agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1", did)
+    rows = await pool.fetch("SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 ORDER BY id DESC LIMIT 50", did)
+    return {"avg": agg["a"], "count": agg["n"], "reviews": [dict(r) for r in rows]}
+
+
+# ---------- 2) الأطباء المفضلون ----------
+@app.get("/api/me/favorites")
+async def favorites(u=Depends(auth("patient"))):
+    await ensure_features()
+    rows = await pool.fetch(STATS + " WHERE d.is_active AND d.id IN (SELECT doctor_id FROM favorite_doctors WHERE patient_id=$1) ORDER BY d.name", u["id"])
+    return {"favorites": await with_ratings([view(r) for r in rows])}
+
+
+@app.put("/api/me/favorites/{did}")
+async def fav_add(did: int, u=Depends(auth("patient"))):
+    await ensure_features()
+    if not await pool.fetchval("SELECT 1 FROM doctors WHERE id=$1 AND is_active", did):
+        raise Fail(404, "الطبيب غير موجود")
+    await pool.execute("INSERT INTO favorite_doctors(patient_id,doctor_id) VALUES($1,$2) ON CONFLICT DO NOTHING", u["id"], did)
+    return {"ok": True}
+
+
+@app.delete("/api/me/favorites/{did}")
+async def fav_del(did: int, u=Depends(auth("patient"))):
+    await ensure_features()
+    await pool.execute("DELETE FROM favorite_doctors WHERE patient_id=$1 AND doctor_id=$2", u["id"], did)
+    return {"ok": True}
+
+
+# ---------- 3) تذكير الأدوية ----------
+# التذكير تنظيم مواعيد فقط: اسم الدواء والجرعة تُنسخ من الروشتة كما كتبها الطبيب ولا يعدّلها المريض ولا النظام.
+def vrem(b):
+    t, d = b.get("times"), b.get("days")
+    if not isinstance(t, list) or not 1 <= len(t) <= 6 or not all(isinstance(x, str) and TIME_RE.fullmatch(x) for x in t):
+        raise Fail(400, "اختر من 1 إلى 6 مواعيد بصيغة صحيحة")
+    if isinstance(d, bool) or not isinstance(d, int) or not 1 <= d <= 90:
+        raise Fail(400, "مدة العلاج من 1 إلى 90 يوماً")
+    return sorted(set(t)), d
+
+
+def future_doses(times, start, end):
+    now, out, d = datetime.now(CAIRO), [], start
+    while d <= end:
+        for t in times:
+            at = datetime(d.year, d.month, d.day, int(t[:2]), int(t[3:]), tzinfo=CAIRO)
+            if at > now:
+                out.append(at)
+        d += timedelta(days=1)
+    return out
+
+
+async def fill_doses(c, rid, times, start, end):
+    ats = future_doses(times, start, end)
+    if ats:
+        await c.executemany("INSERT INTO medicine_doses(reminder_id,scheduled_at) VALUES($1,$2) ON CONFLICT DO NOTHING", [(rid, a) for a in ats])
+    return len(ats)
+
+
+async def own_reminder(c, rid, pid):
+    r = await c.fetchrow("SELECT * FROM medicine_reminders WHERE id=$1 AND patient_id=$2 FOR UPDATE", rid, pid)
+    if not r:
+        raise Fail(404, "التذكير غير موجود")
+    return r
+
+
+@app.post("/api/me/reminders", status_code=201)
+async def rem_create(request: Request, u=Depends(auth("patient"))):
+    await ensure_features()
+    b = await body(request)
+    times, days = vrem(b)
+    try:
+        bid, idx = int(b.get("booking_id")), int(b.get("med_index"))
+    except (TypeError, ValueError):
+        raise Fail(400, "بيانات غير صحيحة")
+    row = await pool.fetchrow("""SELECT b.patient_name,r.medications FROM bookings b JOIN visit_reports r ON r.booking_id=b.id
+      WHERE b.id=$1 AND b.patient_id=$2""", bid, u["id"])
+    meds = jl(row["medications"]) if row else []
+    if not row or not 0 <= idx < len(meds) or not str(meds[idx].get("name") or "").strip():
+        raise Fail(404, "الدواء غير موجود في روشتتك")
+    m = meds[idx]
+    name = str(m["name"]).strip()[:120]
+    note = " — ".join(x for x in (str(m.get("dose") or "").strip(), str(m.get("freq") or "").strip()) if x)[:120]
+    today = datetime.now(CAIRO).date()
+    end = today + timedelta(days=days - 1)
+    if not future_doses(times, today, end):
+        raise Fail(400, "كل المواعيد المختارة فاتت اليوم، زوّد عدد الأيام")
+    async with pool.acquire() as c, c.transaction():
+        try:
+            rid = await c.fetchval("""INSERT INTO medicine_reminders(patient_id,booking_id,med_index,medicine_name,dose_note,for_name,times,start_date,end_date)
+              VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id""", u["id"], bid, idx, name, note, row["patient_name"], times, today, end)
+        except UniqueViolationError:
+            raise Fail(409, "تذكير هذا الدواء موجود بالفعل، عدّله من صفحة التذكيرات")
+        n = await fill_doses(c, rid, times, today, end)
+    return {"id": rid, "doses": n}
+
+
+@app.get("/api/me/reminders")
+async def rem_list(u=Depends(auth("patient"))):
+    await ensure_features()
+    today = datetime.now(CAIRO).date()
+    rows = await pool.fetch("""SELECT r.id,r.medicine_name,r.dose_note,r.for_name,r.times,r.start_date,r.end_date,r.is_active,d.name AS doctor_name,
+      count(x.id) FILTER (WHERE x.status='Taken')::int AS taken,count(x.id) FILTER (WHERE x.status='Skipped')::int AS skipped,
+      count(x.id) FILTER (WHERE x.status='Pending')::int AS pending
+      FROM medicine_reminders r JOIN bookings b ON b.id=r.booking_id JOIN doctors d ON d.id=b.doctor_id
+      LEFT JOIN medicine_doses x ON x.reminder_id=r.id WHERE r.patient_id=$1 GROUP BY r.id,d.name ORDER BY r.is_active DESC,r.id DESC""", u["id"])
+    ds = await pool.fetch("""SELECT x.id,x.reminder_id,x.scheduled_at,x.status,r.medicine_name,r.dose_note,r.for_name
+      FROM medicine_doses x JOIN medicine_reminders r ON r.id=x.reminder_id
+      WHERE r.patient_id=$1 AND r.is_active AND x.scheduled_at BETWEEN now()-interval '24 hours' AND now()+interval '48 hours'
+      ORDER BY x.scheduled_at LIMIT 200""", u["id"])
+    return {"reminders": [{**dict(r), "days_left": max((r["end_date"] - today).days + 1, 1)} for r in rows], "doses": [dict(x) for x in ds]}
+
+
+@app.get("/api/me/reminders/due")
+async def rem_due(u=Depends(auth("patient"))):
+    """الجرعات التي حان موعدها ولم يُنبَّه عنها بعد (كل جرعة تُرجَع مرة واحدة). الأقدم من ساعتين تُعلَّم دون تنبيه."""
+    await ensure_features()
+    rows = await pool.fetch("""UPDATE medicine_doses x SET notified_at=now() FROM medicine_reminders r
+      WHERE x.reminder_id=r.id AND r.patient_id=$1 AND r.is_active AND x.status='Pending' AND x.notified_at IS NULL AND x.scheduled_at<=now()
+      RETURNING x.id,x.scheduled_at,r.medicine_name,r.dose_note,r.for_name""", u["id"])
+    limit = datetime.now(timezone.utc) - timedelta(hours=2)
+    return {"due": sorted((dict(r) for r in rows if r["scheduled_at"] >= limit), key=lambda r: r["scheduled_at"])}
+
+
+@app.put("/api/me/reminders/{rid}")
+async def rem_edit(rid: int, request: Request, u=Depends(auth("patient"))):
+    await ensure_features()
+    times, days = vrem(await body(request))
+    today = datetime.now(CAIRO).date()
+    end = today + timedelta(days=days - 1)
+    async with pool.acquire() as c, c.transaction():
+        r = await own_reminder(c, rid, u["id"])
+        await c.execute("DELETE FROM medicine_doses WHERE reminder_id=$1 AND status='Pending' AND scheduled_at>now()", rid)
+        await c.execute("UPDATE medicine_reminders SET times=$2,end_date=$3 WHERE id=$1", rid, times, end)
+        n = await fill_doses(c, rid, times, today, end) if r["is_active"] else 0
+    return {"ok": True, "doses": n}
+
+
+@app.patch("/api/me/reminders/{rid}")
+async def rem_toggle(rid: int, request: Request, u=Depends(auth("patient"))):
+    await ensure_features()
+    act = (await body(request)).get("is_active")
+    if not isinstance(act, bool):
+        raise Fail(400, "بيانات غير صحيحة")
+    today = datetime.now(CAIRO).date()
+    async with pool.acquire() as c, c.transaction():
+        r = await own_reminder(c, rid, u["id"])
+        if act and r["end_date"] < today:
+            raise Fail(409, "انتهت مدة هذا التذكير، عدّله لتحديد مدة جديدة")
+        await c.execute("UPDATE medicine_reminders SET is_active=$2 WHERE id=$1", rid, act)
+        await c.execute("DELETE FROM medicine_doses WHERE reminder_id=$1 AND status='Pending' AND scheduled_at>now()", rid)
+        if act:
+            await fill_doses(c, rid, list(r["times"]), today, r["end_date"])
+    return {"ok": True}
+
+
+@app.delete("/api/me/reminders/{rid}")
+async def rem_delete(rid: int, u=Depends(auth("patient"))):
+    await ensure_features()
+    if not await pool.fetchval("DELETE FROM medicine_reminders WHERE id=$1 AND patient_id=$2 RETURNING id", rid, u["id"]):
+        raise Fail(404, "التذكير غير موجود")
+    return {"ok": True}
+
+
+@app.post("/api/me/doses/{did}")
+async def dose_set(did: int, request: Request, u=Depends(auth("patient"))):
+    await ensure_features()
+    st = (await body(request)).get("status")
+    if st not in ("Pending", "Taken", "Skipped"):
+        raise Fail(400, "حالة غير صحيحة")
+    ok = await pool.fetchval("""UPDATE medicine_doses x SET status=$3::text,responded_at=CASE WHEN $3::text='Pending' THEN NULL ELSE now() END
+      FROM medicine_reminders r WHERE x.id=$1 AND x.reminder_id=r.id AND r.patient_id=$2 RETURNING x.id""", did, u["id"], st)
+    if not ok:
+        raise Fail(404, "الجرعة غير موجودة")
+    return {"ok": True}
+
+
+@app.get("/sw.js")
+async def service_worker():
+    """Service worker صغير لعرض إشعارات التذكير (يعمل والموقع مفتوح في أي تبويب)."""
+    js = ("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));"
+          "self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/patient/reminders'))});")
+    return Response(js, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
 
 
 if __name__ == "__main__":

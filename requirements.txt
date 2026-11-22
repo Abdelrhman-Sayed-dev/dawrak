@@ -5,3 +5,4 @@ bcrypt
 PyJWT
 google-auth
 requests
+tzdata
