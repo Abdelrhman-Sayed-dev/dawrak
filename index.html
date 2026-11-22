@@ -666,6 +666,44 @@ html,body{overflow-x:clip}
 .dz .tmx{font-weight:800;color:var(--p);min-width:64px}.dz .dzi{flex:1;min-width:150px}.dz.late{border-color:#fcd34d;background:#fffbeb}.dz.done{opacity:.7}
 .tms{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.tms span{display:inline-flex;align-items:center;gap:4px}.tms input{width:auto}
 .rmc{margin-bottom:10px}.rmc .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* ===== كارت الحجز ومتابعة الطابور (تذكرة المريض) ===== */
+.tkg{grid-template-columns:repeat(auto-fill,minmax(min(100%,430px),1fr))}
+.tkc{background:#fff;border:1px solid var(--b);border-radius:24px;padding:18px 16px 16px;box-shadow:0 10px 30px rgba(37,99,235,.08);display:flex;flex-direction:column;gap:14px;transition:border-color .2s,box-shadow .2s}
+.tkc.s2{border-color:#86EFAC;box-shadow:0 10px 30px rgba(22,163,74,.14)}
+.tkh{display:flex;align-items:center;gap:12px}
+.tkav{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);color:var(--p);display:grid;place-items:center;font-weight:800;font-size:1.4rem;flex:none;box-shadow:0 0 0 3px #fff,0 0 0 4px var(--lb)}
+.tkd{min-width:0;display:flex;flex-direction:column;line-height:1.4;padding-inline-start:12px;border-inline-start:1px solid var(--b)}
+.tkd b{font-size:1.15rem;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkd small{color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkpill{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;font-weight:700;font-size:.88rem;white-space:nowrap;background:#DCFCE7;color:#15803D}
+.tkpill svg{width:18px;height:18px;padding:2px;border-radius:50%;background:#16A34A;color:#fff;stroke-width:3}
+.tkpill.w{background:#FEF3C7;color:#B45309}.tkpill.w svg{background:#D97706}
+.tkpill.p{background:#DBEAFE;color:#1D4ED8}.tkpill.p svg{background:#2563EB}
+.tkst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tkst>div{background:#F1F5FD;border-radius:18px;padding:14px 6px 12px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tkv{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.55rem;font-weight:800;color:var(--navy);line-height:1.2;font-variant-numeric:tabular-nums}
+.tkv svg{width:26px;height:26px;flex:none}
+.tkv small{font-size:.8rem;font-weight:600;color:var(--m)}
+.tkst small.lb{color:var(--m);font-size:.85rem;font-weight:500}
+.tkst .i1 svg{color:#2563EB}.tkst .i2 svg{color:#8B5CF6}.tkst .i3 svg{color:#2563EB}
+.tkm{border-radius:14px;padding:10px 14px;font-weight:700;text-align:center;background:#EFF6FF;color:#1D4ED8}
+.tkm.g{background:#DCFCE7;color:#15803D}.tkm.a{background:#FEF3C7;color:#B45309}
+.tkp{position:relative;direction:ltr;display:grid;grid-template-columns:repeat(3,1fr);padding:2px 0 0}
+.tkp::before,.tkp::after{content:"";position:absolute;top:17px;left:16.66%;height:6px;border-radius:6px}
+.tkp::before{right:16.66%;background:#E2E8F0}
+.tkp::after{width:calc(66.66% * var(--f,0));background:linear-gradient(90deg,#16A34A,#22C55E);transition:width .6s ease}
+.tks{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;font-size:.82rem;font-weight:600;color:var(--m)}
+.tks.on{color:var(--navy)}
+.tkn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#fff;border:6px solid #CBD5E1;color:var(--m);box-shadow:0 0 0 4px #fff}
+.tkn svg{width:20px;height:20px}
+.tks.on .tkn{background:#16A34A;border-color:#16A34A;color:#fff}
+.tks.fl .tkn{border-width:0;background:#E2E8F0}
+.tks.fl.on .tkn{background:#16A34A}
+.tkx{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--b);padding-top:12px}
+.tkx .btn{flex:1 1 auto}
+@media(max-width:400px){.tkv{font-size:1.3rem;gap:5px}.tkv svg{width:22px;height:22px}.tkd b{font-size:1.02rem}.tkpill{padding:6px 10px;font-size:.8rem}.tks{font-size:.74rem}}
+@media(prefers-reduced-motion:reduce){.tkp::after{transition:none}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -907,7 +945,7 @@ async function book(id, pick = 0) {
     const btn = e.currentTarget; btn.disabled = true;
     try {
       const t = await api('/bookings', { method: 'POST', body: { doctor_id: id, member_id: +document.querySelector('#who input:checked').value || null } });
-      modal(`<div class="ok-box">${ic('circle-check')}<h3>تم الحجز بنجاح!</h3><div class="num big">${t.queue_number}</div><p class="mt">رقم الحجز</p><p><b>${aheadTxt(t.ahead)}</b></p><p>متوسط وقت الانتظار المتوقع: <b>${waitTxt(t.ahead * t.avg)}</b></p><button class="btn p" onclick="goMe()">تتبع حجزي</button></div>`);
+      modal(`<div class="ok-box">${ic('circle-check')}<h3 style="margin:6px 0 14px">تم الحجز بنجاح!</h3></div><div style="text-align:start">${tkCard(t)}</div><button class="btn p lg" style="margin-top:14px" onclick="goMe()">تتبع حجزي</button>`);
       cur();
     } catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
   };
@@ -987,6 +1025,22 @@ let prev = {}, HB = [], PN = '', FAM = [];
 // صفحة حجوزاتي (تتحدث لحظياً من WebSocket)
 function me() { cur = async () => { try { mview(await api('/me')); } catch (e) { toast(e.message); } }; cur(); }
 // رسم الحجوزات النشطة (مع إلغاء/تأجيل/ملفات) والكشوفات السابقة
+IC.ticket = '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>';
+IC.flag = '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>';
+// كارت الحجز ومتابعة الطابور: حالة الحجز + رقم الدور + عدد من قبلك + وقت الانتظار + شريط التقدم
+// act=true يضيف أزرار (تحاليل / تأجيل / إلغاء) وتحتاج x.files
+function tkCard(x, act) {
+  const inProg = x.status === 'In Progress', now = inProg || !!x.called, soon = !now && x.ahead <= 1;
+  const s = now ? 2 : soon ? 1 : 0, mins = Math.round(x.ahead * x.avg / 5) * 5;
+  const pill = inProg ? ['p', 'جارٍ الكشف'] : x.called ? ['w', 'تم استدعاؤك'] : ['', 'حجز مؤكد'];
+  const msg = inProg ? ['g', 'دورك الآن! توجّه إلى الطبيب'] : x.called ? ['a', 'تم استدعاؤك، توجّه إلى العيادة الآن'] : x.ahead === 0 ? ['g', 'أنت التالي في الدور، استعد'] : null;
+  const steps = ['في انتظار دورك', 'قريباً دورك', 'دورك الآن'].map((l, i) => `<div class="tks ${i <= s ? 'on' : ''} ${i === 2 ? 'fl' : ''}"><span class="tkn">${i === 2 ? ic('flag') : i <= s ? ic('check') : ''}</span>${l}</div>`).join('');
+  return `<article class="tkc s${s}"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}</small>${x.member_name ? `<small>الحجز باسم: ${esc(x.member_name)} (${esc(x.relation)})</small>` : ''}</div><span class="tkpill ${pill[0]}">${ic('circle-check')} ${pill[1]}</span></div>
+  <div class="tkst"><div class="i1"><span class="tkv">${ic('ticket')}${String(x.queue_number).padStart(2, '0')}</span><small class="lb">رقم دورك</small></div><div class="i2"><span class="tkv">${ic('users')}${now ? 0 : x.ahead}</span><small class="lb">أشخاص قبلك</small></div><div class="i3"><span class="tkv">${ic('clock')}${now || mins <= 0 ? 'الآن' : `${mins}<small>دقيقة</small>`}</span><small class="lb">وقت انتظار تقريبي</small></div></div>
+  ${msg ? `<div class="tkm ${msg[0]}">${msg[1]}</div>` : ''}
+  <div class="tkp" style="--f:${[.3, .5, 1][s]}">${steps}</div>
+  ${act ? `<div class="tkx"><button class="btn o sm" onclick="upl(${x.id})">${ic('paperclip')} تحاليل وأشعة${x.files.length ? ' (' + x.files.length + ')' : ''}</button>${x.status === 'Waiting' ? `<button class="btn o sm" onclick="pp(${x.id})">تأجيل لآخر الطابور</button><button class="btn d sm" onclick="cx(${x.id})">إلغاء الحجز</button>` : ''}</div>` : ''}</article>`;
+}
 function mview({ profile: p, bookings: b }) {
   HB = b; PN = p.name; const live = b.filter(x => x.status === 'Waiting' || x.status === 'In Progress'), hist = b.filter(x => !live.includes(x));
   live.forEach(x => {
@@ -997,7 +1051,7 @@ function mview({ profile: p, bookings: b }) {
     prev[x.id] = { s: x.status, a: x.ahead, c: x.called };
   });
   $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p><div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="btn o sm" href="/patient/favorites">${ic('heart')} أطبائي المفضلون</a><a class="btn o sm" href="/patient/reminders">${ic('bell')} تذكير الأدوية</a></div>` +
-    (live.length ? `<div class="grid">${live.map(x => `<article class="card tk2 ${x.status === 'In Progress' || x.ahead === 0 ? 'hot' : ''}"><div class="num">${x.queue_number}</div><div class="fl"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}</small>${x.member_name ? `<small>الحجز باسم: ${esc(x.member_name)} (${esc(x.relation)})</small>` : ''}<div class="info">${x.status === 'In Progress' ? '<b>دورك الآن! توجّه إلى الطبيب</b>' : x.called ? '<b>تم استدعاؤك، توجّه إلى العيادة الآن</b>' : `${aheadTxt(x.ahead)} — ${waitTxt(x.ahead * x.avg)}`}</div><div class="acts"><button class="btn o sm" onclick="upl(${x.id})">${ic('paperclip')} تحاليل وأشعة${x.files.length ? ' (' + x.files.length + ')' : ''}</button>${x.status === 'Waiting' ? `<button class="btn o sm" onclick="pp(${x.id})">تأجيل لآخر الطابور</button><button class="btn d sm" onclick="cx(${x.id})">إلغاء الحجز</button>` : ''}</div></div></article>`).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
+    (live.length ? `<div class="grid tkg">${live.map(x => tkCard(x, true)).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
     (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
 }
