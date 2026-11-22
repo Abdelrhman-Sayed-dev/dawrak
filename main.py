@@ -90,6 +90,43 @@ class Fail(Exception):
         self.status, self.message = status, message
 
 
+# ---------- سجل الدخول والخروج (auth_log) ----------
+# الجدول يُنشأ تلقائياً عند أول استخدام، وأي فشل في التسجيل لا يؤثر على الدخول نفسه.
+AUTH_LOG_DDL = """CREATE TABLE IF NOT EXISTS auth_log (
+  id BIGSERIAL PRIMARY KEY,
+  role VARCHAR(15) NOT NULL,
+  user_id INT,
+  username VARCHAR(80) NOT NULL DEFAULT '',
+  event VARCHAR(15) NOT NULL,
+  method VARCHAR(10) NOT NULL DEFAULT 'password',
+  ip VARCHAR(45) NOT NULL DEFAULT '',
+  user_agent VARCHAR(200) NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_log_id ON auth_log (id DESC);"""
+_auth_log_ready = False
+
+
+async def ensure_auth_log():
+    global _auth_log_ready
+    if not _auth_log_ready:
+        await pool.execute(AUTH_LOG_DDL)
+        _auth_log_ready = True
+
+
+def client_ip(request: Request):
+    return (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()[:45]
+
+
+async def log_auth(request: Request, role, event, uid=None, username="", method="password"):
+    try:
+        await ensure_auth_log()
+        await pool.execute("INSERT INTO auth_log(role,user_id,username,event,method,ip,user_agent) VALUES($1,$2,$3,$4,$5,$6,$7)",
+                           role, uid, str(username or "")[:80], event, method, client_ip(request), (request.headers.get("user-agent") or "")[:200])
+    except Exception as e:
+        print("auth_log:", e)
+
+
 async def changed():
     """لا بث لحظي في Vercel: الواجهة تعمل تحديثاً دورياً (Polling) كل 5 ثوانٍ."""
     return
@@ -105,6 +142,11 @@ async def cleanup_if_due():
         await pool.execute("UPDATE bookings SET status='Cancelled' WHERE booking_date<CURRENT_DATE AND status IN ('Waiting','In Progress')")
     except Exception as e:
         print(e)
+    try:
+        await ensure_auth_log()
+        await pool.execute("DELETE FROM auth_log WHERE created_at < now() - interval '90 days'")
+    except Exception as e:
+        print("auth_log cleanup:", e)
 
 
 app = FastAPI(docs_url=None, redoc_url=None)
@@ -216,10 +258,13 @@ async def do_login(request: Request, role: str):
     good = await asyncio.to_thread(bcrypt.checkpw, password.encode()[:72], (u["password_hash"] if u else DUMMY_HASH).encode())
     if not (u and good):
         tries[key] = (n + 1, at)
+        await log_auth(request, role, "login_failed", u["id"] if u else None, username.strip().lower())
         raise Fail(401, "بيانات الدخول غير صحيحة")
     if not u["is_active"]:
+        await log_auth(request, role, "login_failed", u["id"], username.strip().lower())
         raise Fail(403, "هذا الحساب معطّل")
     tries.pop(key, None)
+    await log_auth(request, role, "login", u["id"], username.strip().lower())
     return {"token": make_token(role, u["id"]), "role": role}
 
 
@@ -241,6 +286,23 @@ async def patient_login(request: Request):
 @app.post("/api/receptionist/login")
 async def receptionist_login(request: Request):
     return await do_login(request, "receptionist")
+
+
+NAME_SQL = {"doctor": "SELECT username FROM doctors WHERE id=$1", "admin": "SELECT username FROM admins WHERE id=$1",
+            "patient": "SELECT login_id FROM patients WHERE id=$1", "receptionist": "SELECT email FROM receptionists WHERE id=$1"}
+
+
+@app.post("/api/logout")
+async def logout_api(request: Request):
+    """يسجّل الخروج فقط (التوكن JWT بلا حالة، فلا شيء يُلغى هنا). دائماً يرجع ok حتى لا يتعطل الخروج من الواجهة."""
+    try:
+        u = jwt.decode(request.headers.get("authorization", "").replace("Bearer ", ""), SECRET, algorithms=["HS256"])
+        role, uid = u["role"], int(u["id"])
+        name = await pool.fetchval(NAME_SQL[role], uid) or ""
+    except Exception:
+        return {"ok": True}
+    await log_auth(request, role, "logout", uid, name)
+    return {"ok": True}
 
 
 def make_token(role, uid):
@@ -288,6 +350,7 @@ async def register(request: Request):
                                   await asyncio.to_thread(hashpw, pw), o["chronic"], o["other"], o["notes"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "اسم المستخدم أو الإيميل مستخدم بالفعل")
+    await log_auth(request, "patient", "register", uid, lid)
     return {"token": make_token("patient", uid), "role": "patient"}
 
 
@@ -319,6 +382,7 @@ async def google_login(request: Request):
         raise Fail(401, "إيميل جوجل غير مؤكد")
     uid = await pool.fetchval("SELECT id FROM patients WHERE login_id=$1", email)
     if uid:
+        await log_auth(request, "patient", "login", uid, email, "google")
         return {"token": make_token("patient", uid), "role": "patient"}
     st = jwt.encode({"typ": "gsignup", "email": email, "exp": datetime.now(timezone.utc) + timedelta(minutes=15)}, SECRET, algorithm="HS256")
     return {"needs_signup": True, "signup_token": st, "email": email, "name": str(info.get("name") or "")[:60]}
@@ -340,6 +404,7 @@ async def google_register(request: Request):
                                   await asyncio.to_thread(hashpw, secrets.token_urlsafe(32)), o["chronic"], o["other"], o["notes"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "هذا الحساب مسجّل بالفعل، سجّل الدخول")
+    await log_auth(request, "patient", "register", uid, t["email"], "google")
     return {"token": make_token("patient", uid), "role": "patient"}
 
 
@@ -1072,6 +1137,14 @@ async def a_audit(doctor_id: int = 0, u=Depends(auth("admin"))):
     rows = await pool.fetch("""SELECT a.id,a.action,a.details,a.created_at,a.receptionist_name,d.name AS doctor_name FROM queue_audit a
       JOIN doctors d ON d.id=a.doctor_id WHERE ($1=0 OR a.doctor_id=$1) ORDER BY a.id DESC LIMIT 200""", doctor_id)
     return {"audit": [{**dict(r), "details": jl(r["details"])} for r in rows]}
+
+
+@app.get("/api/admin/auth-log")
+async def a_auth_log(role: str = "", event: str = "", u=Depends(auth("admin"))):
+    await ensure_auth_log()
+    rows = await pool.fetch("""SELECT id,role,user_id,username,event,method,ip,user_agent,created_at FROM auth_log
+      WHERE ($1='' OR role=$1) AND ($2='' OR event=$2) ORDER BY id DESC LIMIT 300""", role[:15], event[:15])
+    return {"log": [dict(r) for r in rows]}
 
 
 if __name__ == "__main__":

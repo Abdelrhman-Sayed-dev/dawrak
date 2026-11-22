@@ -1,6 +1,6 @@
 -- الإنشاء:  createdb clinic_queue  ثم  psql -d clinic_queue -f database.sql
 -- تنبيه: الملف يعيد إنشاء الجداول (يحذف البيانات الحالية).
-DROP TABLE IF EXISTS queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
+DROP TABLE IF EXISTS auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
 
 CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
@@ -139,6 +139,20 @@ CREATE TABLE queue_audit (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_audit_doctor ON queue_audit (doctor_id, id DESC);
+
+-- سجل الدخول والخروج (يراه الأدمن فقط). السيرفر ينشئه تلقائياً لو لم يوجد.
+CREATE TABLE auth_log (
+  id BIGSERIAL PRIMARY KEY,
+  role VARCHAR(15) NOT NULL,
+  user_id INT,
+  username VARCHAR(80) NOT NULL DEFAULT '',
+  event VARCHAR(15) NOT NULL,                       -- login | login_failed | logout | register
+  method VARCHAR(10) NOT NULL DEFAULT 'password',   -- password | google
+  ip VARCHAR(45) NOT NULL DEFAULT '',
+  user_agent VARCHAR(200) NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_auth_log_id ON auth_log (id DESC);
 
 CREATE INDEX idx_patient_bookings ON bookings (patient_id, booking_date DESC);
 CREATE INDEX idx_queue ON bookings (doctor_id, booking_date, status, queue_number);

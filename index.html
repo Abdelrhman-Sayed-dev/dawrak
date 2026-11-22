@@ -727,7 +727,7 @@ async function api(p, o = {}) {
   const t = localStorage.tok;
   const r = await fetch('/api' + p, { method: o.method || 'GET', headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) }, body: o.body ? JSON.stringify(o.body) : undefined });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) { if (r.status === 401 && t && !/\/login$/.test(p)) logout(); throw Object.assign(new Error(d.error || 'حدث خطأ'), { status: r.status }); }
+  if (!r.ok) { if (r.status === 401 && t && !/\/login$/.test(p)) logout(true); throw Object.assign(new Error(d.error || 'حدث خطأ'), { status: r.status }); }
   return d;
 }
 // رسالة سريعة تختفي بعد ثوانٍ (ok=true للنجاح)
@@ -779,8 +779,10 @@ function go(id) {
   if (R() !== '/') { nav('/'); setTimeout(sc, 200); } else sc();
   return false;
 }
-function logout() {
-  const r = localStorage.role; localStorage.removeItem('tok'); localStorage.removeItem('role');
+function logout(auto) {
+  const r = localStorage.role, t = localStorage.tok;
+  if (t && !auto) fetch('/api/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {});
+  localStorage.removeItem('tok'); localStorage.removeItem('role');
   nav(r && r !== 'patient' && LOGIN[r] ? LOGIN[r] : '/');
 }
 // الراوتر: يقرأ location.hash ويحمي الصفحات حسب الدور (مريض/طبيب/أدمن)
@@ -1179,16 +1181,16 @@ async function pf(id, m = 0) {
 
 /* ---------- لوحة الأدمن ---------- */
 // لوحة الأدمن
-function admin() { cur = async () => { try { A = (await api('/admin/doctors')).doctors; RC = (await api('/admin/receptionists')).receptionists; if (tab === 'au') AU = (await api('/admin/audit')).audit; aview(); } catch (e) { toast(e.message); } }; cur(); }
+function admin() { cur = async () => { try { A = (await api('/admin/doctors')).doctors; RC = (await api('/admin/receptionists')).receptionists; if (tab === 'au') AU = (await api('/admin/audit')).audit; if (tab === 'lg') LG = (await api('/admin/auth-log?role=' + LGR + '&event=' + LGE)).log; aview(); } catch (e) { toast(e.message); } }; cur(); }
 const setTab = k => { tab = k; cur(); };
 const ach = d => d.is_active ? chip(d.status) : '<span class="chip off">معطّل</span>';
 function aview() {
   const sum = k => A.reduce((a, d) => a + d[k], 0);
-  const nav = [['ov', 'layout-dashboard', 'نظرة عامة'], ['dl', 'users', 'الأطباء'], ['rc', 'user-plus', 'الاستقبال'], ['au', 'file-text', 'السجل']].map(([k, i, l]) => `<button class="${tab === k ? 'on' : ''}" onclick="setTab('${k}')">${ic(i)}${l}</button>`).join('');
+  const nav = [['ov', 'layout-dashboard', 'نظرة عامة'], ['dl', 'users', 'الأطباء'], ['rc', 'user-plus', 'الاستقبال'], ['au', 'file-text', 'السجل'], ['lg', 'log-in', 'الدخول والخروج']].map(([k, i, l]) => `<button class="${tab === k ? 'on' : ''}" onclick="setTab('${k}')">${ic(i)}${l}</button>`).join('');
   const ov = `<div class="stats"><div class="st"><b>${A.filter(d => d.is_active).length}</b><small>أطباء مفعّلون</small></div><div class="st"><b>${sum('waiting')}</b><small>منتظرون الآن</small></div><div class="st"><b>${sum('in_progress')}</b><small>جارٍ الكشف</small></div><div class="st"><b>${sum('completed')}</b><small>أنهوا اليوم</small></div></div>
   <h2 class="sec">الطوابير الحالية</h2><div class="grid">${A.map(d => `<article class="card"><div class="row">${av(d)}<div><h3>${esc(d.name)}</h3><span class="sp">${esc(d.specialty)}</span></div>${ach(d)}</div><div class="qo">${d.queue.length ? d.queue.map(x => `<span class="${x.status === 'In Progress' ? 'cur2' : ''}">${x.queue_number} ${esc(x.patient_name)}${x.status === 'In Progress' ? ' (جارٍ)' : ''}</span>`).join('') : '<span>لا يوجد مرضى</span>'}</div></article>`).join('')}</div>`;
   const dl = `<div class="row sb" style="margin-bottom:12px"><h2>الأطباء (${A.length})</h2><button class="btn p" onclick="df()">${ic('plus')} إضافة طبيب</button></div><div class="card tw"><table class="tbl"><thead><tr><th>الطبيب</th><th>المستخدم</th><th>الحالة</th><th>منتظرون</th><th>الكشف</th><th>إجراءات</th></tr></thead><tbody>${A.map(d => `<tr><td><div class="row">${av(d)}<div><b>${esc(d.name)}</b><br><small class="mt">${esc(d.specialty)}</small></div></div></td><td dir="ltr">${esc(d.username)}</td><td>${ach(d)}</td><td>${d.waiting} (اليوم ${d.total})</td><td>${d.avg} د</td><td><div class="act"><button class="btn sm" onclick="df(${d.id})" aria-label="تعديل">${ic('pencil')}</button><button class="btn sm" onclick="ta(${d.id})" aria-label="تفعيل أو تعطيل">${ic(d.is_active ? 'ban' : 'check')}</button><button class="btn sm d" onclick="del(${d.id})" aria-label="حذف">${ic('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>`;
-  $('#m').innerHTML = `<div class="adm"><aside class="sbar">${nav}</aside><section>${tab === 'ov' ? ov : tab === 'rc' ? rcv() : tab === 'au' ? auv() : dl}</section></div><nav class="bn">${nav}</nav>`;
+  $('#m').innerHTML = `<div class="adm"><aside class="sbar">${nav}</aside><section>${tab === 'ov' ? ov : tab === 'rc' ? rcv() : tab === 'au' ? auv() : tab === 'lg' ? lgv() : dl}</section></div><nav class="bn">${nav}</nav>`;
   done();
 }
 const ta = id => api('/admin/doctors/' + id, { method: 'PATCH', body: { is_active: !A.find(d => d.id === id).is_active } }).then(cur).catch(e => toast(e.message));
@@ -1291,6 +1293,19 @@ function rcv() {
 function auv() {
   const dt = d => [d.patient ? esc(d.patient) : '', d.queue ? '#' + d.queue : '', d.from ? `(من ${d.from} إلى ${d.to})` : '', d.reason ? '— ' + esc(d.reason) : ''].filter(Boolean).join(' ');
   return `<h2 style="margin-bottom:12px">سجل العمليات (آخر ${AU.length})</h2><div class="card tw"><table class="tbl"><thead><tr><th>الوقت</th><th>الموظف</th><th>الطبيب</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${AU.length ? AU.map(a => `<tr><td>${fds(a.created_at)} ${tm(a.created_at)}</td><td>${esc(a.receptionist_name)}</td><td>${esc(a.doctor_name)}</td><td><b>${esc(RCA[a.action] || a.action)}</b></td><td>${dt(a.details || {})}</td></tr>`).join('') : '<tr><td colspan="5" class="mt">لا توجد عمليات مسجّلة بعد.</td></tr>'}</tbody></table></div>`;
+}
+/* ---------- الأدمن: سجل الدخول والخروج ---------- */
+let LG = [], LGR = '', LGE = '';
+const LGROLE = { admin: 'أدمن', doctor: 'طبيب', receptionist: 'استقبال', patient: 'مريض' };
+const LGEV = { login: ['دخول', 'ok'], logout: ['خروج', 'off'], login_failed: ['دخول فاشل', 'warn'], register: ['إنشاء حساب', 'ok'] };
+const fdt = t => new Date(t).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+const devOf = ua => { ua = ua || ''; const b = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '—'; return (/Android|iPhone|iPad|Mobile/.test(ua) ? 'موبايل' : 'كمبيوتر') + ' · ' + b; };
+const lgSet = (k, v) => { if (k === 'r') LGR = v; else LGE = v; cur(); };
+function lgv() {
+  const opt = (o, c) => Object.entries(o).map(([k, v]) => `<option value="${k}" ${k === c ? 'selected' : ''}>${typeof v === 'string' ? v : v[0]}</option>`).join('');
+  return `<div class="row sb" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2>سجل الدخول والخروج (آخر ${LG.length})</h2><div class="row" style="gap:8px"><select onchange="lgSet('r',this.value)" aria-label="الدور"><option value="">كل الأدوار</option>${opt(LGROLE, LGR)}</select><select onchange="lgSet('e',this.value)" aria-label="العملية"><option value="">كل العمليات</option>${opt(LGEV, LGE)}</select></div></div>
+  <p class="mt" style="margin-bottom:10px">الخروج يُسجَّل عند الضغط على زر الخروج فقط، وتُحذف السجلات الأقدم من 90 يوماً تلقائياً.</p>
+  <div class="card tw"><table class="tbl"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الدور</th><th>العملية</th><th>الطريقة</th><th>IP</th><th>الجهاز</th></tr></thead><tbody>${LG.length ? LG.map(a => { const ev = LGEV[a.event] || [a.event, 'off']; return `<tr><td>${fdt(a.created_at)}</td><td dir="ltr">${esc(a.username) || '—'}${a.event === 'login_failed' && !a.user_id ? '<br><small class="mt">اسم غير مسجّل</small>' : ''}</td><td>${esc(LGROLE[a.role] || a.role)}</td><td><span class="chip ${ev[1]}">${esc(ev[0])}</span></td><td>${a.method === 'google' ? 'Google' : 'كلمة مرور'}</td><td dir="ltr">${esc(a.ip)}</td><td>${esc(devOf(a.user_agent))}</td></tr>`; }).join('') : '<tr><td colspan="7" class="mt">لا توجد سجلات بعد.</td></tr>'}</tbody></table></div>`;
 }
 const rcTa = id => api('/admin/receptionists/' + id, { method: 'PATCH', body: { is_active: !RC.find(r => r.id === id).is_active } }).then(cur).catch(e => toast(e.message));
 const rcDel = id => confirm('حذف حساب الموظف نهائياً؟ سجل عملياته السابقة يبقى محفوظاً. يمكنك التعطيل بدلاً من الحذف.') && api('/admin/receptionists/' + id, { method: 'DELETE' }).then(() => { toast('تم الحذف', 1); cur(); }).catch(e => toast(e.message));
