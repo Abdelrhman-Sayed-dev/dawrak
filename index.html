@@ -919,6 +919,7 @@ async function onGoogle(resp) {
   } catch (e) { toast(e.message); }
 }
 function gsignup(r) {
+  if (!$('#m')) $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + foot();
   $('#m').innerHTML = `<form class="card lg-card wide" id="gf"><h2>أهلاً بك ${esc(r.name)}</h2><p class="mt">أكمل بياناتك لإنشاء حسابك (${esc(r.email)})</p>${baseFields({ name: r.name })}${medFields()}<div class="err" id="er"></div><button class="btn p lg">إنشاء الحساب</button></form>`;
   $('#gf').onsubmit = async e => {
     e.preventDefault();
