@@ -228,7 +228,7 @@ def shell(private=False):
 
 
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/doctors", "/patient/login", "/patient/register", "/patient/dashboard", "/patient/favorites", "/patient/reminders"):
+for _p in ("/doctors", "/track", "/patient/login", "/patient/register", "/patient/dashboard", "/patient/favorites", "/patient/reminders"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/receptionist/login", "/receptionist/dashboard"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
@@ -624,6 +624,99 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
           SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE RETURNING id""", did, name, phone, u["id"], mid)
     await changed()
     return await ticket(bid)
+
+
+# ---------- حجز بدون حساب (ضيف): الاسم ورقم الهاتف فقط ----------
+# الحجز يدخل نفس الطابور الموحّد (source=Online, patient_id=NULL). تتبّعه وإلغاؤه يتطلبان رقم الهاتف نفسه.
+guest_tries: dict = {}
+
+
+def guest_limit(request: Request, key: str, mx: int = 8, win: int = 600):
+    k = f"{client_ip(request)}:{key}"
+    n, at = guest_tries.get(k, (0, time.time()))
+    if time.time() - at > win:
+        n, at = 0, time.time()
+    if n >= mx:
+        raise Fail(429, "محاولات كثيرة، حاول بعد قليل")
+    guest_tries[k] = (n + 1, at)
+    if len(guest_tries) > 5000:
+        for kk in [x for x, v in guest_tries.items() if time.time() - v[1] > win]:
+            guest_tries.pop(kk, None)
+
+
+def norm_phone(v):
+    return re.sub(r"[\s-]", "", str(v or ""))
+
+
+async def guest_ticket(bid):
+    t = await pool.fetchrow("""SELECT b.id,b.queue_number,b.status,b.patient_name,b.booking_date,(b.called_at IS NOT NULL) AS called,
+      d.name AS doctor_name,d.specialty,d.average_consultation_time AS avg,
+      CASE WHEN b.status='Waiting' THEN (SELECT count(*) FROM bookings x WHERE x.doctor_id=b.doctor_id AND x.booking_date=b.booking_date
+        AND x.status='Waiting' AND x.queue_number<b.queue_number)::int ELSE 0 END AS ahead
+      FROM bookings b JOIN doctors d ON d.id=b.doctor_id WHERE b.id=$1""", bid)
+    return dict(t) if t else None
+
+
+@app.post("/api/guest/bookings", status_code=201)
+async def guest_book(request: Request):
+    guest_limit(request, "book")
+    b = await body(request)
+    try:
+        did = int(b.get("doctor_id"))
+    except Exception:
+        raise Fail(400, "اختر طبيباً")
+    name, phone = str(b.get("name") or "").strip(), norm_phone(b.get("phone"))
+    if not 2 <= len(name) <= 60:
+        raise Fail(400, "اكتب اسمك (حرفان على الأقل)")
+    if not re.fullmatch(r"\+?\d{8,15}", phone):
+        raise Fail(400, "رقم الهاتف غير صحيح")
+    async with pool.acquire() as c, c.transaction():
+        d = await c.fetchrow("SELECT is_active,is_accepting_bookings FROM doctors WHERE id=$1 FOR UPDATE", did)
+        if not d or not d["is_active"]:
+            raise Fail(404, "الطبيب غير متاح")
+        if not d["is_accepting_bookings"]:
+            raise Fail(409, "الطبيب أغلق استقبال الحجوزات حالياً")
+        if await c.fetchval("""SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')
+                AND patient_phone=$2 AND lower(patient_name)=lower($3)""", did, phone, name):
+            raise Fail(409, "لديك حجز نشط عند هذا الطبيب اليوم بنفس الاسم والرقم")
+        bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,queue_number)
+          SELECT $1::int,$2::text,$3::text,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE
+          RETURNING id""", did, name, phone)
+    await changed()
+    return await guest_ticket(bid)
+
+
+@app.post("/api/guest/tickets")
+async def guest_tickets(request: Request):
+    """تتبع حجوزات الضيف: يرسل الجهاز [{id, phone}] المحفوظة عنده، ولا يُرجَع إلا ما يطابق رقم الهاتف."""
+    guest_limit(request, "track", 120, 600)
+    items = (await body(request)).get("items")
+    out = []
+    for it in (items if isinstance(items, list) else [])[:10]:
+        if not isinstance(it, dict):
+            continue
+        try:
+            bid = int(it.get("id"))
+        except Exception:
+            continue
+        if await pool.fetchval("SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL", bid, norm_phone(it.get("phone"))):
+            out.append(await guest_ticket(bid))
+    return {"tickets": out}
+
+
+@app.post("/api/guest/bookings/{bid}/cancel")
+async def guest_cancel(bid: int, request: Request):
+    guest_limit(request, "cancel", 20, 600)
+    phone = norm_phone((await body(request)).get("phone"))
+    async with pool.acquire() as c, c.transaction():
+        r = await c.fetchrow("SELECT doctor_id,status FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL", bid, phone)
+        if not r:
+            raise Fail(404, "الحجز غير موجود")
+        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", r["doctor_id"])
+        if not await c.fetchval("UPDATE bookings SET status='Cancelled' WHERE id=$1 AND status='Waiting' RETURNING id", bid):
+            raise Fail(409, "لا يمكن إلغاء هذا الحجز في حالته الحالية")
+    await changed()
+    return {"ok": True}
 
 
 # ---------- doctor ----------
