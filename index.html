@@ -747,10 +747,12 @@ Object.assign(IC, { 'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
   'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' });
 
 /* ---------- بوابات الدخول والمسارات (كل دور له رابط مستقل) ---------- */
+// مرحلة أولى: الحجز كضيف (اسم + هاتف). غيّرها إلى true لإظهار روابط تسجيل دخول/حساب المريض من جديد (الصفحات نفسها تعمل دائماً).
+const SHOW_LOGIN = false;
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', receptionist: '/receptionist/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', receptionist: '/receptionist/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/receptionist/login': 'L:receptionist', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
+  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/track': '/track', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -759,7 +761,7 @@ document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('a[href]'); if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || a.target) return;
   const h = a.getAttribute('href');
   const to = { '#/': '/', '#/doctors': '/doctors', '#/login': LOGIN.patient, '#/register': '/patient/register', '#/me': DASH.patient, '#/doctor': DASH.doctor, '#/admin': DASH.admin }[h]
-    || (/^\/(patient|doctor|admin|receptionist)\//.test(h) ? h : null);
+    || (/^\/(patient|doctor|admin|receptionist)\//.test(h) || h === '/track' ? h : null);
   if (to) { e.preventDefault(); nav(to); }
 });
 addEventListener('popstate', () => route());
@@ -821,7 +823,8 @@ function foot() {
   }
   const T = r === 'patient'
     ? [H, D, ['calendar-check', 'حجوزاتي', '#/me', at === '/me'], ['heart', 'المفضلة', '/patient/favorites', at === '/favorites'], ['user', 'ملفي', '#/profile', at === '/profile']]
-    : [H, D, ['user-plus', 'حساب جديد', '/patient/register', at === '/register'], ['log-in', 'دخول', '/patient/login', at === 'L:patient']];
+    : SHOW_LOGIN ? [H, D, ['user-plus', 'حساب جديد', '/patient/register', at === '/register'], ['log-in', 'دخول', '/patient/login', at === 'L:patient']]
+    : [H, D, ['ticket', 'حجزي', '/track', at === '/track']];
   return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${T.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
 }
 // سكرول لقسم في الصفحة الرئيسية (ينتقل لها أولاً لو كنت في صفحة أخرى)
@@ -855,7 +858,7 @@ function route() {
     loginPage(lr); done(); return;
   }
   $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/receptionist' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception, '/track': track }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -932,7 +935,7 @@ function grid() {
   done();
 }
 async function book(id, pick = 0) {
-  if (localStorage.role !== 'patient') { toast('سجّل دخولك أو أنشئ حساباً أولاً للحجز'); nav(LOGIN.patient); return; }
+  if (localStorage.role !== 'patient') { if (SHOW_LOGIN) { toast('سجّل دخولك أو أنشئ حساباً أولاً للحجز'); nav(LOGIN.patient); } else guestBook(id); return; }
   const d = docs.find(x => x.id === id);
   try { FAM = await api('/me/family'); } catch (e) { toast(e.message); return; }
   const who = (v, name, sub) => `<label class="who"><input type="radio" name="w" value="${v}" ${v === pick ? 'checked' : ''}><span class="wv">${esc([...name][0])}</span><span><b>${esc(name)}</b><small>${esc(sub)}</small></span></label>`;
@@ -950,6 +953,55 @@ async function book(id, pick = 0) {
     } catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
   };
 }
+
+/* ---------- حجز كضيف (بدون تسجيل دخول): اسم + رقم هاتف ---------- */
+const GT = { get: () => { try { return JSON.parse(localStorage.gt || '[]'); } catch (e) { return []; } }, set: v => { try { localStorage.gt = JSON.stringify(v.slice(0, 10)); } catch (e) {} } };
+const GI = { get: () => { try { return JSON.parse(localStorage.gi || '{}'); } catch (e) { return {}; } } };
+function guestBook(id) {
+  const d = docs.find(x => x.id === id); if (!d) return;
+  const g = GI.get();
+  modal(`<h3>الحجز عند ${esc(d.name)}</h3><p class="mt">${esc(d.specialty)}</p>
+    <form id="gbf" novalidate><label>الاسم<input name="gname" maxlength="60" autocomplete="name" value="${esc(g.name)}" placeholder="اسم المريض"></label>
+    <label>رقم الهاتف<input name="gphone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" value="${esc(g.phone)}" placeholder="01xxxxxxxxx"></label>
+    <div class="err" id="er"></div><button class="btn p lg" id="cb">تأكيد الحجز</button>
+    <button type="button" class="btn" style="width:100%;margin-top:10px" onclick="closeModal()">إلغاء</button></form>`);
+  const f = $('#gbf'); (f.gname.value ? f.gphone : f.gname).focus();
+  f.onsubmit = async e => {
+    e.preventDefault(); const btn = $('#cb'), name = f.gname.value.trim(), phone = f.gphone.value.replace(/[\s-]/g, '');
+    if (name.length < 2) { $('#er').textContent = 'اكتب اسمك (حرفان على الأقل)'; return; }
+    if (!/^\+?\d{8,15}$/.test(phone)) { $('#er').textContent = 'رقم الهاتف غير صحيح'; return; }
+    btn.disabled = true;
+    try {
+      const t = await api('/guest/bookings', { method: 'POST', body: { doctor_id: id, name, phone } });
+      try { localStorage.gi = JSON.stringify({ name, phone }); } catch (x) {}
+      GT.set([{ id: t.id, phone }, ...GT.get().filter(x => x.id !== t.id)]);
+      modal(`<div class="ok-box">${ic('circle-check')}<h3 style="margin:6px 0 14px">تم الحجز بنجاح!</h3></div><div style="text-align:start">${tkCard(t)}</div><p class="mt" style="margin-top:10px">احتفظ برقم دورك. يمكنك متابعته من صفحة «حجزي» على نفس الجهاز.</p><button class="btn p lg" style="margin-top:10px" onclick="closeModal();nav('/track')">تتبع حجزي</button>`);
+    } catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
+  };
+}
+let GPREV = {};
+function track() {
+  document.title = 'حجزي — دورك';
+  $('#m').innerHTML = '<h2 class="sec2">حجزي</h2><div id="gl"></div>';
+  cur = async () => {
+    const items = GT.get(); const gl = $('#gl'); if (!gl) return;
+    if (!items.length) { gl.innerHTML = '<p class="empty card">لا توجد حجوزات على هذا الجهاز. احجز من صفحة الأطباء وسيظهر دورك هنا.</p>'; return; }
+    try {
+      const { tickets } = await api('/guest/tickets', { method: 'POST', body: { items } });
+      const live = tickets.filter(x => x.status === 'Waiting' || x.status === 'In Progress');
+      live.forEach(x => { const o = GPREV[x.id];
+        if (o && x.status === 'In Progress' && o.s !== 'In Progress') { toast('جاء دورك الآن! توجّه إلى الطبيب', 1); navigator.vibrate?.(400); }
+        else if (o && x.called && !o.c) { toast('تم استدعاؤك! توجّه إلى العيادة', 1); navigator.vibrate?.(400); }
+        else if (o && x.status === 'Waiting' && x.ahead === 0 && o.a > 0) { toast('أنت التالي في الدور، استعد', 1); navigator.vibrate?.(200); }
+        GPREV[x.id] = { s: x.status, c: x.called, a: x.ahead }; });
+      GT.set(items.filter(i => tickets.some(t => t.id === i.id)));
+      gl.innerHTML = live.length ? live.map(x => `<div style="margin-bottom:14px">${tkCard(x)}<div class="tkx"><button class="btn d sm" ${x.status === 'Waiting' ? '' : 'disabled'} onclick="gcx(${x.id})">إلغاء الحجز</button></div></div>`).join('')
+        : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>';
+    } catch (e) { toast(e.message); }
+  };
+  cur();
+}
+const gcx = id => { const it = GT.get().find(x => x.id === id); return it && confirm('إلغاء هذا الحجز؟') && api(`/guest/bookings/${id}/cancel`, { method: 'POST', body: { phone: it.phone } }).then(() => { toast('تم إلغاء الحجز', 1); cur(); }).catch(e => toast(e.message)); };
 
 /* ---------- تسجيل الدخول ---------- */
 // صفحة تسجيل الدخول (مريض/طبيب/أدمن)
@@ -1405,7 +1457,7 @@ const fdd = t => new Date(t).toLocaleDateString('ar-EG');
 const stars = v => `<span class="stars" style="--v:${+v || 0}" aria-hidden="true">★★★★★</span>`;
 const rateLine = d => d.reviews ? `<button class="rt" onclick="revs(${d.id})" aria-label="عرض التقييمات، المتوسط ${d.rating} من 5">${stars(d.rating)}<b>${d.rating}</b><small>(${d.reviews})</small></button>` : '<span class="rt0">لا توجد تقييمات بعد</span>';
 let FAVS = new Set();
-const heartBtn = d => { const on = FAVS.has(d.id); return `<button class="fv ${on ? 'on' : ''}" onclick="fav(${d.id})" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}">${ic('heart')}</button>`; };
+const heartBtn = d => { if (!SHOW_LOGIN && localStorage.role !== 'patient') return ''; const on = FAVS.has(d.id); return `<button class="fv ${on ? 'on' : ''}" onclick="fav(${d.id})" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}">${ic('heart')}</button>`; };
 const dcard = d => `<article class="card dc3">${heartBtn(d)}<span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span>${rateLine(d)}<p class="ds">${esc(d.description)}</p><div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div></article>`;
 async function loadFavs() {
   FAVS = new Set();
@@ -1492,11 +1544,11 @@ function remForm(bid, idx, r) {
 function remsPage() {
   document.title = 'تذكير الأدوية — دورك';
   $('#m').innerHTML = '<h2 class="sec2">تذكير الأدوية</h2><div id="rm"></div>';
-  cur = async () => { try { rview(await api('/me/reminders')); } catch (e) { toast(e.message); } };
+  cur = async () => { try { remView(await api('/me/reminders')); } catch (e) { toast(e.message); } };
   cur();
 }
 let RM = [];
-function rview({ reminders, doses }) {
+function remView({ reminders, doses }) {
   RM = reminders; const now = Date.now(), today = new Date().toDateString();
   const day = t => { const d = new Date(t); return d.toDateString() === today ? 'اليوم' : d.toDateString() === new Date(now + 864e5).toDateString() ? 'غداً' : d.toDateString() === new Date(now - 864e5).toDateString() ? 'أمس' : fdd(t); };
   let last = '';
