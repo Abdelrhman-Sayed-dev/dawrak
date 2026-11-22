@@ -201,8 +201,6 @@ DUMMY_HASH = bcrypt.hashpw(b"dawrak-dummy", bcrypt.gensalt(10)).decode()  # لت
 
 
 async def do_login(request: Request, role: str):
-    if role == "patient":
-        raise Fail(410, "دخول المرضى عن طريق حساب Google فقط")
     ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()
     key = f"{ip}:{role}"
     n, at = tries.get(key, (0, time.time()))
@@ -274,7 +272,6 @@ def vpat(b):
 
 @app.post("/api/register", status_code=201)
 async def register(request: Request):
-    raise Fail(410, "إنشاء حساب المرضى عن طريق Google فقط")
     b = await body(request)
     o = vpat(b)
     lid, pw = str(b.get("login_id") or "").strip().lower(), str(b.get("password") or "")
