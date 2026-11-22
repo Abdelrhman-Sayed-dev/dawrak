@@ -816,6 +816,15 @@ const AUTH_ART = `<svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice
 const authField = (id, label, icon, extra = '') => `<label for="${id}">${label}</label><div class="fld"><span class="fico" aria-hidden="true">${ic(icon)}</span>${extra}</div>`;
 function loginPage(role) {
   const P = PORTAL[role]; document.title = P.t + ' — دورك';
+  if (role === 'patient') {
+    $('#app').innerHTML = `<div class="auth ${P.c}"><main class="am"><div class="af"><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
+    <div id="gb" class="gb"></div>
+    <p class="mt" style="text-align:center;margin-top:16px">الدخول وإنشاء الحساب للمرضى عن طريق حساب Google فقط.</p>
+    </div></main>
+    <aside class="aside"><a href="/" class="logo">${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>
+    <div class="at"><div class="ai">${ic(P.i)}</div><h1>${P.t}</h1><p>${P.s}</p></div><div class="art">${AUTH_ART}</div></aside></div>`;
+    gbtn(); return;
+  }
   $('#app').innerHTML = `<div class="auth ${P.c}"><main class="am"><form class="af" id="lf" novalidate><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
   ${authField('lu', P.u, 'user', '<input class="in" id="lu" name="u" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="er">')}
   ${authField('lp', 'كلمة المرور', 'lock', `<input class="in" id="lp" name="p" type="password" dir="ltr" autocomplete="current-password" aria-describedby="er"><button type="button" class="pwt" id="pwt" aria-label="إظهار كلمة المرور" aria-pressed="false">${ic('eye')}</button>`)}
@@ -906,7 +915,7 @@ const CFG = fetch('/api/config').then(r => r.json()).catch(() => ({}));
 async function gbtn() {
   const el = $('#gb'), c = await CFG;
   if (!el) return;
-  if (!c.google_client_id) { el.parentElement.querySelector('.gsep')?.remove(); el.remove(); return; }
+  if (!c.google_client_id) { el.innerHTML = '<p class="mt">تسجيل جوجل غير مفعّل على السيرفر حالياً.</p>'; return; }
   for (let i = 0; i < 50 && !(window.google && google.accounts); i++) await new Promise(r => setTimeout(r, 100));
   if (!(window.google && google.accounts)) { el.innerHTML = '<p class="mt">تعذر تحميل تسجيل جوجل، تأكد من الاتصال بالإنترنت.</p>'; return; }
   if (!window._gi) { google.accounts.id.initialize({ client_id: c.google_client_id, callback: onGoogle }); window._gi = 1; }
@@ -940,20 +949,9 @@ const baseFields = (p = {}) => `<label>الاسم الكامل<input name="fname
 const baseVals = f => ({ name: f.fname.value, phone: f.phone.value, whatsapp: f.wa.value, age: f.age.value, ...medVals(f) });
 // صفحة إنشاء حساب مريض
 function register() {
-  $('#m').innerHTML = `<form class="card lg-card wide" id="rf"><h2>إنشاء حساب جديد</h2><div id="gb" class="gb"></div><div class="gsep">أو أنشئ حسابك يدوياً</div>${baseFields()}
-  <label>اسم المستخدم<input name="lid" required dir="ltr" autocomplete="username" pattern="[A-Za-z0-9_.]{3,30}" minlength="3" maxlength="30" placeholder="مثال: ahmed_22" title="حروف إنجليزية وأرقام و _ . فقط (3-30)"></label>
-  <label>كلمة المرور<input name="pw" type="password" required minlength="6" dir="ltr" autocomplete="new-password"></label>
-  ${medFields()}
-  <div class="err" id="er"></div><button class="btn p lg">إنشاء الحساب</button>
-  <p class="mt" style="text-align:center;margin-top:12px">لديك حساب؟ <a href="/patient/login" style="color:var(--ac);font-weight:700">سجّل الدخول</a></p></form>`;
+  $('#m').innerHTML = `<div class="card lg-card wide"><h2>إنشاء حساب جديد</h2><p class="mt">سجّل بحساب Google، وبعدها نطلب منك بياناتك (الهاتف والعمر) لإكمال الحساب.</p><div id="gb" class="gb"></div>
+  <p class="mt" style="text-align:center;margin-top:12px">لديك حساب؟ <a href="/patient/login" style="color:var(--ac);font-weight:700">سجّل الدخول</a></p></div>`;
   gbtn();
-  $('#rf').onsubmit = async e => {
-    e.preventDefault(); const f = e.target;
-    try {
-      const r = await api('/register', { method: 'POST', body: { ...baseVals(f), login_id: f.lid.value, password: f.pw.value } });
-      localStorage.tok = r.token; localStorage.role = r.role; nav(DASH.patient);
-    } catch (x) { $('#er').textContent = x.message; }
-  };
 }
 // صفحة ملفي الشخصي + أفراد العيلة
 async function profile() {
