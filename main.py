@@ -238,7 +238,7 @@ def shell(private=False):
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/doctors", "/track", "/patient/login", "/patient/register", "/patient/dashboard", "/patient/favorites", "/patient/reminders"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/receptionist/login", "/receptionist/dashboard"):
+for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/doctor/waiting", "/doctor/stats", "/receptionist/login", "/receptionist/dashboard"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
 for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login"), ("/receptionist", "/receptionist/login")):
     app.add_api_route(_r, (lambda to: (lambda: RedirectResponse(to)))(_to), methods=["GET"], include_in_schema=False)
@@ -844,14 +844,6 @@ async def d_queue_locked(u=Depends(auth("doctor"))):
     raise Fail(403, "إدارة الطابور من اختصاص موظف الاستقبال")
 
 
-@app.post("/api/doctor/accepting")
-async def d_accepting(request: Request, u=Depends(auth("doctor"))):
-    b = await body(request)
-    await pool.execute("UPDATE doctors SET is_accepting_bookings=$2,booking_open_date=CURRENT_DATE WHERE id=$1", u["id"], b.get("accepting") is True)
-    await changed()
-    return await dq(u["id"])
-
-
 # ---------- الملف الشخصي للطبيب ----------
 @app.get("/api/doctor/profile")
 async def d_profile(u=Depends(auth("doctor"))):
@@ -1157,20 +1149,6 @@ async def r_complete(bid: int, rec=Depends(rec_ctx)):
         has = await c.fetchval("SELECT EXISTS(SELECT 1 FROM visit_reports WHERE booking_id=$1)", bid)
         await c.execute("UPDATE bookings SET status='Completed',completed_at=now() WHERE id=$1", bid)
         await audit(c, rec, bid, "complete", patient=b["patient_name"], queue=b["queue_number"], has_report=has)
-    return await r_state(rec)
-
-
-@app.post("/api/reception/bookings/{bid}/skip")
-async def r_skip(bid: int, rec=Depends(rec_ctx)):
-    """تخطي مريض (لم يحضر/غير جاهز): يعود لآخر الطابور برقم جديد وتُسجَّل المرة، ويمكن استدعاؤه لاحقاً."""
-    did = rec["doctor_id"]
-    async with pool.acquire() as c, c.transaction():
-        b = await lock_get(c, rec, bid, ("Waiting", "In Progress"))
-        if b["status"] == "Waiting" and not await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' AND id<>$2", did, bid):
-            raise Fail(409, "لا يوجد مرضى آخرون في الانتظار")
-        mx = await c.fetchval("SELECT MAX(queue_number) FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE", did)
-        await c.execute("UPDATE bookings SET status='Waiting',queue_number=$2,started_at=NULL,called_at=NULL,skipped_count=skipped_count+1 WHERE id=$1", bid, mx + 1)
-        await audit(c, rec, bid, "skip", patient=b["patient_name"], queue=b["queue_number"], new_queue=mx + 1)
     return await r_state(rec)
 
 

@@ -597,6 +597,13 @@ body{background:var(--bg)}
 .dpu{margin:0!important}
 .dps{grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
 .dps .st{border-radius:16px;text-align:center}.dps .st b{display:block;font-size:1.5rem;color:var(--navy)}.dps .st small{color:var(--m);font-size:.8rem}
+.dpd{padding:0}
+.dpd summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:16px;font-weight:800;font-size:1.05rem;color:var(--navy)}
+.dpd summary::-webkit-details-marker{display:none}
+.dpd .chev svg{width:22px;height:22px;transition:transform .2s}.dpd[open] .chev svg{transform:rotate(180deg)}
+.dpd form{padding:0 16px 16px}
+.dlb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+@media(max-width:520px){.dlb{grid-template-columns:1fr}}
 .bs{font-weight:700}.bs.c{color:var(--ok)}.bs.x{color:var(--err)}.bs.p{color:var(--p)}.bs.w{color:var(--m)}
 @media(max-width:520px){.dpc{flex-direction:column;text-align:center}.dpu{width:100%}.dps{gap:8px}.dps .st{padding:10px 4px}.dps .st b{font-size:1.3rem}.dp .ql li{flex-wrap:wrap}.dp .ql time{margin-inline-start:0;width:100%}}
 
@@ -786,7 +793,7 @@ const SHOW_LOGIN = false;
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', receptionist: '/receptionist/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', receptionist: '/receptionist/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/receptionist/login': 'L:receptionist', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctors': '/doctors', '/track': '/track', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
+  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctor/waiting': '/dwait', '/doctor/stats': '/dstats', '/doctors': '/doctors', '/track': '/track', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -846,13 +853,13 @@ function head() {
   return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${out}</header>`;
 }
 function goMe() { closeModal(); nav(DASH.patient); }
-Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' });
+Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'list': '<path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/>', 'bar-chart': '<path d=\"M3 3v18h18\"/><path d=\"M18 17V9\"/><path d=\"M13 17V5\"/><path d=\"M8 17v-3\"/>', 'chevron-down': '<path d=\"m6 9 6 6 6-6\"/>', 'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' });
 // شريط أيقونات سفلي بدل الفوتر (زي تطبيقات الموبايل)
 function foot() {
   const r = localStorage.role, at = R();
   const H = ['home', 'الرئيسية', '#/', at === '/', "return go('top')"], D = ['stethoscope', 'الأطباء', '#/doctors', at === '/doctors'];
   if (r === 'doctor') {
-    const DT = [['users', 'الطابور', '/doctor/dashboard', at === '/doctor'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
+    const DT = [['users', 'الطابور', '/doctor/dashboard', at === '/doctor'], ['list', 'القائمة', '/doctor/waiting', at === '/dwait'], ['bar-chart', 'الإحصائيات', '/doctor/stats', at === '/dstats'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
     return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${DT.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
   }
   const T = r === 'patient'
@@ -879,10 +886,10 @@ function route() {
   const lh = location.hash.slice(1);
   if (LEGACY[lh]) history.replaceState(null, '', LEGACY[lh]);
   const h = R(); cur = null; closeModal();
-  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/me': 'patient', '/profile': 'patient', '/favorites': 'patient', '/reminders': 'patient' }[h], role = localStorage.role;
+  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/dwait': 'doctor', '/dstats': 'doctor', '/me': 'patient', '/profile': 'patient', '/favorites': 'patient', '/reminders': 'patient' }[h], role = localStorage.role;
   // مستخدم بدور آخر ← بوابته الخاصة، وغير المسجّل ← صفحة الدخول المناسبة (والـ API يرفض أي وصول غير مصرح به على أي حال)
   // الطبيب المسجّل لا يفتح أي صفحة عامة: يعود دائماً للوحته
-  if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile') { nav(DASH.doctor); return; }
+  if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile' && h !== '/dwait' && h !== '/dstats') { nav(DASH.doctor); return; }
   // موظف الاستقبال المسجّل لا يفتح إلا لوحته
   if (role === 'receptionist' && localStorage.tok && !h.startsWith('L:') && h !== '/receptionist') { nav(DASH.receptionist); return; }
   if (need && role !== need) { nav(role && DASH[role] ? DASH[role] : LOGIN[need]); return; }
@@ -892,7 +899,7 @@ function route() {
     loginPage(lr); done(); return;
   }
   $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/receptionist' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception, '/track': track }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/dwait': dwait, '/dstats': dstats, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception, '/track': track }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -1143,58 +1150,68 @@ function mview({ profile: p, bookings: b }) {
 }
 
 /* ---------- لوحة الطبيب ---------- */
-// لوحة الطبيب
+// لوحة الطبيب (الرئيسية): بيانات الطبيب + إحصائيات اليوم + المريض الحالي
 function doctor() { cur = async () => { try { dview(await api('/doctor/queue')); } catch (e) { toast(e.message); } }; cur(); }
-// رسم الطابور: المريض الحالي، التالي، وقائمة الانتظار
-function dview({ doctor: d, current: c, waiting: w, done: dn = [] }) {
+function dview({ doctor: d, current: c, waiting: w }) {
   const nx = w[0];
-  $('#m').innerHTML = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span></div>${chip(d.status)}</div><button class="btn ${d.accepting ? 'o' : 'p'}" onclick="tg(${!d.accepting})">${ic(d.accepting ? 'pause' : 'play')} ${d.accepting ? 'إيقاف استقبال الحجوزات مؤقتاً' : 'إعادة فتح الحجوزات'}</button></section>
+  $('#m').innerHTML = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span></div>${chip(d.status)}</div></section>
   <div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>
   <section class="card cur">${c ? `<small class="mt">المريض الحالي</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.files ? `<span class="fb">${ic('paperclip')} ${c.files} ملف</span>` : ''}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div>${c.patient_id ? `<button class="btn o" onclick="pf(${c.patient_id},${c.member_id || 0})">${ic('user')} ملف المريض</button>` : ''}<button class="btn p lg" onclick="fin(${c.id})">${ic('file-text')} ${c.has_report ? 'تعديل التقرير والروشتة' : 'كتابة التقرير والروشتة'}</button>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
   <p class="mt">${nx ? `المريض التالي: <b>${esc(nx.patient_name)}</b> (رقم ${nx.queue_number})` : 'لا يوجد مرضى في الانتظار.'}</p>
-  <p class="mt">${ic('users')} بدء الحجز وإنهاؤه وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>
-  <section class="card"><h3>قائمة الانتظار (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<time>حُجز ${tm(x.created_at)}</time>${x.patient_id ? `<button class="btn o sm" onclick="pf(${x.patient_id},${x.member_id || 0})">ملفه</button>` : ''}</li>`).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>
-  ${dn.length ? `<section class="card"><h3>كشوفات اليوم المنتهية (${dn.length})</h3><ul class="ql">${dn.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.has_report ? '' : '<span class="fb warn">بدون تقرير</span>'}<button class="btn o sm" style="margin-inline-start:auto" onclick="fin(${x.id})">${x.has_report ? 'تعديل التقرير' : 'كتابة التقرير'}</button></li>`).join('')}</ul></section>` : ''}`;
+  <p class="mt">${ic('users')} بدء الحجز وإنهاؤه وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>`;
   done();
 }
-const tg = v => api('/doctor/accepting', { method: 'POST', body: { accepting: v } }).then(cur).catch(e => toast(e.message));
 
-/* ---------- الملف الشخصي للطبيب ---------- */
-let dimg = '';
-async function dprofile() {
-  cur = null; document.title = 'ملفي الشخصي — دورك';
-  try { const r = await api('/doctor/profile'); dpview(r.profile, r.stats, r.recent, r.reviews || []); }
-  catch (e) { toast(e.message); }
+/* ---------- صفحة القائمة: قائمة الانتظار + كشوفات اليوم المنتهية ---------- */
+function dwait() { document.title = 'القائمة — دورك'; cur = async () => { try { dwview(await api('/doctor/queue')); } catch (e) { toast(e.message); } }; cur(); }
+function dwview({ waiting: w, current: c, done: dn = [] }) {
+  $('#m').innerHTML = `<div class="dp"><section class="card"><h3>قائمة الانتظار (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<time>حُجز ${tm(x.created_at)}</time>${x.patient_id ? `<button class="btn o sm" onclick="pf(${x.patient_id},${x.member_id || 0})">ملفه</button>` : ''}</li>`).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>
+  <section class="card"><h3>كشوفات اليوم المنتهية (${dn.length})</h3>${dn.length ? `<ul class="ql">${dn.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.has_report ? '' : '<span class="fb warn">بدون تقرير</span>'}<button class="btn o sm" style="margin-inline-start:auto" onclick="fin(${x.id})">${x.has_report ? 'تعديل التقرير' : 'كتابة التقرير'}</button></li>`).join('')}</ul>` : '<p class="mt">لا توجد كشوفات منتهية اليوم بعد.</p>'}</section></div>`;
+  done();
 }
-function dpview(p, s, recent, reviews = []) {
-  dimg = p.profile_image || '';
+
+/* ---------- صفحة الإحصائيات ---------- */
+function dstats() {
+  document.title = 'الإحصائيات — دورك';
+  cur = async () => { try { const r = await api('/doctor/profile'); dsview(r.stats, r.recent, r.reviews || []); } catch (e) { toast(e.message); } }; cur();
+}
+function dsview(s, recent, reviews = []) {
   const stl = { Waiting: 'w', 'In Progress': 'p', Completed: 'c', Cancelled: 'x' };
-  $('#m').innerHTML = `<div class="dp">
-  <section class="card dpc"><div class="dpa" id="dpa">${av({ name: p.name, profile_image: dimg }, 'xl')}</div>
-    <div class="dpt"><h2>${esc(p.name)}</h2><span class="sp">${esc(p.specialty)}</span><small class="mt" dir="ltr">@${esc(p.username)}</small></div>
-    <label class="btn o sm dpu">${ic('image')} تغيير الصورة<input type="file" accept="image/*" hidden id="dfi"></label></section>
+  $('#m').innerHTML = `<div class="dp"><h2 class="sec2">الإحصائيات</h2>
   <div class="stats dps">
     <div class="st"><b>${s.waiting_today}</b><small>منتظرون اليوم</small></div><div class="st"><b>${s.done_today}</b><small>أنهوا اليوم</small></div>
     <div class="st"><b>${s.week}</b><small>كشوفات آخر 7 أيام</small></div><div class="st"><b>${s.completed}</b><small>إجمالي المكتملة</small></div>
     <div class="st"><b>${s.total}</b><small>كل الحجوزات</small></div><div class="st"><b>${s.cancelled}</b><small>الملغية</small></div>
     <div class="st"><b>${s.reviews ? s.rating : '—'}</b><small>متوسط التقييم (${s.reviews || 0} تقييم)</small></div></div>
   ${reviews.length ? `<section class="card"><h3>آخر التقييمات ${stars(s.rating)}</h3>${reviews.map(v => `<div class="rv"><div class="row sb">${stars(v.rating)}<small class="mt">${fdd(v.created_at)}</small></div>${v.comment ? `<p>${esc(v.comment)}</p>` : ''}</div>`).join('')}</section>` : ''}
-  <section class="card"><h3>بياناتي</h3><form id="dpi">
+  <section class="card"><h3>آخر الحجوزات</h3>${recent.length ? `<ul class="ql">${recent.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b><time>${fds(x.booking_date)} · <span class="bs ${stl[x.status] || ''}">${SL[x.status] || x.status}</span></time></li>`).join('')}</ul>` : '<p class="mt">لا توجد حجوزات بعد.</p>'}</section></div>`;
+  done();
+}
+
+/* ---------- الملف الشخصي للطبيب ---------- */
+let dimg = '', DU = '';
+async function dprofile() {
+  cur = null; document.title = 'ملفي الشخصي — دورك';
+  try { const r = await api('/doctor/profile'); dpview(r.profile); }
+  catch (e) { toast(e.message); }
+}
+function dpview(p) {
+  dimg = p.profile_image || ''; DU = p.username;
+  $('#m').innerHTML = `<div class="dp">
+  <section class="card dpc"><div class="dpa" id="dpa">${av({ name: p.name, profile_image: dimg }, 'xl')}</div>
+    <div class="dpt"><h2>${esc(p.name)}</h2><span class="sp">${esc(p.specialty)}</span><small class="mt" dir="ltr">@${esc(p.username)}</small></div>
+    <label class="btn o sm dpu">${ic('image')} تغيير الصورة<input type="file" accept="image/*" hidden id="dfi"></label></section>
+  <details class="card dpd"><summary><span>بياناتي</span><span class="chev">${ic('chevron-down')}</span></summary><form id="dpi">
     <label>الاسم<input name="name" required maxlength="80" value="${esc(p.name)}"></label>
     <label>التخصص<input name="specialty" required maxlength="80" value="${esc(p.specialty)}"></label>
     <label>نبذة مختصرة<textarea name="description" rows="3" maxlength="300">${esc(p.description)}</textarea></label>
     <label>متوسط مدة الكشف (دقيقة)<input name="avg" type="number" min="1" max="240" required value="${p.avg}"></label>
-    <div class="err" id="er1"></div><button class="btn p lg">حفظ البيانات</button></form></section>
-  <section class="card"><h3>بيانات الدخول</h3><p class="mt">تحتاج كلمة المرور الحالية لتغيير اسم المستخدم أو كلمة المرور.</p><form id="dpa2">
-    <label>اسم المستخدم<input name="username" dir="ltr" required pattern="[A-Za-z0-9_.]{3,30}" autocapitalize="none" autocomplete="username" value="${esc(p.username)}"></label>
-    <label>كلمة مرور جديدة (اتركها فارغة بدون تغيير)<input name="password" type="password" dir="ltr" minlength="6" autocomplete="new-password"></label>
-    <label>تأكيد كلمة المرور الجديدة<input name="password2" type="password" dir="ltr" autocomplete="new-password"></label>
-    <label>كلمة المرور الحالية<input name="current" type="password" dir="ltr" required autocomplete="current-password"></label>
-    <div class="err" id="er2"></div><button class="btn p lg">حفظ بيانات الدخول</button></form></section>
-  <section class="card"><h3>آخر الحجوزات</h3>${recent.length ? `<ul class="ql">${recent.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b><time>${fds(x.booking_date)} · <span class="bs ${stl[x.status] || ''}">${SL[x.status] || x.status}</span></time></li>`).join('')}</ul>` : '<p class="mt">لا توجد حجوزات بعد.</p>'}</section></div>`;
+    <div class="err" id="er1"></div><button class="btn p lg">حفظ البيانات</button></form></details>
+  <section class="card"><h3>بيانات الدخول</h3><p class="mt">تحتاج كلمة المرور الحالية لتغيير اسم المستخدم أو كلمة المرور.</p>
+    <div class="dlb"><button class="btn o" onclick="chUser()">${ic('user')} تغيير اسم المستخدم</button><button class="btn o" onclick="chPass()">${ic('pencil')} تغيير كلمة المرور</button></div></section></div>`;
   $('#dfi').onchange = e => {
     const f = e.target.files[0]; if (!f) return; const r = new FileReader();
-    r.onload = () => { const i = new Image(); i.onerror = () => toast('صورة غير صالحة'); i.onload = () => { const z = 256, c = document.createElement('canvas'), m = Math.min(i.width, i.height); c.width = c.height = z; c.getContext('2d').drawImage(i, (i.width - m) / 2, (i.height - m) / 2, m, m, 0, 0, z, z); dimg = c.toDataURL('image/jpeg', .82); $('#dpa').innerHTML = `<img class="av xl" src="${dimg}" alt="">`; toast('اضغط «حفظ البيانات» لتثبيت الصورة', 1); }; i.src = r.result; };
+    r.onload = () => { const i = new Image(); i.onerror = () => toast('صورة غير صالحة'); i.onload = () => { const z = 256, c = document.createElement('canvas'), m = Math.min(i.width, i.height); c.width = c.height = z; c.getContext('2d').drawImage(i, (i.width - m) / 2, (i.height - m) / 2, m, m, 0, 0, z, z); dimg = c.toDataURL('image/jpeg', .82); $('#dpa').innerHTML = `<img class="av xl" src="${dimg}" alt="">`; toast('افتح «بياناتي» واضغط «حفظ البيانات» لتثبيت الصورة', 1); }; i.src = r.result; };
     r.readAsDataURL(f);
   };
   $('#dpi').onsubmit = async e => {
@@ -1202,14 +1219,36 @@ function dpview(p, s, recent, reviews = []) {
     try { await api('/doctor/profile', { method: 'PUT', body: { name: f.name.value, specialty: f.specialty.value, description: f.description.value, average_consultation_time: f.avg.value, profile_image: dimg } }); toast('تم حفظ البيانات', 1); dprofile(); }
     catch (x) { $('#er1').textContent = x.message; }
   };
-  $('#dpa2').onsubmit = async e => {
+  done();
+}
+// تغيير اسم المستخدم (نافذة مستقلة)
+function chUser() {
+  modal(`<h3>تغيير اسم المستخدم</h3><p class="mt">اسمك الحالي: <b dir="ltr">@${esc(DU)}</b></p><form id="fu">
+    <label>اسم المستخدم الجديد<input name="username" dir="ltr" required pattern="[A-Za-z0-9_.]{3,30}" autocapitalize="none" autocomplete="username" value="${esc(DU)}"></label>
+    <label>كلمة المرور الحالية<input name="current" type="password" dir="ltr" required autocomplete="current-password"></label>
+    <div class="err" id="er2"></div><button class="btn p lg">حفظ اسم المستخدم</button>
+    <button type="button" class="btn o" style="width:100%;margin-top:10px" onclick="closeModal()">إلغاء</button></form>`);
+  $('#fu').onsubmit = async e => {
     e.preventDefault(); const f = e.target; $('#er2').textContent = '';
-    if (f.password.value && f.password.value !== f.password2.value) { $('#er2').textContent = 'كلمتا المرور غير متطابقتين'; return; }
-    if (f.username.value.trim().toLowerCase() === p.username && !f.password.value) { $('#er2').textContent = 'لم تغيّر اسم المستخدم ولا كلمة المرور'; return; }
-    try { await api('/doctor/profile', { method: 'PUT', body: { username: f.username.value, password: f.password.value, current_password: f.current.value } }); toast('تم حفظ بيانات الدخول', 1); dprofile(); }
+    if (f.username.value.trim().toLowerCase() === DU) { $('#er2').textContent = 'لم تغيّر اسم المستخدم'; return; }
+    try { await api('/doctor/profile', { method: 'PUT', body: { username: f.username.value, current_password: f.current.value } }); closeModal(); toast('تم تغيير اسم المستخدم', 1); dprofile(); }
     catch (x) { $('#er2').textContent = x.message; }
   };
-  done();
+}
+// تغيير كلمة المرور (نافذة مستقلة)
+function chPass() {
+  modal(`<h3>تغيير كلمة المرور</h3><form id="fp">
+    <label>كلمة المرور الحالية<input name="current" type="password" dir="ltr" required autocomplete="current-password"></label>
+    <label>كلمة المرور الجديدة<input name="password" type="password" dir="ltr" required minlength="6" autocomplete="new-password"></label>
+    <label>تأكيد كلمة المرور الجديدة<input name="password2" type="password" dir="ltr" required autocomplete="new-password"></label>
+    <div class="err" id="er3"></div><button class="btn p lg">حفظ كلمة المرور</button>
+    <button type="button" class="btn o" style="width:100%;margin-top:10px" onclick="closeModal()">إلغاء</button></form>`);
+  $('#fp').onsubmit = async e => {
+    e.preventDefault(); const f = e.target; $('#er3').textContent = '';
+    if (f.password.value !== f.password2.value) { $('#er3').textContent = 'كلمتا المرور غير متطابقتين'; return; }
+    try { await api('/doctor/profile', { method: 'PUT', body: { password: f.password.value, current_password: f.current.value } }); closeModal(); toast('تم تغيير كلمة المرور', 1); }
+    catch (x) { $('#er3').textContent = x.message; }
+  };
 }
 
 const fdn = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -1378,7 +1417,6 @@ function df(id) {
 /* ---------- لوحة موظف الاستقبال (الطابور الموحّد: أونلاين + حضور مباشر) ---------- */
 IC['arrow-up'] = '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>';
 IC['arrow-down'] = '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>';
-IC['skip-forward'] = '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>';
 IC['phone-call'] = IC.phone + '<path d="M14.05 2a9 9 0 0 1 8 7.94"/><path d="M14.05 6A5 5 0 0 1 18 10"/>';
 const SRC = { Online: ['أونلاين', 'on'], 'Walk-in': ['حضور مباشر', 'wi'] };
 const srcB = s => `<span class="src ${(SRC[s] || SRC.Online)[1]}">${esc((SRC[s] || [s])[0])}</span>`;
@@ -1392,7 +1430,6 @@ const rop = (path, body, ok) => api('/reception' + path, { method: 'POST', body 
 const racc = v => (v || confirm('إنهاء الحجز لليوم؟ لن يستطيع المرضى الحجز أونلاين، والحجوزات الحالية تبقى في الطابور.')) && rop('/accepting', { accepting: v }, v ? 'بدأ الحجز لليوم' : 'تم إنهاء الحجز');
 const rstart = id => rop(`/bookings/${id}/start`, null, 'بدأ الكشف');
 const rdone = (id, rep) => (rep || confirm('الطبيب لم يكتب التقرير والروشتة بعد. إنهاء الكشف على أي حال؟ (يستطيع الطبيب كتابتها بعد الإنهاء)')) && rop(`/bookings/${id}/complete`, null, 'تم إنهاء الكشف');
-const rskip = id => confirm('إرجاع المريض لآخر الطابور؟') && rop(`/bookings/${id}/skip`, null, 'تم نقل المريض لآخر الطابور');
 const rcancel = id => confirm('إلغاء هذا الحجز؟') && rop(`/bookings/${id}/cancel`, null, 'تم إلغاء الحجز');
 const rmove = (id, d) => { const i = QW.findIndex(x => x.id === id); if (i >= 0) rop(`/bookings/${id}/move`, { position: i + 1 + d }); };
 let rtab = 'home', RD = null;
@@ -1407,7 +1444,7 @@ function rview(data) {
     <button class="btn d sm" onclick="rcancel(${x.id})">${ic('x')} إلغاء الحجز</button></div></div></li>`;
   const head = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span><small class="mt" style="display:block">${ic('user')} ${esc(me.name)} — موظف الاستقبال</small></div>${chip(d.status)}</div></section>`;
   const stats = `<div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.in_progress}</b><small>جارٍ الكشف</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>`;
-  const curCard = `<section class="card cur">${c ? `<small class="mt">المريض الحالي (جارٍ الكشف)</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.has_report ? '<span class="fb">التقرير جاهز</span>' : '<span class="fb warn">بانتظار تقرير الطبيب</span>'}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div><div class="acts"><button class="btn ok" onclick="rdone(${c.id},${c.has_report})">${ic('check')} إنهاء الكشف</button><button class="btn o" onclick="rskip(${c.id})">${ic('skip-forward')} إرجاع لآخر الطابور</button><button class="btn d" onclick="rcancel(${c.id})">${ic('x')} إلغاء</button></div>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
+  const curCard = `<section class="card cur">${c ? `<small class="mt">المريض الحالي (جارٍ الكشف)</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.has_report ? '<span class="fb">التقرير جاهز</span>' : '<span class="fb warn">بانتظار تقرير الطبيب</span>'}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div><div class="acts"><button class="btn ok" onclick="rdone(${c.id},${c.has_report})">${ic('check')} إنهاء الكشف</button><button class="btn d" onclick="rcancel(${c.id})">${ic('x')} إلغاء</button></div>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
   </section>`;
   const qCard = `<section class="card"><h3>الطابور الموحّد (${w.length})</h3>${w.length ? `<p class="mt qhint">المريض الأول هو التالي. استخدم «تقديم» و«تأخير» لتغيير مكان أي مريض خطوة بخطوة.</p><ul class="ql qcl">${w.map(li).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>`;
   const homeCard = `<section class="card"><h3>حجز جديد</h3><p class="mt">سجّل مريض حضور مباشر أو احجز لمريض مسجّل في الطابور.</p><button class="btn p lg" style="width:100%;margin-top:10px" onclick="rwalk()">${ic('user-plus')} تسجيل مريض / حجز جديد</button></section>`;
