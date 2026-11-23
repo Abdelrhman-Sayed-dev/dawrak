@@ -1219,7 +1219,7 @@ function tkCard(x, act) {
   const dur = m => m >= 60 ? `<b>${Math.floor(m / 60)}</b><small>${Math.floor(m / 60) === 1 ? 'ساعة' : 'ساعات'}</small>${m % 60 ? ` <b>${m % 60}</b><small>دقيقة</small>` : ''}` : `<b>${m}</b><small>دقيقة</small>`;
   const eta = new Date(Date.now() + mins * 6e4).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Cairo' });
   const hero = now ? `<span class="tkwb">${ic('flag')} دورك الآن</span>` : x.ahead === 0 ? '<span class="tkwb">أنت التالي</span>' : dur(mins);
-  const sub = now ? 'توجّه إلى غرفة الكشف' : x.ahead === 0 ? 'استعد، سيتم استدعاؤك خلال دقائق' : `الدخول تقريباً الساعة <b>${eta}</b><br><span style="opacity:.8">محسوبة من متوسط الكشف (${x.avg} دقيقة لكل مريض)</span>`;
+  const sub = now ? 'توجّه إلى غرفة الكشف' : x.ahead === 0 ? 'استعد، سيتم استدعاؤك خلال دقائق' : `الدخول تقريباً الساعة <b>${eta}</b>`;
   const pill = inProg ? ['p', 'جارٍ الكشف'] : x.called ? ['w', 'تم استدعاؤك'] : ['', 'حجز مؤكد'];
   const msg = inProg ? ['g', 'دورك الآن! توجّه إلى الطبيب'] : x.called ? ['a', 'تم استدعاؤك، توجّه إلى العيادة الآن'] : x.ahead === 0 ? ['g', 'أنت التالي في الدور، استعد'] : null;
   const steps = ['في انتظار دورك', 'قريباً دورك', 'دورك الآن'].map((l, i) => `<div class="tks ${i <= s ? 'on' : ''} ${i === 2 ? 'fl' : ''}"><span class="tkn">${i === 2 ? ic('flag') : i <= s ? ic('check') : ''}</span>${l}</div>`).join('');
