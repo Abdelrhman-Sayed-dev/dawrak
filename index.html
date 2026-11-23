@@ -616,9 +616,9 @@ body{background:var(--bg)}
 .ds-g2{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}@media(min-width:760px){.ds-g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dsb [data-tip]{cursor:pointer}
 /* أعمدة */
-.ds-bars{display:flex;gap:4px;align-items:flex-end;height:190px;margin-top:14px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--b) calc(25% - 1px),var(--b) 25%)}
+.ds-bars{display:flex;justify-content:center;gap:4px;align-items:flex-end;height:190px;margin-top:14px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--b) calc(25% - 1px),var(--b) 25%)}
 .ds-bars.ds-hb{height:170px}
-.ds-bc{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;padding-bottom:34px;transition:opacity .2s,transform .2s}
+.ds-bc{flex:1;min-width:0;max-width:76px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;padding-bottom:34px;transition:opacity .2s,transform .2s}
 .ds-bc .ds-bv{font-size:.68rem;color:var(--m);height:16px;line-height:16px;transition:color .2s,transform .2s}
 .ds-bc .ds-bst{width:100%;max-width:34px;display:flex;flex-direction:column;border-radius:8px 8px 3px 3px;overflow:hidden;min-height:0;transform-origin:bottom;transition:transform .2s,box-shadow .2s;animation:dsgrow .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--k,0)*35ms)}
 .ds-bc .ds-bst i{display:block;min-height:0;transition:filter .2s,opacity .2s}
@@ -1263,19 +1263,19 @@ if (!window.__dsHover) {
 }
 function dsview() {
   const { stats: s, days, hours, dist, reviews } = SD;
-  const dd = days.slice(-SRANGE), mx = Math.max(1, ...dd.map(x => x.completed + x.cancelled + x.active));
+  const dd = days.slice(-SRANGE).filter(x => x.completed + x.cancelled + x.active > 0), mx = Math.max(1, ...dd.map(x => x.completed + x.cancelled + x.active));
   const wd = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { day: 'numeric' });
   const wn = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'short' });
   const wl = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
   const C = { c: 'var(--p)', x: '#f87171', a: '#93c5fd' };
   const sumC = dd.reduce((a, x) => a + x.completed, 0), sumX = dd.reduce((a, x) => a + x.cancelled, 0);
   const seg = (n, key, lbl, day) => n ? `<i style="flex:${n};background:${C[key]}" data-tip="${tip(C[key], lbl, nfmt(n) + ' حجز', wl(day))}"></i>` : '';
-  const bars = dd.map((x, k) => { const t = x.completed + x.cancelled + x.active;
-    return `<div class="ds-bc" style="--k:${k}" data-tip="${tip('#64748b', wl(x.day), nfmt(t) + ' حجز إجمالاً')}"><span class="ds-bv">${t ? nfmt(t) : ''}</span><div class="ds-bst" style="height:${t / mx * 100}%">${seg(x.active, 'a', 'منتظر', x.day)}${seg(x.cancelled, 'x', 'ملغي', x.day)}${seg(x.completed, 'c', 'مكتمل', x.day)}</div><small>${wd(x.day)}</small>${SRANGE <= 7 ? `<small class="ds-wn">${wn(x.day)}</small>` : ''}</div>`; }).join('');
+  const bars = !dd.length ? '' : dd.map((x, k) => { const t = x.completed + x.cancelled + x.active;
+    return `<div class="ds-bc" style="--k:${k}" data-tip="${tip('#64748b', wl(x.day), nfmt(t) + ' حجز إجمالاً')}"><span class="ds-bv">${t ? nfmt(t) : ''}</span><div class="ds-bst" style="height:${t / mx * 100}%">${seg(x.active, 'a', 'منتظر', x.day)}${seg(x.cancelled, 'x', 'ملغي', x.day)}${seg(x.completed, 'c', 'مكتمل', x.day)}</div><small>${wd(x.day)}</small><small class="ds-wn">${wn(x.day)}</small></div>`; }).join('');
   // ساعات الذروة
   const hm = Object.fromEntries(hours.map(x => [x.h, x.n])), hs = hours.map(x => x.h);
   const h0 = hs.length ? Math.min(...hs) : 9, h1 = hs.length ? Math.max(...hs) : 17, hmx = Math.max(1, ...hours.map(x => x.n));
-  const hcols = []; for (let h = h0; h <= h1; h++) hcols.push(h);
+  const hcols = hours.filter(x => x.n > 0).map(x => x.h).sort((a, b) => a - b);
   const peak = hours.length ? hours.reduce((a, x) => x.n > a.n ? x : a) : null;
   const hbars = hours.length ? `<div class="ds-bars ds-hb">${hcols.map((h, k) => { const col = peak && h === peak.h ? 'var(--warn)' : '#60a5fa';
     return `<div class="ds-bc" style="--k:${k}" data-tip="${tip(col, 'الساعة ' + hfmt(h), nfmt(hm[h] || 0) + ' حجز', peak && h === peak.h ? 'ساعة الذروة' : '')}"><span class="ds-bv">${hm[h] ? nfmt(hm[h]) : ''}</span><div class="ds-bst" style="height:${(hm[h] || 0) / hmx * 100}%"><i style="flex:1;background:${col}"></i></div><small>${hfmt(h)}</small></div>`; }).join('')}</div>
@@ -1289,7 +1289,7 @@ function dsview() {
   </div>
   <section class="card"><div class="row sb"><h3>الحجوزات اليومية</h3><div class="ds-seg2"><button class="${SRANGE === 7 ? 'on' : ''}" onclick="dsRange(7)">٧ أيام</button><button class="${SRANGE === 14 ? 'on' : ''}" onclick="dsRange(14)">١٤ يوم</button></div></div>
     <p class="mt">${nfmt(sumC)} مكتمل · ${nfmt(sumX)} ملغي خلال آخر ${nfmt(SRANGE)} يوماً</p>
-    <div class="ds-bars">${bars}</div>
+    ${dd.length ? `<div class="ds-bars">${bars}</div>` : '<p class="mt" style="text-align:center;padding:24px 0">لا توجد حجوزات في هذه الفترة.</p>'}
     <div class="ds-lgh"><span><i style="background:var(--p)"></i>مكتمل</span><span><i style="background:#f87171"></i>ملغي</span><span><i style="background:#93c5fd"></i>منتظر</span></div></section>
   <section class="card"><h3>ساعات الذروة</h3><p class="mt">${peak ? `أكثر وقت حجزاً: ${hfmt(peak.h)} (آخر 30 يوماً)` : 'توزيع الحجوزات على ساعات اليوم (آخر 30 يوماً)'}</p>${hbars}</section>
   <section class="card"><div class="row sb"><h3>التقييمات</h3>${s.reviews ? `<span>${stars(s.rating)} <b>${s.rating}</b></span>` : ''}</div>
