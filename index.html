@@ -666,6 +666,26 @@ html,body{overflow-x:clip}
 .rbn .add svg{width:20px;height:20px}
 .rbn .bdg{position:absolute;top:5px;inset-inline-start:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#EF4444;color:#fff;font-style:normal;font-size:.7rem;line-height:18px;text-align:center}
 
+/* بطاقة المريض في الطابور */
+.qcl{display:grid;gap:12px;margin-top:10px}
+.ql li.qc{display:block;padding:14px;border:1px solid var(--b);border-radius:18px;background:#fff}
+.ql li.qc.first{border-color:#93C5FD;background:#F5F9FF}
+.ql li.qc.called{background:#FFFBEB;border-color:#FDE68A}
+.qh{display:flex;align-items:center;gap:12px}
+.qh .n{flex:none;width:52px;height:52px;border-radius:16px;background:var(--pl);color:var(--pd);display:grid;place-items:center;font-size:1.4rem;font-weight:800}
+.src.nx{background:#DBEAFE;color:#1D4ED8}
+.qhint{font-size:.88rem;margin:4px 0 0}
+.qa{display:grid;gap:8px;margin-top:12px}
+.qa .qs{width:100%;justify-content:center;padding:12px}
+.qm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:stretch}
+.qm .btn,.qm summary{justify-content:center;width:100%;text-align:center;list-style:none;cursor:pointer;display:flex;align-items:center;gap:4px;padding:9px 6px;font-size:.88rem}
+.qm summary::-webkit-details-marker{display:none}
+.rmore{position:relative}
+.rmm{position:absolute;inset-inline-end:0;bottom:calc(100% + 6px);z-index:5;min-width:230px;background:#fff;border:1px solid var(--b);border-radius:14px;box-shadow:0 8px 24px rgba(11,45,91,.15);padding:6px;display:grid;gap:2px}
+.rmm button{border:0;background:none;text-align:start;padding:10px 12px;border-radius:10px;font:inherit;cursor:pointer;display:flex;gap:8px;align-items:center}
+.rmm button:hover:not(:disabled){background:var(--pl)}.rmm button:disabled{opacity:.4}
+.rmm button.dg{color:#DC2626}.rmm button.dg:hover{background:#FEF2F2}
+
 /* ---- تقييمات / مفضلة / تذكير الأدوية ---- */
 .fv{position:absolute;top:12px;left:12px;width:38px;height:38px;border-radius:50%;border:1px solid var(--b);background:#fff;color:var(--m);display:grid;place-items:center;cursor:pointer;padding:0;transition:.15s}
 .fv svg{width:20px;height:20px}.fv:hover{color:#e11d48;border-color:#fecdd3}.fv.on{color:#e11d48;background:#fff1f2;border-color:#fecdd3}.fv.on svg{fill:currentColor}
@@ -1379,19 +1399,22 @@ const setRTab = k => { rtab = k; if (RD) rview(RD); window.scrollTo(0, 0); };
 function rview(data) {
   RD = data; const { doctor: d, current: c, waiting: w, receptionist: me } = data;
   QW = w; const nx = w[0], called = w.find(x => x.called);
-  const li = (x, i) => `<li class="rq ${x.called ? 'called' : ''}"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><small dir="ltr">${esc(x.patient_phone)}</small><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<small>${tm(x.created_at)}${x.added_by ? ' · سجّله ' + esc(x.added_by) : ''}</small></span></div>
-    <div class="rqa"><button class="btn o sm" ${i ? '' : 'disabled'} onclick="rmove(${x.id},-1)" aria-label="تقديم في الطابور" title="تقديم">${ic('arrow-up')}</button><button class="btn o sm" ${i < w.length - 1 ? '' : 'disabled'} onclick="rmove(${x.id},1)" aria-label="تأخير في الطابور" title="تأخير">${ic('arrow-down')}</button><button class="btn p sm" ${c ? 'disabled' : ''} onclick="rstart(${x.id})">${ic('play')} بدء</button><button class="btn o sm" ${w.length > 1 ? '' : 'disabled'} onclick="rskip(${x.id})" aria-label="تخطي" title="تخطي (يعود لآخر الطابور)">${ic('skip-forward')}</button><button class="btn d sm" onclick="rcancel(${x.id})" aria-label="إلغاء الحجز" title="إلغاء">${ic('x')}</button></div></li>`;
+  const li = (x, i) => `<li class="qc ${x.called ? 'called' : ''} ${i === 0 ? 'first' : ''}">
+    <div class="qh"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><small dir="ltr">${esc(x.patient_phone)}</small><span class="rqt">${srcB(x.source)}${i === 0 ? '<span class="src nx">التالي</span>' : ''}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<small>${tm(x.created_at)}${x.added_by ? ' · سجّله ' + esc(x.added_by) : ''}</small></span></div></div>
+    <div class="qa"><button class="btn p qs" ${c ? 'disabled' : ''} onclick="rstart(${x.id})">${ic('play')} ${c ? 'يوجد كشف جارٍ' : 'بدء الكشف'}</button>
+    <div class="qm"><button class="btn o sm" ${i ? '' : 'disabled'} onclick="rmove(${x.id},-1)">${ic('arrow-up')} تقديم</button><button class="btn o sm" ${i < w.length - 1 ? '' : 'disabled'} onclick="rmove(${x.id},1)">${ic('arrow-down')} تأخير</button>
+    <details class="rmore"><summary class="btn o sm">⋯ المزيد</summary><div class="rmm"><button ${w.length > 1 ? '' : 'disabled'} onclick="rskip(${x.id})">${ic('skip-forward')} تخطي (يرجع لآخر الطابور)</button><button class="dg" onclick="rcancel(${x.id})">${ic('x')} إلغاء الحجز</button></div></details></div></div></li>`;
   const head = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span><small class="mt" style="display:block">${ic('user')} ${esc(me.name)} — موظف الاستقبال</small></div>${chip(d.status)}</div></section>`;
   const stats = `<div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.in_progress}</b><small>جارٍ الكشف</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>`;
   const curCard = `<section class="card cur">${c ? `<small class="mt">المريض الحالي (جارٍ الكشف)</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.has_report ? '<span class="fb">التقرير جاهز</span>' : '<span class="fb warn">بانتظار تقرير الطبيب</span>'}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div><div class="acts"><button class="btn ok" onclick="rdone(${c.id},${c.has_report})">${ic('check')} إنهاء الكشف</button><button class="btn o" onclick="rskip(${c.id})">${ic('skip-forward')} إرجاع لآخر الطابور</button><button class="btn d" onclick="rcancel(${c.id})">${ic('x')} إلغاء</button></div>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
   ${called && !c ? `<div class="rcallbox"><span>${ic('phone-call')} تم استدعاء <b>${esc(called.patient_name)}</b> (رقم ${called.queue_number})</span><button class="btn ok" onclick="rstart(${called.id})">${ic('play')} بدء الكشف</button></div>` : ''}
   <div class="rbar"><button class="btn p lg" ${nx ? '' : 'disabled'} onclick="rcall()">${ic('phone-call')} استدعاء المريض التالي${nx ? ' — رقم ' + nx.queue_number : ''}</button></div></section>`;
-  const qCard = `<section class="card"><h3>الطابور الموحّد (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(li).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>`;
+  const qCard = `<section class="card"><h3>الطابور الموحّد (${w.length})</h3>${w.length ? `<p class="mt qhint">المريض الأول هو التالي. استخدم «تقديم» و«تأخير» لتغيير مكان أي مريض خطوة بخطوة.</p><ul class="ql qcl">${w.map(li).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>`;
   const homeCard = `<section class="card"><h3>حجز جديد</h3><p class="mt">سجّل مريض حضور مباشر أو احجز لمريض مسجّل في الطابور.</p><button class="btn p lg" style="width:100%;margin-top:10px" onclick="rwalk()">${ic('user-plus')} تسجيل مريض / حجز جديد</button></section>`;
-  const body = rtab === 'queue' ? qCard : rtab === 'home' ? stats + homeCard : curCard + (w.length ? `<section class="card"><h3>التالي في الطابور</h3><ul class="ql">${w.slice(0, 3).map(x => `<li class="rq"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}</span></div></li>`).join('')}</ul></section>` : '');
+  const body = rtab === 'queue' ? qCard : rtab === 'home' ? head + stats + homeCard : curCard + (w.length ? `<section class="card"><h3>التالي في الطابور</h3><ul class="ql">${w.slice(0, 3).map(x => `<li class="rq"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}</span></div></li>`).join('')}</ul></section>` : '');
   const tabs = [['home', 'layout-dashboard', 'الرئيسية'], ['call', 'phone-call', 'الاستدعاء'], ['queue', 'users', 'الطابور', w.length]];
   const bn = tabs.map(([k, i, l, n]) => `<button class="${rtab === k ? 'on' : ''}" onclick="setRTab('${k}')">${ic(i)}${l}${n ? `<i class="bdg">${n}</i>` : ''}</button>`).join('');
-  $('#m').innerHTML = `<div class="rp">${head}${body}</div><nav class="rbn"><div>${bn}</div></nav>`;
+  $('#m').innerHTML = `<div class="rp">${body}</div><nav class="rbn"><div>${bn}</div></nav>`;
   done();
 }
 // تسجيل مريض: نبحث أولاً لتجنب التكرار، وإن لم يوجد نسجّله كمريض جديد
