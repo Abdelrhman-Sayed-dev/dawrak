@@ -853,9 +853,10 @@ async def d_profile(u=Depends(auth("doctor"))):
 
 
 @app.get("/api/doctor/stats")
-async def d_stats(u=Depends(auth("doctor"))):
+async def d_stats(days: int = 14, u=Depends(auth("doctor"))):
     """بيانات داشبورد الإحصائيات: أرقام عامة + آخر 14 يوماً + ساعات الذروة + المصدر + توزيع التقييمات + آخر التقييمات."""
     did = u["id"]
+    n = days if days in (7, 14, 30) else 14   # الفترة المختارة: تطبَّق على كل الرسوم
     s = await pool.fetchrow("""SELECT count(*)::int AS total,
       count(*) FILTER (WHERE status='Completed')::int AS completed,
       count(*) FILTER (WHERE status='Cancelled')::int AS cancelled,
@@ -865,28 +866,28 @@ async def d_stats(u=Depends(auth("doctor"))):
       count(*) FILTER (WHERE booking_date>=CURRENT_DATE-6 AND status='Completed')::int AS week,
       count(*) FILTER (WHERE source='Online')::int AS online,
       count(*) FILTER (WHERE source='Walk-in')::int AS walkin
-      FROM bookings WHERE doctor_id=$1""", did)
-    days = await pool.fetch("""SELECT g::date AS day,
+      FROM bookings WHERE doctor_id=$1 AND booking_date>=CURRENT_DATE-($2::int-1)""", did, n)
+    days_rows = await pool.fetch("""SELECT g::date AS day,
       count(b.id) FILTER (WHERE b.status='Completed')::int AS completed,
       count(b.id) FILTER (WHERE b.status='Cancelled')::int AS cancelled,
       count(b.id) FILTER (WHERE b.status IN ('Waiting','In Progress'))::int AS active
-      FROM generate_series(CURRENT_DATE-13,CURRENT_DATE,interval '1 day') g
+      FROM generate_series(CURRENT_DATE-($2::int-1),CURRENT_DATE,interval '1 day') g
       LEFT JOIN bookings b ON b.doctor_id=$1 AND b.booking_date=g::date
-      GROUP BY g ORDER BY g""", did)
+      GROUP BY g ORDER BY g""", did, n)
     hours = await pool.fetch("""SELECT extract(hour FROM created_at AT TIME ZONE 'Africa/Cairo')::int AS h,count(*)::int AS n
-      FROM bookings WHERE doctor_id=$1 AND status<>'Cancelled' AND booking_date>=CURRENT_DATE-29 GROUP BY 1 ORDER BY 1""", did)
+      FROM bookings WHERE doctor_id=$1 AND status<>'Cancelled' AND booking_date>=CURRENT_DATE-($2::int-1) GROUP BY 1 ORDER BY 1""", did, n)
     stats, reviews, dist = dict(s), [], {}
     try:
         await ensure_features()
-        agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1", did)
+        agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1 AND (created_at AT TIME ZONE 'Africa/Cairo')::date>=CURRENT_DATE-($2::int-1)", did, n)
         stats.update(rating=agg["a"], reviews=agg["n"])
-        dist = {r["rating"]: r["n"] for r in await pool.fetch("SELECT rating,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1 GROUP BY rating", did)}
+        dist = {r["rating"]: r["n"] for r in await pool.fetch("SELECT rating,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1 AND (created_at AT TIME ZONE 'Africa/Cairo')::date>=CURRENT_DATE-($2::int-1) GROUP BY rating", did, n)}
         reviews = [dict(x) for x in await pool.fetch(
-            "SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 ORDER BY id DESC LIMIT 20", did)]
+            "SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 AND (created_at AT TIME ZONE 'Africa/Cairo')::date>=CURRENT_DATE-($2::int-1) ORDER BY id DESC LIMIT 20", did, n)]
     except Exception as e:
         print("doctor reviews:", e)
         stats.update(rating=None, reviews=0)
-    return {"stats": stats, "days": [dict(x) for x in days], "hours": [dict(x) for x in hours],
+    return {"stats": stats, "days": [dict(x) for x in days_rows], "hours": [dict(x) for x in hours],
             "dist": [dist.get(i, 0) for i in (5, 4, 3, 2, 1)], "reviews": reviews}
 
 
