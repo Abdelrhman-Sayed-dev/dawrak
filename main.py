@@ -618,7 +618,7 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
             raise Fail(404, "الطبيب غير متاح")
         if not d["is_accepting_bookings"]:
             raise Fail(409, "الطبيب أغلق استقبال الحجوزات حالياً")
-        if await c.fetchval("SELECT 1 FROM bookings WHERE doctor_id=$1 AND patient_id=$2 AND member_id IS NOT DISTINCT FROM $3::int AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')", did, u["id"], mid):
+        if await has_active_dup(c, did, name, phone, u["id"], mid):
             raise Fail(409, "يوجد حجز نشط لهذا الشخص عند هذا الطبيب اليوم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,member_id,queue_number)
           SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE RETURNING id""", did, name, phone, u["id"], mid)
@@ -646,6 +646,22 @@ def guest_limit(request: Request, key: str, mx: int = 8, win: int = 600):
 
 def norm_phone(v):
     return re.sub(r"[\s-]", "", str(v or ""))
+
+
+def phone_key(v):
+    """مفتاح موحّد للمقارنة: آخر 10 أرقام. يجعل +201102714613 و 01102714613 و 00201102714613 نفس الرقم."""
+    return re.sub(r"\D", "", str(v or ""))[-10:]
+
+
+async def has_active_dup(c, did, name, phone, pid=None, mid=None, wid=None):
+    """هل يوجد حجز نشط اليوم عند نفس الطبيب لنفس الشخص؟ يشمل كل المصادر (أونلاين/ضيف/حضور مباشر).
+    التطابق: (نفس الاسم + نفس الرقم بعد التوحيد)، أو نفس الحساب/الفرد، أو نفس سجل الحضور المباشر."""
+    return await c.fetchval("""SELECT 1 FROM bookings
+        WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')
+          AND ( (lower(btrim(patient_name))=lower(btrim($2)) AND right(regexp_replace(patient_phone,'[^0-9]','','g'),10)=$3)
+             OR ($4::int IS NOT NULL AND patient_id=$4 AND member_id IS NOT DISTINCT FROM $5::int)
+             OR ($6::int IS NOT NULL AND walkin_id=$6) )
+        LIMIT 1""", did, name, phone_key(phone), pid, mid, wid)
 
 
 async def guest_ticket(bid):
@@ -676,8 +692,7 @@ async def guest_book(request: Request):
             raise Fail(404, "الطبيب غير متاح")
         if not d["is_accepting_bookings"]:
             raise Fail(409, "الطبيب أغلق استقبال الحجوزات حالياً")
-        if await c.fetchval("""SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')
-                AND patient_phone=$2 AND lower(patient_name)=lower($3)""", did, phone, name):
+        if await has_active_dup(c, did, name, phone):
             raise Fail(409, "لديك حجز نشط عند هذا الطبيب اليوم بنفس الاسم والرقم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,queue_number)
           SELECT $1::int,$2::text,$3::text,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE
@@ -1081,13 +1096,14 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
             if not w: raise Fail(404, "المريض غير موجود")
             wid, name, phone = w["id"], w["name"], w["phone"]
         else:
-            if await c.fetchval("SELECT 1 FROM patients WHERE phone=$1 AND lower(name)=lower($2)", phone, name):
+            if await has_active_dup(c, did, name, phone):
+                raise Fail(409, "هذا المريض لديه حجز نشط عند الطبيب اليوم (أونلاين أو حضور مباشر) بنفس الاسم والرقم")
+            if await c.fetchval("SELECT 1 FROM patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2))", phone_key(phone), name):
                 raise Fail(409, "هذا المريض مسجّل بحساب أونلاين، اختره من نتائج البحث بدل تسجيله من جديد")
-            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE phone=$1 AND lower(name)=lower($2) ORDER BY id LIMIT 1", phone, name)
+            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) ORDER BY id LIMIT 1", phone_key(phone), name)
             if not wid:
                 wid = await c.fetchval("INSERT INTO walkin_patients(name,phone,age,created_by) VALUES($1,$2,$3,$4) RETURNING id", name, phone, age, rec["id"])
-        if await c.fetchval("""SELECT 1 FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')
-                AND (($2::int IS NOT NULL AND patient_id=$2 AND member_id IS NULL) OR ($3::int IS NOT NULL AND walkin_id=$3))""", did, pid, wid):
+        if await has_active_dup(c, did, name, phone, pid, None, wid):
             raise Fail(409, "لدى هذا المريض حجز نشط عند الطبيب اليوم")
         row = await c.fetchrow("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,walkin_id,queue_number,source,created_by_receptionist)
           SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1,'Walk-in',$6::int FROM bookings
