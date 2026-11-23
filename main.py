@@ -864,10 +864,7 @@ async def d_stats(u=Depends(auth("doctor"))):
       count(*) FILTER (WHERE booking_date=CURRENT_DATE AND status='Completed')::int AS done_today,
       count(*) FILTER (WHERE booking_date>=CURRENT_DATE-6 AND status='Completed')::int AS week,
       count(*) FILTER (WHERE source='Online')::int AS online,
-      count(*) FILTER (WHERE source='Walk-in')::int AS walkin,
-      (SELECT round(avg(extract(epoch FROM completed_at-started_at)/60)::numeric,1)::float FROM bookings
-         WHERE doctor_id=$1 AND status='Completed' AND started_at IS NOT NULL AND completed_at>started_at
-           AND completed_at-started_at < interval '4 hours' AND booking_date>=CURRENT_DATE-29) AS real_avg
+      count(*) FILTER (WHERE source='Walk-in')::int AS walkin
       FROM bookings WHERE doctor_id=$1""", did)
     days = await pool.fetch("""SELECT g::date AS day,
       count(b.id) FILTER (WHERE b.status='Completed')::int AS completed,
@@ -889,8 +886,6 @@ async def d_stats(u=Depends(auth("doctor"))):
     except Exception as e:
         print("doctor reviews:", e)
         stats.update(rating=None, reviews=0)
-    avg_set = await pool.fetchval("SELECT average_consultation_time FROM doctors WHERE id=$1", did)
-    stats["avg_set"] = avg_set
     return {"stats": stats, "days": [dict(x) for x in days], "hours": [dict(x) for x in hours],
             "dist": [dist.get(i, 0) for i in (5, 4, 3, 2, 1)], "reviews": reviews}
 
