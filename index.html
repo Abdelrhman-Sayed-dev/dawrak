@@ -648,6 +648,7 @@ html,body{overflow-x:clip}
 .ql li.rq.called{background:#FFFBEB;border-radius:14px}
 .rqi{min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.5}.rqi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rqi small{color:var(--m)}
 .rqa{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}.rqa .btn{padding:6px 10px}
+.bk{border-color:#FECACA;background:#FEF2F2}.bk.on{border-color:#BBF7D0;background:#F0FDF4}.bkh{display:flex;align-items:center;gap:8px}.bkh h3{margin:0}.bkd{width:10px;height:10px;border-radius:50%;background:#DC2626;flex:none}.on>.bkh .bkd,.bkl.on .bkd{background:#16A34A}.bkl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;padding:10px 14px;border-radius:14px;background:#FEF2F2;color:#B91C1C;margin-bottom:12px}.bkl.on{background:#F0FDF4;color:#15803D}
 .rcallbox{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#FFFBEB;border:1px solid #FDE68A;border-radius:16px;padding:12px 14px}
 .rs{display:grid;gap:8px;margin:10px 0 14px}
 .rsi{display:flex;align-items:center;gap:10px;border:1px solid var(--b);border-radius:14px;padding:10px 12px}.rsi .fl{min-width:0}
@@ -1151,7 +1152,7 @@ function dview({ doctor: d, current: c, waiting: w, done: dn = [] }) {
   <div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>
   <section class="card cur">${c ? `<small class="mt">المريض الحالي</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.files ? `<span class="fb">${ic('paperclip')} ${c.files} ملف</span>` : ''}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div>${c.patient_id ? `<button class="btn o" onclick="pf(${c.patient_id},${c.member_id || 0})">${ic('user')} ملف المريض</button>` : ''}<button class="btn p lg" onclick="fin(${c.id})">${ic('file-text')} ${c.has_report ? 'تعديل التقرير والروشتة' : 'كتابة التقرير والروشتة'}</button>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
   <p class="mt">${nx ? `المريض التالي: <b>${esc(nx.patient_name)}</b> (رقم ${nx.queue_number})` : 'لا يوجد مرضى في الانتظار.'}</p>
-  <p class="mt">${ic('users')} استدعاء المرضى وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>
+  <p class="mt">${ic('users')} بدء الحجز وإنهاؤه وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>
   <section class="card"><h3>قائمة الانتظار (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<time>حُجز ${tm(x.created_at)}</time>${x.patient_id ? `<button class="btn o sm" onclick="pf(${x.patient_id},${x.member_id || 0})">ملفه</button>` : ''}</li>`).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>
   ${dn.length ? `<section class="card"><h3>كشوفات اليوم المنتهية (${dn.length})</h3><ul class="ql">${dn.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.has_report ? '' : '<span class="fb warn">بدون تقرير</span>'}<button class="btn o sm" style="margin-inline-start:auto" onclick="fin(${x.id})">${x.has_report ? 'تعديل التقرير' : 'كتابة التقرير'}</button></li>`).join('')}</ul></section>` : ''}`;
   done();
@@ -1359,7 +1360,7 @@ function df(id) {
   <label>اسم المستخدم<input name="username" required dir="ltr" pattern="[A-Za-z0-9_.]{3,30}" value="${esc(d.username)}"></label>
   <label>كلمة المرور${id ? ' (اتركها فارغة بدون تغيير)' : ''}<input name="password" type="password" dir="ltr" minlength="6" ${id ? '' : 'required'} autocomplete="new-password"></label>
   <label>متوسط مدة الكشف (دقيقة)<input name="avg" type="number" min="1" max="240" required value="${d.avg || 10}"></label>
-  <label class="chk"><input type="checkbox" name="act" ${d.is_active === false ? '' : 'checked'}> الحساب مفعّل</label><label class="chk"><input type="checkbox" name="acc" ${d.accepting === false ? '' : 'checked'}> يستقبل الحجوزات</label>
+  <label class="chk"><input type="checkbox" name="act" ${d.is_active === false ? '' : 'checked'}> الحساب مفعّل</label>
   <div class="err" id="er"></div><button class="btn p lg">${id ? 'حفظ التعديلات' : 'إضافة الطبيب'}</button></form>`);
   $('#fi').onchange = e => {
     const f = e.target.files[0]; if (!f) return; const r = new FileReader();
@@ -1368,7 +1369,7 @@ function df(id) {
   };
   $('#df').onsubmit = async e => {
     e.preventDefault(); const f = e.target;
-    const body = { name: f.name.value, specialty: f.specialty.value, description: f.description.value, username: f.username.value, password: f.password.value, average_consultation_time: f.avg.value, profile_image: img, is_active: f.act.checked, accepting: f.acc.checked };
+    const body = { name: f.name.value, specialty: f.specialty.value, description: f.description.value, username: f.username.value, password: f.password.value, average_consultation_time: f.avg.value, profile_image: img, is_active: f.act.checked };
     try { await api(id ? '/admin/doctors/' + id : '/admin/doctors', { method: id ? 'PUT' : 'POST', body }); closeModal(); toast('تم الحفظ', 1); cur(); }
     catch (x) { $('#er').textContent = x.message; }
   };
@@ -1388,7 +1389,7 @@ function reception() {
 }
 // كل عمليات الطابور تذهب للباك اند (الذي يقيّدها بطبيب الموظف) ثم نعيد رسم الصفحة
 const rop = (path, body, ok) => api('/reception' + path, { method: 'POST', body }).then(() => { if (ok) toast(ok, 1); return cur(); }).catch(e => { toast(e.message); cur && cur(); });
-const rcall = () => rop('/call-next');
+const racc = v => (v || confirm('إنهاء الحجز لليوم؟ لن يستطيع المرضى الحجز أونلاين، والحجوزات الحالية تبقى في الطابور.')) && rop('/accepting', { accepting: v }, v ? 'بدأ الحجز لليوم' : 'تم إنهاء الحجز');
 const rstart = id => rop(`/bookings/${id}/start`, null, 'بدأ الكشف');
 const rdone = (id, rep) => (rep || confirm('الطبيب لم يكتب التقرير والروشتة بعد. إنهاء الكشف على أي حال؟ (يستطيع الطبيب كتابتها بعد الإنهاء)')) && rop(`/bookings/${id}/complete`, null, 'تم إنهاء الكشف');
 const rskip = id => confirm('إرجاع المريض لآخر الطابور؟') && rop(`/bookings/${id}/skip`, null, 'تم نقل المريض لآخر الطابور');
@@ -1398,21 +1399,22 @@ let rtab = 'home', RD = null;
 const setRTab = k => { rtab = k; if (RD) rview(RD); window.scrollTo(0, 0); };
 function rview(data) {
   RD = data; const { doctor: d, current: c, waiting: w, receptionist: me } = data;
-  QW = w; const nx = w[0], called = w.find(x => x.called);
-  const li = (x, i) => `<li class="qc ${x.called ? 'called' : ''} ${i === 0 ? 'first' : ''}">
-    <div class="qh"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><small dir="ltr">${esc(x.patient_phone)}</small><span class="rqt">${srcB(x.source)}${i === 0 ? '<span class="src nx">التالي</span>' : ''}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<small>${tm(x.created_at)}${x.added_by ? ' · سجّله ' + esc(x.added_by) : ''}</small></span></div></div>
+  QW = w; const open = !!d.accepting;
+  const li = (x, i) => `<li class="qc ${i === 0 ? 'first' : ''}">
+    <div class="qh"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><small dir="ltr">${esc(x.patient_phone)}</small><span class="rqt">${srcB(x.source)}${i === 0 ? '<span class="src nx">التالي</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<small>${tm(x.created_at)}${x.added_by ? ' · سجّله ' + esc(x.added_by) : ''}</small></span></div></div>
     <div class="qa"><button class="btn p qs" ${c ? 'disabled' : ''} onclick="rstart(${x.id})">${ic('play')} ${c ? 'يوجد كشف جارٍ' : 'بدء الكشف'}</button>
     <div class="qm"><button class="btn o sm" ${i ? '' : 'disabled'} onclick="rmove(${x.id},-1)">${ic('arrow-up')} تقديم</button><button class="btn o sm" ${i < w.length - 1 ? '' : 'disabled'} onclick="rmove(${x.id},1)">${ic('arrow-down')} تأخير</button>
     <button class="btn d sm" onclick="rcancel(${x.id})">${ic('x')} إلغاء الحجز</button></div></div></li>`;
   const head = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span><small class="mt" style="display:block">${ic('user')} ${esc(me.name)} — موظف الاستقبال</small></div>${chip(d.status)}</div></section>`;
   const stats = `<div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.in_progress}</b><small>جارٍ الكشف</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>`;
   const curCard = `<section class="card cur">${c ? `<small class="mt">المريض الحالي (جارٍ الكشف)</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.has_report ? '<span class="fb">التقرير جاهز</span>' : '<span class="fb warn">بانتظار تقرير الطبيب</span>'}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div><div class="acts"><button class="btn ok" onclick="rdone(${c.id},${c.has_report})">${ic('check')} إنهاء الكشف</button><button class="btn o" onclick="rskip(${c.id})">${ic('skip-forward')} إرجاع لآخر الطابور</button><button class="btn d" onclick="rcancel(${c.id})">${ic('x')} إلغاء</button></div>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
-  ${called && !c ? `<div class="rcallbox"><span>${ic('phone-call')} تم استدعاء <b>${esc(called.patient_name)}</b> (رقم ${called.queue_number})</span><button class="btn ok" onclick="rstart(${called.id})">${ic('play')} بدء الكشف</button></div>` : ''}
-  <div class="rbar"><button class="btn p lg" ${nx ? '' : 'disabled'} onclick="rcall()">${ic('phone-call')} استدعاء المريض التالي${nx ? ' — رقم ' + nx.queue_number : ''}</button></div></section>`;
+  </section>`;
   const qCard = `<section class="card"><h3>الطابور الموحّد (${w.length})</h3>${w.length ? `<p class="mt qhint">المريض الأول هو التالي. استخدم «تقديم» و«تأخير» لتغيير مكان أي مريض خطوة بخطوة.</p><ul class="ql qcl">${w.map(li).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>`;
   const homeCard = `<section class="card"><h3>حجز جديد</h3><p class="mt">سجّل مريض حضور مباشر أو احجز لمريض مسجّل في الطابور.</p><button class="btn p lg" style="width:100%;margin-top:10px" onclick="rwalk()">${ic('user-plus')} تسجيل مريض / حجز جديد</button></section>`;
-  const body = rtab === 'queue' ? qCard : rtab === 'home' ? head + stats + homeCard : curCard + (w.length ? `<section class="card"><h3>التالي في الطابور</h3><ul class="ql">${w.slice(0, 3).map(x => `<li class="rq"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}</span></div></li>`).join('')}</ul></section>` : '');
-  const tabs = [['home', 'layout-dashboard', 'الرئيسية'], ['call', 'phone-call', 'الاستدعاء'], ['queue', 'users', 'الطابور', w.length]];
+  const bkLine = `<div class="bkl ${open ? 'on' : ''}"><span class="bkd"></span>${open ? 'الحجز مفتوح للمرضى الآن' : 'الحجز مغلق — اذهب لتابة «الحجز» لبدء حجز اليوم'}</div>`;
+  const bkCard = `<section class="card bk ${open ? 'on' : ''}"><div class="bkh"><span class="bkd"></span><h3>${open ? 'الحجز مفتوح الآن' : 'الحجز مغلق'}</h3></div><p class="mt">${open ? 'المرضى يستطيعون الآن حجز دور عند ' + esc(d.name) + ' من التطبيق. اضغط «إنهاء الحجز» عندما يكتمل العدد أو ينتهي اليوم.' : 'لن يظهر للمرضى زر الحجز قبل أن تبدأ الحجز. يُغلق الحجز تلقائياً مع بداية اليوم التالي.'}</p><div class="stats" style="margin:12px 0 0"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div></div><button class="btn ${open ? 'd' : 'p'} lg" style="width:100%;margin-top:14px" onclick="racc(${!open})">${ic(open ? 'pause' : 'play')} ${open ? 'إنهاء الحجز' : 'بدء الحجز لليوم'}</button><p class="mt" style="margin-top:10px">تسجيل مرضى الحضور المباشر متاح دائماً سواء كان الحجز مفتوحاً أو مغلقاً.</p></section>`;
+  const body = rtab === 'queue' ? curCard + qCard : rtab === 'booking' ? bkCard : head + bkLine + stats + homeCard;
+  const tabs = [['home', 'layout-dashboard', 'الرئيسية'], ['booking', 'calendar-check', 'الحجز'], ['queue', 'users', 'الطابور', w.length]];
   const bn = tabs.map(([k, i, l, n]) => `<button class="${rtab === k ? 'on' : ''}" onclick="setRTab('${k}')">${ic(i)}${l}${n ? `<i class="bdg">${n}</i>` : ''}</button>`).join('');
   $('#m').innerHTML = `<div class="rp">${body}</div><nav class="rbn"><div>${bn}</div></nav>`;
   done();
@@ -1447,7 +1449,7 @@ async function rbook(kind, id, extra = {}) {
 
 /* ---------- الأدمن: موظفو الاستقبال وسجل العمليات ---------- */
 let RC = [], AU = [];
-const RCA = { add: 'إضافة حجز', call: 'استدعاء', start: 'بدء الكشف', complete: 'إنهاء الكشف', skip: 'تخطي', cancel: 'إلغاء حجز', move: 'تغيير الترتيب' };
+const RCA = { add: 'إضافة حجز', call: 'استدعاء', open: 'بدء الحجز', close: 'إنهاء الحجز', start: 'بدء الكشف', complete: 'إنهاء الكشف', skip: 'تخطي', cancel: 'إلغاء حجز', move: 'تغيير الترتيب' };
 const rcChip = r => r.is_active ? '<span class="chip ok">مفعّل</span>' : '<span class="chip off">معطّل</span>';
 function rcv() {
   const nor = A.filter(d => d.is_active && !RC.some(r => r.is_active && r.doctor_id === d.id));

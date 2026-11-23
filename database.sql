@@ -19,7 +19,8 @@ CREATE TABLE doctors (
   password_hash TEXT NOT NULL,
   average_consultation_time INT NOT NULL DEFAULT 10 CHECK (average_consultation_time BETWEEN 1 AND 240),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  is_accepting_bookings BOOLEAN NOT NULL DEFAULT TRUE,
+  is_accepting_bookings BOOLEAN NOT NULL DEFAULT FALSE,
+  booking_open_date DATE,                         -- اليوم الذي بدأ فيه الحجز (يُغلق تلقائياً في اليوم التالي)
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -50,12 +50,20 @@ class LazyPool:
     def __init__(self):
         self._task, self._loop = None, None
 
+    async def _make(self):
+        p = await asyncpg.create_pool(
+            DSN, min_size=1, max_size=3, statement_cache_size=0, command_timeout=30, max_inactive_connection_lifetime=30)
+        try:  # اليوم الذي فُتح فيه الحجز (الحجز يُغلق تلقائياً مع بداية يوم جديد)
+            await p.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS booking_open_date DATE")
+        except Exception as e:
+            print("booking_open_date:", e)
+        return p
+
     async def get(self):
         loop = asyncio.get_running_loop()
         if self._task is None or self._loop is not loop:
             self._loop = loop
-            self._task = asyncio.ensure_future(asyncpg.create_pool(
-                DSN, min_size=1, max_size=3, statement_cache_size=0, command_timeout=30, max_inactive_connection_lifetime=30), loop=loop)
+            self._task = asyncio.ensure_future(self._make(), loop=loop)
         try:
             return await self._task
         except Exception:
@@ -180,7 +188,7 @@ def cnt(st=None):
 
 
 STATS = f"""SELECT d.id,d.name,d.specialty,d.description,d.profile_image,d.username,d.average_consultation_time AS avg,
-  d.is_active,d.is_accepting_bookings AS accepting,{cnt('Waiting')} AS waiting,{cnt('In Progress')} AS in_progress,
+  d.is_active,COALESCE(d.is_accepting_bookings AND d.booking_open_date=CURRENT_DATE,FALSE) AS accepting,{cnt('Waiting')} AS waiting,{cnt('In Progress')} AS in_progress,
   {cnt('Completed')} AS completed,{cnt()} AS total FROM doctors d"""
 
 
@@ -613,11 +621,11 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
             raise Fail(404, "الفرد غير موجود")
         name = mem["name"]
     async with pool.acquire() as c, c.transaction():
-        d = await c.fetchrow("SELECT is_active,is_accepting_bookings FROM doctors WHERE id=$1 FOR UPDATE", did)  # يسلسل الحجوزات المتزامنة
+        d = await c.fetchrow("SELECT is_active,COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS open FROM doctors WHERE id=$1 FOR UPDATE", did)  # يسلسل الحجوزات المتزامنة
         if not d or not d["is_active"]:
             raise Fail(404, "الطبيب غير متاح")
-        if not d["is_accepting_bookings"]:
-            raise Fail(409, "الطبيب أغلق استقبال الحجوزات حالياً")
+        if not d["open"]:
+            raise Fail(409, "الحجز مغلق حالياً. يفتح عندما تبدأ العيادة استقبال حجوزات اليوم")
         if await has_active_dup(c, did, name, phone, u["id"], mid):
             raise Fail(409, "يوجد حجز نشط لهذا الشخص عند هذا الطبيب اليوم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,member_id,queue_number)
@@ -687,11 +695,11 @@ async def guest_book(request: Request):
     if not re.fullmatch(r"\+?\d{8,15}", phone):
         raise Fail(400, "رقم الهاتف غير صحيح")
     async with pool.acquire() as c, c.transaction():
-        d = await c.fetchrow("SELECT is_active,is_accepting_bookings FROM doctors WHERE id=$1 FOR UPDATE", did)
+        d = await c.fetchrow("SELECT is_active,COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS open FROM doctors WHERE id=$1 FOR UPDATE", did)
         if not d or not d["is_active"]:
             raise Fail(404, "الطبيب غير متاح")
-        if not d["is_accepting_bookings"]:
-            raise Fail(409, "الطبيب أغلق استقبال الحجوزات حالياً")
+        if not d["open"]:
+            raise Fail(409, "الحجز مغلق حالياً. يفتح عندما تبدأ العيادة استقبال حجوزات اليوم")
         if await has_active_dup(c, did, name, phone):
             raise Fail(409, "لديك حجز نشط عند هذا الطبيب اليوم بنفس الاسم والرقم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,queue_number)
@@ -839,7 +847,7 @@ async def d_queue_locked(u=Depends(auth("doctor"))):
 @app.post("/api/doctor/accepting")
 async def d_accepting(request: Request, u=Depends(auth("doctor"))):
     b = await body(request)
-    await pool.execute("UPDATE doctors SET is_accepting_bookings=$2 WHERE id=$1", u["id"], b.get("accepting") is True)
+    await pool.execute("UPDATE doctors SET is_accepting_bookings=$2,booking_open_date=CURRENT_DATE WHERE id=$1", u["id"], b.get("accepting") is True)
     await changed()
     return await dq(u["id"])
 
@@ -848,7 +856,7 @@ async def d_accepting(request: Request, u=Depends(auth("doctor"))):
 @app.get("/api/doctor/profile")
 async def d_profile(u=Depends(auth("doctor"))):
     d = await pool.fetchrow("""SELECT name,specialty,description,profile_image,username,average_consultation_time AS avg,
-      is_accepting_bookings AS accepting FROM doctors WHERE id=$1""", u["id"])
+      COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS accepting FROM doctors WHERE id=$1""", u["id"])
     s = await pool.fetchrow("""SELECT count(*)::int AS total,
       count(*) FILTER (WHERE status='Completed')::int AS completed,
       count(*) FILTER (WHERE status='Cancelled')::int AS cancelled,
@@ -963,8 +971,8 @@ async def a_create(request: Request, u=Depends(auth("admin"))):
     o = vdoc(await body(request), True)
     try:
         await pool.execute("""INSERT INTO doctors(name,specialty,description,profile_image,username,password_hash,average_consultation_time,is_active,is_accepting_bookings)
-          VALUES($1,$2,$3,NULLIF($4,''),$5,$6,$7,$8,$9)""", o["name"], o["specialty"], o["description"], o["image"], o["username"],
-                           await asyncio.to_thread(hashpw, o["password"]), o["avg"], o["active"], o["accepting"])
+          VALUES($1,$2,$3,NULLIF($4,''),$5,$6,$7,$8,FALSE)""", o["name"], o["specialty"], o["description"], o["image"], o["username"],
+                           await asyncio.to_thread(hashpw, o["password"]), o["avg"], o["active"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "اسم المستخدم مستخدم بالفعل")
     await changed()
@@ -977,8 +985,8 @@ async def a_update(did: int, request: Request, u=Depends(auth("admin"))):
     h = await asyncio.to_thread(hashpw, o["password"]) if o["password"] else None
     try:
         r = await pool.fetchval("""UPDATE doctors SET name=$2,specialty=$3,description=$4,profile_image=NULLIF($5,''),username=$6,
-          password_hash=COALESCE($7,password_hash),average_consultation_time=$8,is_active=$9,is_accepting_bookings=$10 WHERE id=$1 RETURNING id""",
-                                did, o["name"], o["specialty"], o["description"], o["image"], o["username"], h, o["avg"], o["active"], o["accepting"])
+          password_hash=COALESCE($7,password_hash),average_consultation_time=$8,is_active=$9 WHERE id=$1 RETURNING id""",
+                                did, o["name"], o["specialty"], o["description"], o["image"], o["username"], h, o["avg"], o["active"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "اسم المستخدم مستخدم بالفعل")
     if not r:
@@ -1112,18 +1120,16 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
     return await r_state(rec, booking={"id": row["id"], "queue_number": row["queue_number"]})
 
 
-@app.post("/api/reception/call-next")
-async def r_call(rec=Depends(rec_ctx)):
-    """استدعاء المريض التالي (أول منتظر بالترتيب): يظهر له في تطبيقه «تم استدعاؤك». الحالة تبقى Waiting حتى بدء الكشف."""
-    did = rec["doctor_id"]
+@app.post("/api/reception/accepting")
+async def r_accepting(request: Request, rec=Depends(rec_ctx)):
+    """بدء/إنهاء الحجز الأونلاين لليوم. الحجز لا يُفتح إلا بقرار الموظف ويُغلق تلقائياً مع بداية اليوم التالي.
+    الحجوزات الموجودة لا تتأثر، والموظف يستطيع تسجيل مرضى الحضور المباشر في الحالتين."""
+    on = (await body(request)).get("accepting") is True
     async with pool.acquire() as c, c.transaction():
-        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", did)
-        n = await c.fetchrow("SELECT id,queue_number,patient_name FROM bookings WHERE doctor_id=$1 AND booking_date=CURRENT_DATE AND status='Waiting' ORDER BY queue_number LIMIT 1", did)
-        if not n:
-            raise Fail(409, "لا يوجد مرضى في الانتظار")
-        await c.execute("""UPDATE bookings SET called_at=CASE WHEN id=$2 THEN now() END WHERE doctor_id=$1 AND booking_date=CURRENT_DATE
-          AND status='Waiting' AND (id=$2 OR called_at IS NOT NULL)""", did, n["id"])
-        await audit(c, rec, n["id"], "call", patient=n["patient_name"], queue=n["queue_number"])
+        await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", rec["doctor_id"])
+        await c.execute("UPDATE doctors SET is_accepting_bookings=$2,booking_open_date=CURRENT_DATE WHERE id=$1", rec["doctor_id"], on)
+        await audit(c, rec, None, "open" if on else "close")
+    await changed()
     return await r_state(rec)
 
 
