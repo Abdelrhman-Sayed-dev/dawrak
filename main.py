@@ -923,6 +923,7 @@ async def d_profile(u=Depends(auth("doctor"))):
     pr = {k: d[k] for k in ("name", "specialty", "description", "profile_image", "username", "avg")}
     return {"profile": {**pr, "accepting": op, "booking_note": note, "booking_mode": mode, "work_days": list(d["work_days"]) if d["work_days"] is not None else None,
                         "clinic_start": hm(d["clinic_start"]), "clinic_end": hm(d["clinic_end"]), "max_patients": d["max_patients"],
+                        "consultation_fee": d["consultation_fee"], "booking_fee": d["booking_fee"],
                         "booking_opens_at": hm(d["booking_opens_at"]), "booking_closes_at": hm(d["booking_closes_at"])}}
 
 
@@ -989,6 +990,15 @@ async def d_profile_update(request: Request, u=Depends(auth("doctor"))):
         if img and (not re.match(r"(https?://|data:image/)", img) or len(img) > 800000): raise Fail(400, "الصورة غير صالحة")
         add("name", name); add("specialty", spec); add("description", desc); add("average_consultation_time", avg)
         add("profile_image", img or None)
+
+    if "consultation_fee" in b:  # سعر الكشف يغيّره الطبيب بنفسه؛ رسوم الحجز الأونلاين من اختصاص المدير فقط
+        v = b.get("consultation_fee")
+        fee = None
+        if v not in (None, ""):
+            try: fee = int(float(v))
+            except Exception: raise Fail(400, "سعر الكشف غير صحيح")
+            if not 0 <= fee <= 100000: raise Fail(400, "سعر الكشف بين 0 و100000")
+        add("consultation_fee", fee)
 
     if "username" in b or "password" in b:
         row = await pool.fetchrow("SELECT username,password_hash FROM doctors WHERE id=$1", u["id"])
