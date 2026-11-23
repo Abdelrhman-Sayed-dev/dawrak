@@ -401,6 +401,7 @@ h1,h2,h3,h4,.dn,.logo b{color:var(--navy)}
 .hart::after{color:var(--navy)}
 .sbox{border-color:var(--lb)}.feat span{color:var(--p);border-color:var(--lb)}
 .sec2::after{background:var(--p)}
+.sec2.nou::after{display:none}
 .ft{background:var(--pd);color:#CBD9EE}.ft .logo{color:#fff}.ft .logo b{color:#fff}.ft .logo .lm{color:var(--lb)}
 .toast{background:var(--err)}.toast.ok{background:var(--ok)}
 .chip.ok{background:#DCFCE7;color:var(--ok)}
@@ -1281,22 +1282,15 @@ function dsview() {
     <div class="ds-lgh"><span><i style="background:var(--warn)"></i>ساعة الذروة</span><span><i style="background:#60a5fa"></i>باقي الساعات</span></div>` : '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
   // التقييمات
   const dmx = Math.max(1, ...dist), rows = dist.map((n, i) => `<div class="ds-rb" data-tip="${tip('#f59e0b', nfmt(5 - i) + ' نجوم', nfmt(n) + ' تقييم', s.reviews ? Math.round(n / s.reviews * 100) + '٪' : '')}"><span>${5 - i} ★</span><div class="ds-rt"><i style="width:${n / dmx * 100}%"></i></div><b>${nfmt(n)}</b></div>`).join('');
-  const rate = s.completed + s.cancelled ? Math.round(s.completed / (s.completed + s.cancelled) * 100) : null;
-  const kpi = (ico, v, l, sub, c) => `<div class="ds-kp"><span class="ds-ki" style="background:${c[0]};color:${c[1]}">${ic(ico)}</span><div><b>${v}</b><small>${l}</small>${sub ? `<em>${sub}</em>` : ''}</div></div>`;
-  $('#m').innerHTML = `<div class="dp dsb"><h2 class="sec2">الإحصائيات</h2>
-  <div class="ds-kg">
-    ${kpi('calendar-check', nfmt(s.done_today), 'أنهوا اليوم', `${nfmt(s.waiting_today)} منتظر الآن`, ['#dcfce7', '#15803d'])}
-    ${kpi('users', nfmt(s.week), 'كشوفات آخر 7 أيام', `${nfmt(s.completed)} إجمالي المكتملة`, ['#dbeafe', '#1d4ed8'])}
-    ${kpi('check', rate != null ? nfmt(rate) + '٪' : '—', 'نسبة إتمام الحجوزات', `${nfmt(s.cancelled)} ملغي من ${nfmt(s.completed + s.cancelled)}`, ['#ede9fe', '#6d28d9'])}
+  $('#m').innerHTML = `<div class="dp dsb"><h2 class="sec2 nou">الإحصائيات</h2>
+  <div class="ds-g2">
+    <section class="card"><h3>حالة كل الحجوزات</h3>${donut([[s.completed, 'var(--p)', 'مكتمل'], [s.cancelled, '#f87171', 'ملغي'], [s.active, '#93c5fd', 'نشط']], s.total, 'حجز')}</section>
+    <section class="card"><h3>مصدر الحجز</h3>${donut([[s.online, '#2563eb', 'أونلاين'], [s.walkin, '#16a34a', 'حضور مباشر']], s.online + s.walkin, 'حجز')}</section>
   </div>
   <section class="card"><div class="row sb"><h3>الحجوزات اليومية</h3><div class="ds-seg2"><button class="${SRANGE === 7 ? 'on' : ''}" onclick="dsRange(7)">٧ أيام</button><button class="${SRANGE === 14 ? 'on' : ''}" onclick="dsRange(14)">١٤ يوم</button></div></div>
     <p class="mt">${nfmt(sumC)} مكتمل · ${nfmt(sumX)} ملغي خلال آخر ${nfmt(SRANGE)} يوماً</p>
     <div class="ds-bars">${bars}</div>
     <div class="ds-lgh"><span><i style="background:var(--p)"></i>مكتمل</span><span><i style="background:#f87171"></i>ملغي</span><span><i style="background:#93c5fd"></i>منتظر</span></div></section>
-  <div class="ds-g2">
-    <section class="card"><h3>حالة كل الحجوزات</h3>${donut([[s.completed, 'var(--p)', 'مكتمل'], [s.cancelled, '#f87171', 'ملغي'], [s.active, '#93c5fd', 'نشط']], s.total, 'حجز')}</section>
-    <section class="card"><h3>مصدر الحجز</h3>${donut([[s.online, '#2563eb', 'أونلاين'], [s.walkin, '#16a34a', 'حضور مباشر']], s.online + s.walkin, 'حجز')}</section>
-  </div>
   <section class="card"><h3>ساعات الذروة</h3><p class="mt">${peak ? `أكثر وقت حجزاً: ${hfmt(peak.h)} (آخر 30 يوماً)` : 'توزيع الحجوزات على ساعات اليوم (آخر 30 يوماً)'}</p>${hbars}</section>
   <section class="card"><div class="row sb"><h3>التقييمات</h3>${s.reviews ? `<span>${stars(s.rating)} <b>${s.rating}</b></span>` : ''}</div>
     ${s.reviews ? `<p class="mt">${nfmt(s.reviews)} تقييم</p><div class="ds-rbs">${rows}</div>` : '<p class="mt" style="padding:12px 0">لا توجد تقييمات بعد.</p>'}
