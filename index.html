@@ -604,6 +604,30 @@ body{background:var(--bg)}
 .dpd form{padding:0 16px 16px}
 .dlb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
 @media(max-width:520px){.dlb{grid-template-columns:1fr}}
+/* داشبورد الإحصائيات */
+.dsb{max-width:860px}.dsb h3{font-size:1.05rem;color:var(--navy)}
+.ds-kg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:760px){.ds-kg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ds-kp{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--b);border-radius:18px;padding:14px}
+.ds-kp b{display:block;font-size:1.45rem;color:var(--navy);line-height:1.2}.ds-kp small{display:block;color:var(--m);font-size:.8rem}.ds-kp em{display:block;font-style:normal;color:var(--m);font-size:.72rem;margin-top:4px}
+.ds-ki{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center}.ds-ki svg{width:20px;height:20px}
+.ds-g2{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}@media(min-width:760px){.ds-g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ds-bars{display:flex;gap:4px;align-items:flex-end;height:190px;margin-top:14px;padding-bottom:0;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--b) calc(25% - 1px),var(--b) 25%)}
+.ds-bars.ds-hb{height:170px}
+.ds-bc{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;padding-bottom:34px}
+.ds-bc .ds-bv{font-size:.68rem;color:var(--m);height:16px;line-height:16px}
+.ds-bc .ds-bst{width:100%;max-width:34px;display:flex;flex-direction:column;border-radius:8px 8px 3px 3px;overflow:hidden;min-height:0;transition:height .3s}
+.ds-bc .ds-bst i{display:block;min-height:0}
+.ds-bc small{position:absolute;bottom:16px;font-size:.7rem;color:var(--m);white-space:nowrap}.ds-bc small.ds-wn{bottom:2px;font-size:.62rem}
+.ds-bars:not(.ds-hb) .ds-bc:not(:has(.ds-wn)) small{bottom:12px}
+.ds-lgh{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;font-size:.8rem;color:var(--m)}.ds-lgh i,.ds-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px}
+.ds-seg2{display:flex;background:var(--bg);border-radius:999px;padding:3px}.ds-seg2 button{border:0;background:none;padding:5px 12px;border-radius:999px;cursor:pointer;color:var(--m);font:inherit;font-size:.8rem}.ds-seg2 button.on{background:#fff;color:var(--p);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.ds-dn{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.ds-dnr{width:140px;height:140px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ds-dnc{width:98px;height:98px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}.ds-dnc b{font-size:1.4rem;color:var(--navy);line-height:1.1}.ds-dnc small{color:var(--m);font-size:.75rem}
+.ds-lg{list-style:none;padding:0;margin:0;display:grid;gap:8px;min-width:150px}.ds-lg li{display:flex;align-items:center;font-size:.85rem}.ds-lg li span{flex:1}.ds-lg li b{margin-inline-end:8px}.ds-lg li small{color:var(--m);width:34px;text-align:end}
+.ds-rbs{display:grid;gap:8px;margin-top:8px}.ds-rb{display:flex;align-items:center;gap:10px;font-size:.85rem}.ds-rb>span{width:34px;color:var(--warn);font-weight:700}.ds-rb b{width:28px;text-align:end;color:var(--navy)}
+.ds-rt{flex:1;height:10px;background:var(--bg);border-radius:99px;overflow:hidden}.ds-rt i{display:block;height:100%;background:#f59e0b;border-radius:99px}
 .bs{font-weight:700}.bs.c{color:var(--ok)}.bs.x{color:var(--err)}.bs.p{color:var(--p)}.bs.w{color:var(--m)}
 @media(max-width:520px){.dpc{flex-direction:column;text-align:center}.dpu{width:100%}.dps{gap:8px}.dps .st{padding:10px 4px}.dps .st b{font-size:1.3rem}.dp .ql li{flex-wrap:wrap}.dp .ql time{margin-inline-start:0;width:100%}}
 
@@ -793,7 +817,7 @@ const SHOW_LOGIN = false;
 const LOGIN = { admin: '/admin/login', doctor: '/doctor/login', receptionist: '/receptionist/login', patient: '/patient/login' };
 const DASH = { admin: '/admin/dashboard', doctor: '/doctor/dashboard', receptionist: '/receptionist/dashboard', patient: '/patient/dashboard' };
 const PAGES = { '/admin/login': 'L:admin', '/receptionist/login': 'L:receptionist', '/doctor/login': 'L:doctor', '/patient/login': 'L:patient', '/patient/register': '/register',
-  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctor/waiting': '/dwait', '/doctor/stats': '/dstats', '/doctors': '/doctors', '/track': '/track', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
+  '/admin/dashboard': '/admin', '/receptionist/dashboard': '/receptionist', '/doctor/dashboard': '/doctor', '/doctor/profile': '/dprofile', '/doctor/stats': '/dstats', '/doctors': '/doctors', '/track': '/track', '/patient/dashboard': '/me', '/patient/favorites': '/favorites', '/patient/reminders': '/reminders' };
 // روابط hash القديمة تتحول إلى المسارات الجديدة
 const LEGACY = { '/login': '/patient/login', '/register': '/patient/register', '/me': '/patient/dashboard', '/doctor': '/doctor/dashboard', '/admin': '/admin/dashboard' };
 const R = () => { const h = location.hash.slice(1); if (h && h !== '/') return h; return PAGES[location.pathname.replace(/\/+$/, '')] || '/'; };
@@ -859,7 +883,7 @@ function foot() {
   const r = localStorage.role, at = R();
   const H = ['home', 'الرئيسية', '#/', at === '/', "return go('top')"], D = ['stethoscope', 'الأطباء', '#/doctors', at === '/doctors'];
   if (r === 'doctor') {
-    const DT = [['users', 'الطابور', '/doctor/dashboard', at === '/doctor'], ['list', 'القائمة', '/doctor/waiting', at === '/dwait'], ['bar-chart', 'الإحصائيات', '/doctor/stats', at === '/dstats'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
+    const DT = [['home', 'الرئيسية', '/doctor/dashboard', at === '/doctor'], ['bar-chart', 'الإحصائيات', '/doctor/stats', at === '/dstats'], ['user', 'ملفي', '/doctor/profile', at === '/dprofile'], ['log-out', 'خروج', '#', false, 'logout();return false']];
     return `<div class="bn-sp"></div><nav class="bn" aria-label="التنقل">${DT.map(([i, l, h, on, oc]) => `<a href="${h}" class="${on ? 'on' : ''}"${oc ? ` onclick="${oc}"` : ''}>${ic(i)}<span>${l}</span></a>`).join('')}</nav>`;
   }
   const T = r === 'patient'
@@ -886,10 +910,10 @@ function route() {
   const lh = location.hash.slice(1);
   if (LEGACY[lh]) history.replaceState(null, '', LEGACY[lh]);
   const h = R(); cur = null; closeModal();
-  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/dwait': 'doctor', '/dstats': 'doctor', '/me': 'patient', '/profile': 'patient', '/favorites': 'patient', '/reminders': 'patient' }[h], role = localStorage.role;
+  const need = { '/admin': 'admin', '/receptionist': 'receptionist', '/doctor': 'doctor', '/dprofile': 'doctor', '/dstats': 'doctor', '/me': 'patient', '/profile': 'patient', '/favorites': 'patient', '/reminders': 'patient' }[h], role = localStorage.role;
   // مستخدم بدور آخر ← بوابته الخاصة، وغير المسجّل ← صفحة الدخول المناسبة (والـ API يرفض أي وصول غير مصرح به على أي حال)
   // الطبيب المسجّل لا يفتح أي صفحة عامة: يعود دائماً للوحته
-  if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile' && h !== '/dwait' && h !== '/dstats') { nav(DASH.doctor); return; }
+  if (role === 'doctor' && localStorage.tok && !h.startsWith('L:') && h !== '/doctor' && h !== '/dprofile' && h !== '/dstats') { nav(DASH.doctor); return; }
   // موظف الاستقبال المسجّل لا يفتح إلا لوحته
   if (role === 'receptionist' && localStorage.tok && !h.startsWith('L:') && h !== '/receptionist') { nav(DASH.receptionist); return; }
   if (need && role !== need) { nav(role && DASH[role] ? DASH[role] : LOGIN[need]); return; }
@@ -899,7 +923,7 @@ function route() {
     loginPage(lr); done(); return;
   }
   $('#app').innerHTML = head() + '<main class="wrap" id="m"></main>' + (h === '/admin' || h === '/receptionist' ? '' : foot());
-  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/dwait': dwait, '/dstats': dstats, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception, '/track': track }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
+  try { ({ '/': pub, '/register': register, '/me': me, '/profile': profile, '/doctor': doctor, '/dprofile': dprofile, '/dstats': dstats, '/doctors': docsPage, '/favorites': favsPage, '/reminders': remsPage, '/admin': admin, '/receptionist': reception, '/track': track }[h] || pub)(); } catch (e) { console.error(e); toast('حدث خطأ في عرض الصفحة'); } done();
 }
 addEventListener('hashchange', route);
 
@@ -1162,29 +1186,61 @@ function dview({ doctor: d, current: c, waiting: w }) {
   done();
 }
 
-/* ---------- صفحة القائمة: قائمة الانتظار + كشوفات اليوم المنتهية ---------- */
-function dwait() { document.title = 'القائمة — دورك'; cur = async () => { try { dwview(await api('/doctor/queue')); } catch (e) { toast(e.message); } }; cur(); }
-function dwview({ waiting: w, current: c, done: dn = [] }) {
-  $('#m').innerHTML = `<div class="dp"><section class="card"><h3>قائمة الانتظار (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}${x.files ? `<span class="fb">${ic('paperclip')} ${x.files}</span>` : ''}<time>حُجز ${tm(x.created_at)}</time>${x.patient_id ? `<button class="btn o sm" onclick="pf(${x.patient_id},${x.member_id || 0})">ملفه</button>` : ''}</li>`).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>
-  <section class="card"><h3>كشوفات اليوم المنتهية (${dn.length})</h3>${dn.length ? `<ul class="ql">${dn.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b>${srcB(x.source)}${x.has_report ? '' : '<span class="fb warn">بدون تقرير</span>'}<button class="btn o sm" style="margin-inline-start:auto" onclick="fin(${x.id})">${x.has_report ? 'تعديل التقرير' : 'كتابة التقرير'}</button></li>`).join('')}</ul>` : '<p class="mt">لا توجد كشوفات منتهية اليوم بعد.</p>'}</section></div>`;
-  done();
-}
-
-/* ---------- صفحة الإحصائيات ---------- */
+/* ---------- داشبورد الإحصائيات (رسوم بـ HTML/CSS بدون مكتبات) ---------- */
+let SD = null, SRANGE = 14;
 function dstats() {
   document.title = 'الإحصائيات — دورك';
-  cur = async () => { try { const r = await api('/doctor/profile'); dsview(r.stats, r.recent, r.reviews || []); } catch (e) { toast(e.message); } }; cur();
+  cur = async () => { try { SD = await api('/doctor/stats'); dsview(); } catch (e) { toast(e.message); } }; cur();
 }
-function dsview(s, recent, reviews = []) {
-  const stl = { Waiting: 'w', 'In Progress': 'p', Completed: 'c', Cancelled: 'x' };
-  $('#m').innerHTML = `<div class="dp"><h2 class="sec2">الإحصائيات</h2>
-  <div class="stats dps">
-    <div class="st"><b>${s.waiting_today}</b><small>منتظرون اليوم</small></div><div class="st"><b>${s.done_today}</b><small>أنهوا اليوم</small></div>
-    <div class="st"><b>${s.week}</b><small>كشوفات آخر 7 أيام</small></div><div class="st"><b>${s.completed}</b><small>إجمالي المكتملة</small></div>
-    <div class="st"><b>${s.total}</b><small>كل الحجوزات</small></div><div class="st"><b>${s.cancelled}</b><small>الملغية</small></div>
-    <div class="st"><b>${s.reviews ? s.rating : '—'}</b><small>متوسط التقييم (${s.reviews || 0} تقييم)</small></div></div>
-  ${reviews.length ? `<section class="card"><h3>آخر التقييمات ${stars(s.rating)}</h3>${reviews.map(v => `<div class="rv"><div class="row sb">${stars(v.rating)}<small class="mt">${fdd(v.created_at)}</small></div>${v.comment ? `<p>${esc(v.comment)}</p>` : ''}</div>`).join('')}</section>` : ''}
-  <section class="card"><h3>آخر الحجوزات</h3>${recent.length ? `<ul class="ql">${recent.map(x => `<li><span class="n">${x.queue_number}</span><b>${esc(x.patient_name)}</b><time>${fds(x.booking_date)} · <span class="bs ${stl[x.status] || ''}">${SL[x.status] || x.status}</span></time></li>`).join('')}</ul>` : '<p class="mt">لا توجد حجوزات بعد.</p>'}</section></div>`;
+const nfmt = n => (+n || 0).toLocaleString('ar-EG');
+const hfmt = h => new Date(2000, 0, 1, h).toLocaleTimeString('ar-EG', { hour: 'numeric' });
+const dsRange = r => { SRANGE = r; dsview(); };
+// دونات بـ conic-gradient: parts = [[قيمة, لون, اسم]]
+function donut(parts, center, label) {
+  const tot = parts.reduce((a, p) => a + p[0], 0);
+  if (!tot) return '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
+  let acc = 0; const g = parts.filter(p => p[0] > 0).map(p => { const a = acc / tot * 100; acc += p[0]; return `${p[1]} ${a}% ${acc / tot * 100}%`; }).join(',');
+  return `<div class="ds-dn"><div class="ds-dnr" style="background:conic-gradient(${g})"><div class="ds-dnc"><b>${nfmt(center)}</b><small>${label}</small></div></div>
+  <ul class="ds-lg">${parts.map(p => `<li><i style="background:${p[1]}"></i><span>${p[2]}</span><b>${nfmt(p[0])}</b><small>${Math.round(p[0] / tot * 100)}%</small></li>`).join('')}</ul></div>`;
+}
+function dsview() {
+  const { stats: s, days, hours, dist, reviews } = SD;
+  const dd = days.slice(-SRANGE), mx = Math.max(1, ...dd.map(x => x.completed + x.cancelled + x.active));
+  const wd = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { day: 'numeric' });
+  const wn = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'short' });
+  const sumC = dd.reduce((a, x) => a + x.completed, 0), sumX = dd.reduce((a, x) => a + x.cancelled, 0);
+  const bars = dd.map(x => { const t = x.completed + x.cancelled + x.active, h = v => v / mx * 100;
+    return `<div class="ds-bc" title="${fds(x.day)}: ${x.completed} مكتمل، ${x.cancelled} ملغي، ${x.active} منتظر"><span class="ds-bv">${t ? nfmt(t) : ''}</span><div class="ds-bst" style="height:${h(t)}%"><i style="flex:${x.active};background:#93c5fd"></i><i style="flex:${x.cancelled};background:#f87171"></i><i style="flex:${x.completed};background:var(--p)"></i></div><small>${wd(x.day)}</small>${SRANGE <= 7 ? `<small class="ds-wn">${wn(x.day)}</small>` : ''}</div>`; }).join('');
+  // ساعات الذروة
+  const hm = Object.fromEntries(hours.map(x => [x.h, x.n])), hs = hours.map(x => x.h);
+  const h0 = hs.length ? Math.min(...hs) : 9, h1 = hs.length ? Math.max(...hs) : 17, hmx = Math.max(1, ...hours.map(x => x.n));
+  const hcols = []; for (let h = h0; h <= h1; h++) hcols.push(h);
+  const peak = hours.length ? hours.reduce((a, x) => x.n > a.n ? x : a) : null;
+  const hbars = hours.length ? `<div class="ds-bars ds-hb">${hcols.map(h => `<div class="ds-bc" title="${hfmt(h)}: ${hm[h] || 0} حجز"><span class="ds-bv">${hm[h] ? nfmt(hm[h]) : ''}</span><div class="ds-bst" style="height:${(hm[h] || 0) / hmx * 100}%"><i style="flex:1;background:${peak && h === peak.h ? 'var(--warn)' : '#60a5fa'}"></i></div><small>${hfmt(h)}</small></div>`).join('')}</div>` : '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
+  // التقييمات
+  const dmx = Math.max(1, ...dist), rows = dist.map((n, i) => `<div class="ds-rb"><span>${5 - i} ★</span><div class="ds-rt"><i style="width:${n / dmx * 100}%"></i></div><b>${nfmt(n)}</b></div>`).join('');
+  const real = s.real_avg, set = s.avg_set, diff = real != null ? Math.round(real - set) : null;
+  const rate = s.completed + s.cancelled ? Math.round(s.completed / (s.completed + s.cancelled) * 100) : null;
+  const kpi = (ico, v, l, sub, c) => `<div class="ds-kp"><span class="ds-ki" style="background:${c[0]};color:${c[1]}">${ic(ico)}</span><div><b>${v}</b><small>${l}</small>${sub ? `<em>${sub}</em>` : ''}</div></div>`;
+  $('#m').innerHTML = `<div class="dp dsb"><h2 class="sec2">الإحصائيات</h2>
+  <div class="ds-kg">
+    ${kpi('calendar-check', nfmt(s.done_today), 'أنهوا اليوم', `${nfmt(s.waiting_today)} منتظر الآن`, ['#dcfce7', '#15803d'])}
+    ${kpi('users', nfmt(s.week), 'كشوفات آخر 7 أيام', `${nfmt(s.completed)} إجمالي المكتملة`, ['#dbeafe', '#1d4ed8'])}
+    ${kpi('timer', real != null ? nfmt(Math.round(real)) + ' د' : '—', 'متوسط الكشف الفعلي', real != null ? (diff === 0 ? 'مطابق للمحدد' : `${nfmt(Math.abs(diff))} د ${diff > 0 ? 'أكثر' : 'أقل'} من المحدد (${nfmt(set)} د)`) : `المحدد ${nfmt(set)} د`, ['#fef3c7', '#b45309'])}
+    ${kpi('check', rate != null ? nfmt(rate) + '٪' : '—', 'نسبة إتمام الحجوزات', `${nfmt(s.cancelled)} ملغي من ${nfmt(s.completed + s.cancelled)}`, ['#ede9fe', '#6d28d9'])}
+  </div>
+  <section class="card"><div class="row sb"><h3>الحجوزات اليومية</h3><div class="ds-seg2"><button class="${SRANGE === 7 ? 'on' : ''}" onclick="dsRange(7)">٧ أيام</button><button class="${SRANGE === 14 ? 'on' : ''}" onclick="dsRange(14)">١٤ يوم</button></div></div>
+    <p class="mt">${nfmt(sumC)} مكتمل · ${nfmt(sumX)} ملغي خلال آخر ${nfmt(SRANGE)} يوماً</p>
+    <div class="ds-bars">${bars}</div>
+    <div class="ds-lgh"><span><i style="background:var(--p)"></i>مكتمل</span><span><i style="background:#f87171"></i>ملغي</span><span><i style="background:#93c5fd"></i>منتظر</span></div></section>
+  <div class="ds-g2">
+    <section class="card"><h3>حالة كل الحجوزات</h3>${donut([[s.completed, 'var(--p)', 'مكتمل'], [s.cancelled, '#f87171', 'ملغي'], [s.active, '#93c5fd', 'نشط']], s.total, 'حجز')}</section>
+    <section class="card"><h3>مصدر الحجز</h3>${donut([[s.online, '#2563eb', 'أونلاين'], [s.walkin, '#16a34a', 'حضور مباشر']], s.online + s.walkin, 'حجز')}</section>
+  </div>
+  <section class="card"><h3>ساعات الذروة</h3><p class="mt">${peak ? `أكثر وقت حجزاً: ${hfmt(peak.h)} (آخر 30 يوماً)` : 'توزيع الحجوزات على ساعات اليوم (آخر 30 يوماً)'}</p>${hbars}</section>
+  <section class="card"><div class="row sb"><h3>التقييمات</h3>${s.reviews ? `<span>${stars(s.rating)} <b>${s.rating}</b></span>` : ''}</div>
+    ${s.reviews ? `<p class="mt">${nfmt(s.reviews)} تقييم</p><div class="ds-rbs">${rows}</div>` : '<p class="mt" style="padding:12px 0">لا توجد تقييمات بعد.</p>'}
+    ${reviews.length ? `<h3 style="margin-top:16px">آخر التعليقات</h3>${reviews.filter(v => v.comment).slice(0, 5).map(v => `<div class="rv"><div class="row sb">${stars(v.rating)}<small class="mt">${fdd(v.created_at)}</small></div><p>${esc(v.comment)}</p></div>`).join('') || '<p class="mt">لا توجد تعليقات نصية.</p>'}` : ''}</section></div>`;
   done();
 }
 

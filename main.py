@@ -238,7 +238,7 @@ def shell(private=False):
 app.add_api_route("/", shell(), methods=["GET"], include_in_schema=False)
 for _p in ("/doctors", "/track", "/patient/login", "/patient/register", "/patient/dashboard", "/patient/favorites", "/patient/reminders"):
     app.add_api_route(_p, shell(), methods=["GET"], include_in_schema=False)
-for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/doctor/waiting", "/doctor/stats", "/receptionist/login", "/receptionist/dashboard"):
+for _p in ("/admin/login", "/admin/dashboard", "/doctor/login", "/doctor/dashboard", "/doctor/profile", "/doctor/stats", "/receptionist/login", "/receptionist/dashboard"):
     app.add_api_route(_p, shell(True), methods=["GET"], include_in_schema=False)
 for _r, _to in (("/patient", "/patient/login"), ("/doctor", "/doctor/login"), ("/admin", "/admin/login"), ("/receptionist", "/receptionist/login")):
     app.add_api_route(_r, (lambda to: (lambda: RedirectResponse(to)))(_to), methods=["GET"], include_in_schema=False)
@@ -849,26 +849,50 @@ async def d_queue_locked(u=Depends(auth("doctor"))):
 async def d_profile(u=Depends(auth("doctor"))):
     d = await pool.fetchrow("""SELECT name,specialty,description,profile_image,username,average_consultation_time AS avg,
       COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS accepting FROM doctors WHERE id=$1""", u["id"])
+    return {"profile": dict(d)}
+
+
+@app.get("/api/doctor/stats")
+async def d_stats(u=Depends(auth("doctor"))):
+    """بيانات داشبورد الإحصائيات: أرقام عامة + آخر 14 يوماً + ساعات الذروة + المصدر + توزيع التقييمات + آخر التقييمات."""
+    did = u["id"]
     s = await pool.fetchrow("""SELECT count(*)::int AS total,
       count(*) FILTER (WHERE status='Completed')::int AS completed,
       count(*) FILTER (WHERE status='Cancelled')::int AS cancelled,
+      count(*) FILTER (WHERE status IN ('Waiting','In Progress'))::int AS active,
       count(*) FILTER (WHERE booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress'))::int AS waiting_today,
       count(*) FILTER (WHERE booking_date=CURRENT_DATE AND status='Completed')::int AS done_today,
-      count(*) FILTER (WHERE booking_date>=CURRENT_DATE-6 AND status='Completed')::int AS week
-      FROM bookings WHERE doctor_id=$1""", u["id"])
-    rows = await pool.fetch("""SELECT id,queue_number,patient_name,status,booking_date FROM bookings
-      WHERE doctor_id=$1 ORDER BY booking_date DESC,queue_number DESC LIMIT 30""", u["id"])
-    stats, reviews = dict(s), []
+      count(*) FILTER (WHERE booking_date>=CURRENT_DATE-6 AND status='Completed')::int AS week,
+      count(*) FILTER (WHERE source='Online')::int AS online,
+      count(*) FILTER (WHERE source='Walk-in')::int AS walkin,
+      (SELECT round(avg(extract(epoch FROM completed_at-started_at)/60)::numeric,1)::float FROM bookings
+         WHERE doctor_id=$1 AND status='Completed' AND started_at IS NOT NULL AND completed_at>started_at
+           AND completed_at-started_at < interval '4 hours' AND booking_date>=CURRENT_DATE-29) AS real_avg
+      FROM bookings WHERE doctor_id=$1""", did)
+    days = await pool.fetch("""SELECT g::date AS day,
+      count(b.id) FILTER (WHERE b.status='Completed')::int AS completed,
+      count(b.id) FILTER (WHERE b.status='Cancelled')::int AS cancelled,
+      count(b.id) FILTER (WHERE b.status IN ('Waiting','In Progress'))::int AS active
+      FROM generate_series(CURRENT_DATE-13,CURRENT_DATE,interval '1 day') g
+      LEFT JOIN bookings b ON b.doctor_id=$1 AND b.booking_date=g::date
+      GROUP BY g ORDER BY g""", did)
+    hours = await pool.fetch("""SELECT extract(hour FROM created_at AT TIME ZONE 'Africa/Cairo')::int AS h,count(*)::int AS n
+      FROM bookings WHERE doctor_id=$1 AND status<>'Cancelled' AND booking_date>=CURRENT_DATE-29 GROUP BY 1 ORDER BY 1""", did)
+    stats, reviews, dist = dict(s), [], {}
     try:
         await ensure_features()
-        agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1", u["id"])
+        agg = await pool.fetchrow("SELECT round(avg(rating)::numeric,1)::float AS a,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1", did)
         stats.update(rating=agg["a"], reviews=agg["n"])
+        dist = {r["rating"]: r["n"] for r in await pool.fetch("SELECT rating,count(*)::int AS n FROM doctor_reviews WHERE doctor_id=$1 GROUP BY rating", did)}
         reviews = [dict(x) for x in await pool.fetch(
-            "SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 ORDER BY id DESC LIMIT 20", u["id"])]
+            "SELECT rating,comment,created_at FROM doctor_reviews WHERE doctor_id=$1 ORDER BY id DESC LIMIT 20", did)]
     except Exception as e:
         print("doctor reviews:", e)
         stats.update(rating=None, reviews=0)
-    return {"profile": dict(d), "stats": stats, "recent": [dict(x) for x in rows], "reviews": reviews}
+    avg_set = await pool.fetchval("SELECT average_consultation_time FROM doctors WHERE id=$1", did)
+    stats["avg_set"] = avg_set
+    return {"stats": stats, "days": [dict(x) for x in days], "hours": [dict(x) for x in hours],
+            "dist": [dist.get(i, 0) for i in (5, 4, 3, 2, 1)], "reviews": reviews}
 
 
 @app.put("/api/doctor/profile")
