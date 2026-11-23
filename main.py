@@ -20,7 +20,7 @@
 """
 import os, re, json, base64, asyncio, secrets, time, traceback
 from urllib.parse import quote
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time as dtime
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
@@ -57,6 +57,20 @@ class LazyPool:
             await p.execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS booking_open_date DATE")
         except Exception as e:
             print("booking_open_date:", e)
+        try:  # جدول عمل العيادة (يحدده المدير) + استثناء اليوم (يحدده موظف الاستقبال)
+            await p.execute("""ALTER TABLE doctors
+              ADD COLUMN IF NOT EXISTS work_days SMALLINT[],
+              ADD COLUMN IF NOT EXISTS clinic_start TIME,
+              ADD COLUMN IF NOT EXISTS clinic_end TIME,
+              ADD COLUMN IF NOT EXISTS max_patients INT,
+              ADD COLUMN IF NOT EXISTS booking_opens_at TIME,
+              ADD COLUMN IF NOT EXISTS booking_closes_at TIME,
+              ADD COLUMN IF NOT EXISTS override_date DATE,
+              ADD COLUMN IF NOT EXISTS override_state VARCHAR(6),
+              ADD COLUMN IF NOT EXISTS consultation_fee INT,
+              ADD COLUMN IF NOT EXISTS booking_fee INT NOT NULL DEFAULT 0""")
+        except Exception as e:
+            print("doctor schedule:", e)
         return p
 
     async def get(self):
@@ -187,20 +201,74 @@ def cnt(st=None):
     return f"(SELECT count(*) FROM bookings b WHERE b.doctor_id=d.id AND b.booking_date=CURRENT_DATE {f})::int"
 
 
+# أعمدة الجدول الزمني + حالة اليوم (تُقرأ مع الطبيب لتحديد هل الحجز الأونلاين مفتوح الآن)
+SCHED_COLS = """d.consultation_fee,d.booking_fee,d.work_days,d.clinic_start,d.clinic_end,d.max_patients,d.booking_opens_at,d.booking_closes_at,
+  CASE WHEN d.override_date=CURRENT_DATE THEN d.override_state END AS ovr,
+  COALESCE(d.is_accepting_bookings AND d.booking_open_date=CURRENT_DATE,FALSE) AS legacy_open,
+  (SELECT count(*) FROM bookings b WHERE b.doctor_id=d.id AND b.booking_date=CURRENT_DATE AND b.status<>'Cancelled')::int AS booked"""
+
 STATS = f"""SELECT d.id,d.name,d.specialty,d.description,d.profile_image,d.username,d.average_consultation_time AS avg,
-  d.is_active,COALESCE(d.is_accepting_bookings AND d.booking_open_date=CURRENT_DATE,FALSE) AS accepting,{cnt('Waiting')} AS waiting,{cnt('In Progress')} AS in_progress,
+  d.is_active,{SCHED_COLS},{cnt('Waiting')} AS waiting,{cnt('In Progress')} AS in_progress,
   {cnt('Completed')} AS completed,{cnt()} AS total FROM doctors d"""
+
+DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]   # ترتيب Postgres: 0 = الأحد
+
+
+def t12(t):
+    """وقت بصيغة 12 ساعة بالعربية: 6:30 م"""
+    h, m = t.hour, t.minute
+    return f"{(h % 12) or 12}:{m:02d} {'ص' if h < 12 else 'م'}"
+
+
+def sched(r):
+    """هل الحجز الأونلاين مفتوح الآن؟ يرجع (مفتوح؟, ملاحظة للعرض, النمط).
+    الأولوية: 1) استثناء موظف الاستقبال لليوم  2) جدول العيادة (أيام + نافذة الحجز + الحد الأقصى)
+    3) لو لم يُحدَّد جدول للطبيب (work_days فارغ) يبقى النظام اليدوي القديم."""
+    ovr = r["ovr"]
+    if ovr == "open":
+        return True, "فتحه موظف الاستقبال استثناءً", "override"
+    if ovr == "closed":
+        return False, "أغلقه موظف الاستقبال لليوم", "override"
+    full = r["max_patients"] is not None and r["booked"] >= r["max_patients"]
+    days = r["work_days"]
+    if days is None:
+        if not r["legacy_open"]:
+            return False, "الحجز مغلق حالياً", "manual"
+        return (False, "اكتمل عدد الحجوزات لليوم", "manual") if full else (True, "", "manual")
+    now = datetime.now(CAIRO)
+    dow = (now.weekday() + 1) % 7
+    if dow not in days:
+        nxt = next((DAYS_AR[(dow + k) % 7] for k in range(1, 8) if (dow + k) % 7 in days), None)
+        return False, "العيادة لا تعمل اليوم" + (f" — أقرب يوم: {nxt}" if nxt else ""), "schedule"
+    o = r["booking_opens_at"] or r["clinic_start"] or dtime(0, 0)
+    c = r["booking_closes_at"] or r["clinic_end"] or dtime(23, 59, 59)
+    t = now.time().replace(tzinfo=None)
+    if t < o:
+        return False, f"يفتح الحجز اليوم الساعة {t12(o)}", "schedule"
+    if t >= c:
+        return False, "انتهى وقت الحجز لليوم", "schedule"
+    if full:
+        return False, "اكتمل عدد الحجوزات لليوم", "schedule"
+    return True, "", "schedule"
+
+
+def hm(t):
+    return t.strftime("%H:%M") if t else None
 
 
 def view(r):
+    op, note, mode = sched(r)
     return {"id": r["id"], "name": r["name"], "specialty": r["specialty"], "description": r["description"],
-            "profile_image": r["profile_image"], "avg": r["avg"], "accepting": r["accepting"], "waiting": r["waiting"],
-            "in_progress": r["in_progress"], "completed": r["completed"],
-            "status": "busy" if r["in_progress"] else "available" if r["accepting"] else "offline"}
+            "profile_image": r["profile_image"], "avg": r["avg"], "consultation_fee": r["consultation_fee"], "booking_fee": r["booking_fee"], "accepting": op, "booking_note": note, "booking_mode": mode,
+            "work_days": list(r["work_days"]) if r["work_days"] is not None else None,
+            "clinic_start": hm(r["clinic_start"]), "clinic_end": hm(r["clinic_end"]),
+            "waiting": r["waiting"], "in_progress": r["in_progress"], "completed": r["completed"],
+            "status": "busy" if r["in_progress"] else "available" if op else "offline"}
 
 
 def adm(r):
-    return {**view(r), "username": r["username"], "is_active": r["is_active"], "total": r["total"]}
+    return {**view(r), "username": r["username"], "is_active": r["is_active"], "total": r["total"],
+            "max_patients": r["max_patients"], "booking_opens_at": hm(r["booking_opens_at"]), "booking_closes_at": hm(r["booking_closes_at"])}
 
 
 def auth(role):
@@ -621,11 +689,12 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
             raise Fail(404, "الفرد غير موجود")
         name = mem["name"]
     async with pool.acquire() as c, c.transaction():
-        d = await c.fetchrow("SELECT is_active,COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS open FROM doctors WHERE id=$1 FOR UPDATE", did)  # يسلسل الحجوزات المتزامنة
+        d = await c.fetchrow(f"SELECT d.is_active,{SCHED_COLS} FROM doctors d WHERE d.id=$1 FOR UPDATE", did)  # يسلسل الحجوزات المتزامنة
         if not d or not d["is_active"]:
             raise Fail(404, "الطبيب غير متاح")
-        if not d["open"]:
-            raise Fail(409, "الحجز مغلق حالياً. يفتح عندما تبدأ العيادة استقبال حجوزات اليوم")
+        op, note, _ = sched(d)
+        if not op:
+            raise Fail(409, "الحجز مغلق حالياً. " + note)
         if await has_active_dup(c, did, name, phone, u["id"], mid):
             raise Fail(409, "يوجد حجز نشط لهذا الشخص عند هذا الطبيب اليوم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,member_id,queue_number)
@@ -695,11 +764,12 @@ async def guest_book(request: Request):
     if not re.fullmatch(r"\+?\d{8,15}", phone):
         raise Fail(400, "رقم الهاتف غير صحيح")
     async with pool.acquire() as c, c.transaction():
-        d = await c.fetchrow("SELECT is_active,COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS open FROM doctors WHERE id=$1 FOR UPDATE", did)
+        d = await c.fetchrow(f"SELECT d.is_active,{SCHED_COLS} FROM doctors d WHERE d.id=$1 FOR UPDATE", did)
         if not d or not d["is_active"]:
             raise Fail(404, "الطبيب غير متاح")
-        if not d["open"]:
-            raise Fail(409, "الحجز مغلق حالياً. يفتح عندما تبدأ العيادة استقبال حجوزات اليوم")
+        op, note, _ = sched(d)
+        if not op:
+            raise Fail(409, "الحجز مغلق حالياً. " + note)
         if await has_active_dup(c, did, name, phone):
             raise Fail(409, "لديك حجز نشط عند هذا الطبيب اليوم بنفس الاسم والرقم")
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,queue_number)
@@ -847,9 +917,13 @@ async def d_queue_locked(u=Depends(auth("doctor"))):
 # ---------- الملف الشخصي للطبيب ----------
 @app.get("/api/doctor/profile")
 async def d_profile(u=Depends(auth("doctor"))):
-    d = await pool.fetchrow("""SELECT name,specialty,description,profile_image,username,average_consultation_time AS avg,
-      COALESCE(is_accepting_bookings AND booking_open_date=CURRENT_DATE,FALSE) AS accepting FROM doctors WHERE id=$1""", u["id"])
-    return {"profile": dict(d)}
+    d = await pool.fetchrow(f"""SELECT name,specialty,description,profile_image,username,average_consultation_time AS avg,
+      {SCHED_COLS} FROM doctors d WHERE d.id=$1""", u["id"])
+    op, note, mode = sched(d)
+    pr = {k: d[k] for k in ("name", "specialty", "description", "profile_image", "username", "avg")}
+    return {"profile": {**pr, "accepting": op, "booking_note": note, "booking_mode": mode, "work_days": list(d["work_days"]) if d["work_days"] is not None else None,
+                        "clinic_start": hm(d["clinic_start"]), "clinic_end": hm(d["clinic_end"]), "max_patients": d["max_patients"],
+                        "booking_opens_at": hm(d["booking_opens_at"]), "booking_closes_at": hm(d["booking_closes_at"])}}
 
 
 @app.get("/api/doctor/stats")
@@ -964,6 +1038,44 @@ def vdoc(b, create):
     if not 1 <= o["avg"] <= 240: raise Fail(400, "متوسط الكشف بين 1 و240 دقيقة")
     if o["image"] and (not re.match(r"(https?://|data:image/)", o["image"]) or len(o["image"]) > 800000): raise Fail(400, "الصورة غير صالحة")
     if (create or o["password"]) and len(o["password"]) < 6: raise Fail(400, "كلمة المرور 6 أحرف على الأقل")
+    o.update(vsched(b))
+    def money(k, null_ok):
+        v = b.get(k)
+        if v in (None, ""):
+            return None if null_ok else 0
+        try: n = int(float(v))
+        except Exception: raise Fail(400, "المبلغ غير صحيح")
+        if not 0 <= n <= 100000: raise Fail(400, "المبلغ بين 0 و100000")
+        return n
+    o["fee"], o["bfee"] = money("consultation_fee", True), money("booking_fee", False)
+    return o
+
+
+def vsched(b):
+    """جدول العيادة: أيام العمل (0=الأحد..6=السبت) + مواعيد الكشف + نافذة الحجز الإلكتروني + حد أقصى اختياري.
+    لو لم تُحدَّد أيام عمل يبقى الطبيب على النظام اليدوي (موظف الاستقبال يبدأ/ينهي الحجز بنفسه)."""
+    def tm(k):
+        v = str(b.get(k) or "").strip()
+        if not v: return None
+        if not TIME_RE.fullmatch(v): raise Fail(400, "صيغة الوقت غير صحيحة (مثال 09:30)")
+        return dtime(int(v[:2]), int(v[3:]))
+    raw = b.get("work_days")
+    days = None
+    if isinstance(raw, list) and raw:
+        try: days = sorted({int(x) for x in raw})
+        except Exception: raise Fail(400, "أيام العمل غير صحيحة")
+        if any(d < 0 or d > 6 for d in days): raise Fail(400, "أيام العمل غير صحيحة")
+    o = {"work_days": days, "clinic_start": tm("clinic_start"), "clinic_end": tm("clinic_end"),
+         "opens_at": tm("booking_opens_at"), "closes_at": tm("booking_closes_at"), "max_patients": None}
+    mp = b.get("max_patients")
+    if mp not in (None, ""):
+        try: o["max_patients"] = int(mp)
+        except Exception: raise Fail(400, "الحد الأقصى للمرضى غير صحيح")
+        if not 1 <= o["max_patients"] <= 500: raise Fail(400, "الحد الأقصى للمرضى بين 1 و500")
+    if days is not None:
+        if not (o["clinic_start"] and o["clinic_end"]): raise Fail(400, "حدّد وقت بداية ونهاية الكشف")
+        if o["clinic_end"] <= o["clinic_start"]: raise Fail(400, "نهاية الكشف يجب أن تكون بعد البداية")
+        if o["opens_at"] and o["closes_at"] and o["closes_at"] <= o["opens_at"]: raise Fail(400, "إغلاق الحجز يجب أن يكون بعد فتحه")
     return o
 
 
@@ -982,9 +1094,11 @@ async def a_list(u=Depends(auth("admin"))):
 async def a_create(request: Request, u=Depends(auth("admin"))):
     o = vdoc(await body(request), True)
     try:
-        await pool.execute("""INSERT INTO doctors(name,specialty,description,profile_image,username,password_hash,average_consultation_time,is_active,is_accepting_bookings)
-          VALUES($1,$2,$3,NULLIF($4,''),$5,$6,$7,$8,FALSE)""", o["name"], o["specialty"], o["description"], o["image"], o["username"],
-                           await asyncio.to_thread(hashpw, o["password"]), o["avg"], o["active"])
+        await pool.execute("""INSERT INTO doctors(name,specialty,description,profile_image,username,password_hash,average_consultation_time,is_active,is_accepting_bookings,
+            work_days,clinic_start,clinic_end,max_patients,booking_opens_at,booking_closes_at,consultation_fee,booking_fee)
+          VALUES($1,$2,$3,NULLIF($4,''),$5,$6,$7,$8,FALSE,$9,$10,$11,$12,$13,$14,$15,$16)""", o["name"], o["specialty"], o["description"], o["image"], o["username"],
+                           await asyncio.to_thread(hashpw, o["password"]), o["avg"], o["active"],
+                           o["work_days"], o["clinic_start"], o["clinic_end"], o["max_patients"], o["opens_at"], o["closes_at"], o["fee"], o["bfee"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "اسم المستخدم مستخدم بالفعل")
     await changed()
@@ -997,8 +1111,10 @@ async def a_update(did: int, request: Request, u=Depends(auth("admin"))):
     h = await asyncio.to_thread(hashpw, o["password"]) if o["password"] else None
     try:
         r = await pool.fetchval("""UPDATE doctors SET name=$2,specialty=$3,description=$4,profile_image=NULLIF($5,''),username=$6,
-          password_hash=COALESCE($7,password_hash),average_consultation_time=$8,is_active=$9 WHERE id=$1 RETURNING id""",
-                                did, o["name"], o["specialty"], o["description"], o["image"], o["username"], h, o["avg"], o["active"])
+          password_hash=COALESCE($7,password_hash),average_consultation_time=$8,is_active=$9,
+          work_days=$10,clinic_start=$11,clinic_end=$12,max_patients=$13,booking_opens_at=$14,booking_closes_at=$15,consultation_fee=$16,booking_fee=$17 WHERE id=$1 RETURNING id""",
+                                did, o["name"], o["specialty"], o["description"], o["image"], o["username"], h, o["avg"], o["active"],
+                                o["work_days"], o["clinic_start"], o["clinic_end"], o["max_patients"], o["opens_at"], o["closes_at"], o["fee"], o["bfee"])
     except asyncpg.UniqueViolationError:
         raise Fail(409, "اسم المستخدم مستخدم بالفعل")
     if not r:
@@ -1139,13 +1255,20 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
 
 @app.post("/api/reception/accepting")
 async def r_accepting(request: Request, rec=Depends(rec_ctx)):
-    """بدء/إنهاء الحجز الأونلاين لليوم. الحجز لا يُفتح إلا بقرار الموظف ويُغلق تلقائياً مع بداية اليوم التالي.
-    الحجوزات الموجودة لا تتأثر، والموظف يستطيع تسجيل مرضى الحضور المباشر في الحالتين."""
-    on = (await body(request)).get("accepting") is True
+    """استثناء لليوم فقط: mode = open (فتح الحجز رغم الجدول) | closed (إغلاقه رغم الجدول) | auto (العودة لجدول العيادة).
+    الأصل أن الجدول الذي حدده المدير هو المتحكم، وهذا الإجراء للحالات الاستثنائية. يُلغى تلقائياً مع بداية اليوم التالي.
+    (للتوافق: accepting=true/false تعادل open/closed). الحجوزات الموجودة لا تتأثر، وتسجيل الحضور المباشر متاح دائماً."""
+    b = await body(request)
+    mode = b.get("mode") or ("open" if b.get("accepting") is True else "closed" if "accepting" in b else None)
+    if mode not in ("open", "closed", "auto"):
+        raise Fail(400, "اختيار غير صحيح")
     async with pool.acquire() as c, c.transaction():
         await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", rec["doctor_id"])
-        await c.execute("UPDATE doctors SET is_accepting_bookings=$2,booking_open_date=CURRENT_DATE WHERE id=$1", rec["doctor_id"], on)
-        await audit(c, rec, None, "open" if on else "close")
+        if mode == "auto":
+            await c.execute("UPDATE doctors SET override_state=NULL,override_date=NULL,is_accepting_bookings=FALSE WHERE id=$1", rec["doctor_id"])
+        else:
+            await c.execute("UPDATE doctors SET override_state=$2,override_date=CURRENT_DATE WHERE id=$1", rec["doctor_id"], mode)
+        await audit(c, rec, None, {"open": "open", "closed": "close", "auto": "auto"}[mode])
     await changed()
     return await r_state(rec)
 

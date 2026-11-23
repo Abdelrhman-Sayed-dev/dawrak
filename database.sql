@@ -21,6 +21,17 @@ CREATE TABLE doctors (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   is_accepting_bookings BOOLEAN NOT NULL DEFAULT FALSE,
   booking_open_date DATE,                         -- اليوم الذي بدأ فيه الحجز (يُغلق تلقائياً في اليوم التالي)
+  -- جدول العيادة (يحدده المدير). work_days فارغ (NULL) = نظام يدوي قديم يبدأ/ينهي فيه الموظف الحجز كل يوم
+  work_days SMALLINT[],                           -- أيام العمل: 0=الأحد .. 6=السبت
+  clinic_start TIME,                              -- بداية الكشف
+  clinic_end TIME,                                -- نهاية الكشف
+  max_patients INT CHECK (max_patients BETWEEN 1 AND 500),   -- الحد الأقصى للحجوزات يومياً (اختياري)
+  booking_opens_at TIME,                          -- فتح الحجز الإلكتروني (فارغ = من بداية الكشف)
+  booking_closes_at TIME,                         -- إغلاق الحجز الإلكتروني (فارغ = عند نهاية الكشف)
+  consultation_fee INT CHECK (consultation_fee BETWEEN 0 AND 100000),   -- سعر الكشف (NULL = غير محدد)
+  booking_fee INT NOT NULL DEFAULT 0 CHECK (booking_fee BETWEEN 0 AND 100000),  -- رسوم الحجز الأونلاين (0 = مجاني)
+  override_date DATE,                             -- استثناء موظف الاستقبال (يسري في هذا اليوم فقط)
+  override_state VARCHAR(6) CHECK (override_state IN ('open','closed')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
