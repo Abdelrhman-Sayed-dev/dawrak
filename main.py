@@ -1231,18 +1231,26 @@ async def r_search(q: str = "", rec=Depends(rec_ctx)):
     if not 3 <= len(q) <= 40:
         raise Fail(400, "اكتب 3 أحرف أو أرقام على الأقل للبحث")
     esc_like = lambda t: re.sub(r"([\\%_])", r"\\\1", t)
-    digits = re.sub(r"[\s-]", "", q)
+    act = "b.doctor_id=$3 AND b.booking_date=CURRENT_DATE AND b.status IN ('Waiting','In Progress')"
+    ar = "translate({c},'٠١٢٣٤٥٦٧٨٩','0123456789')"   # توحيد الأرقام العربية والإنجليزية في البحث
+    q = q.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")); digits = re.sub(r"[\s-]", "", q)
     name_like = "%" + esc_like(q) + "%"
     phone_like = "%" + esc_like(digits) + "%" if re.fullmatch(r"\+?\d+", digits) else name_like
-    act = "b.doctor_id=$3 AND b.booking_date=CURRENT_DATE AND b.status IN ('Waiting','In Progress')"
+    pn, wn, bn = ar.format(c="p.name"), ar.format(c="w.name"), ar.format(c="b.patient_name")
     rows = await pool.fetch(f"""(SELECT 'account' AS kind,p.id,p.name,p.phone,p.age,
         EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.patient_id=p.id AND b.member_id IS NULL) AS booked
-        FROM patients p WHERE p.name ILIKE $1 OR p.phone LIKE $2)
+        FROM patients p WHERE {pn} ILIKE $1 OR p.phone LIKE $2)
       UNION ALL
       (SELECT 'walkin',w.id,w.name,w.phone,w.age,
         EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.walkin_id=w.id) AS booked
-        FROM walkin_patients w WHERE w.name ILIKE $1 OR w.phone LIKE $2)
-      ORDER BY name LIMIT 10""", name_like, phone_like, rec["doctor_id"])
+        FROM walkin_patients w WHERE {wn} ILIKE $1 OR w.phone LIKE $2)
+      UNION ALL
+      (SELECT 'guest',0,b.patient_name,b.patient_phone,NULL::int,
+        bool_or(b.booking_date=CURRENT_DATE AND b.status IN ('Waiting','In Progress'))
+        FROM bookings b WHERE b.doctor_id=$3 AND b.walkin_id IS NULL AND (b.patient_id IS NULL OR b.member_id IS NOT NULL)
+          AND ({bn} ILIKE $1 OR b.patient_phone LIKE $2)
+        GROUP BY b.patient_name,b.patient_phone)
+      ORDER BY name LIMIT 15""", name_like, phone_like, rec["doctor_id"])
     return [dict(r) for r in rows]
 
 
@@ -1273,15 +1281,15 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
         else:
             if await has_active_dup(c, did, name, phone):
                 raise Fail(409, "هذا المريض لديه حجز نشط عند الطبيب اليوم (أونلاين أو حضور مباشر) بنفس الاسم والرقم")
-            # رقم الهاتف مسجّل من قبل => المريض موجود، لا ننشئ سجلاً مكرراً (اختره من نتائج البحث)
+            # رقم الهاتف مسجّل من قبل: الواجهة تعرض الأسماء الموجودة وتسأل الموظف؛ confirm_new=true يعني أكّد تسجيله باسم جديد على نفس الرقم
             pk = phone_key(phone)
             ex = await c.fetchrow("SELECT name FROM patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 OR right(regexp_replace(whatsapp,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
-            if ex:
+            if ex and not b.get("confirm_new"):
                 raise Fail(409, f"رقم الهاتف مسجّل مسبقاً بحساب أونلاين باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
             wid = await c.fetchval("SELECT id FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) ORDER BY id LIMIT 1", pk, name)
             if not wid:
                 ex = await c.fetchrow("SELECT name FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
-                if ex:
+                if ex and not b.get("confirm_new"):
                     raise Fail(409, f"رقم الهاتف مسجّل مسبقاً باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
                 wid = await c.fetchval("INSERT INTO walkin_patients(name,phone,age,created_by) VALUES($1,$2,$3,$4) RETURNING id", name, phone, age, rec["id"])
         if await has_active_dup(c, did, name, phone, pid, None, wid):
