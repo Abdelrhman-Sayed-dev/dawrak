@@ -607,27 +607,54 @@ body{background:var(--bg)}
 /* داشبورد الإحصائيات */
 .dsb{max-width:860px}.dsb h3{font-size:1.05rem;color:var(--navy)}
 .ds-kg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-@media(min-width:760px){.ds-kg{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.ds-kp{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--b);border-radius:18px;padding:14px}
+@media(max-width:759px){.ds-kg>:last-child:nth-child(odd){grid-column:1/-1}}@media(min-width:760px){.ds-kg{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ds-kp{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--b);border-radius:18px;padding:14px;transition:transform .2s,box-shadow .2s}
+.ds-kp:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(37,99,235,.12)}
 .ds-kp b{display:block;font-size:1.45rem;color:var(--navy);line-height:1.2}.ds-kp small{display:block;color:var(--m);font-size:.8rem}.ds-kp em{display:block;font-style:normal;color:var(--m);font-size:.72rem;margin-top:4px}
 .ds-ki{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center}.ds-ki svg{width:20px;height:20px}
 .ds-g2{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}@media(min-width:760px){.ds-g2{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ds-bars{display:flex;gap:4px;align-items:flex-end;height:190px;margin-top:14px;padding-bottom:0;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--b) calc(25% - 1px),var(--b) 25%)}
+.dsb [data-tip]{cursor:pointer}
+/* أعمدة */
+.ds-bars{display:flex;gap:4px;align-items:flex-end;height:190px;margin-top:14px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--b) calc(25% - 1px),var(--b) 25%)}
 .ds-bars.ds-hb{height:170px}
-.ds-bc{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;padding-bottom:34px}
-.ds-bc .ds-bv{font-size:.68rem;color:var(--m);height:16px;line-height:16px}
-.ds-bc .ds-bst{width:100%;max-width:34px;display:flex;flex-direction:column;border-radius:8px 8px 3px 3px;overflow:hidden;min-height:0;transition:height .3s}
-.ds-bc .ds-bst i{display:block;min-height:0}
-.ds-bc small{position:absolute;bottom:16px;font-size:.7rem;color:var(--m);white-space:nowrap}.ds-bc small.ds-wn{bottom:2px;font-size:.62rem}
+.ds-bc{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;padding-bottom:34px;transition:opacity .2s,transform .2s}
+.ds-bc .ds-bv{font-size:.68rem;color:var(--m);height:16px;line-height:16px;transition:color .2s,transform .2s}
+.ds-bc .ds-bst{width:100%;max-width:34px;display:flex;flex-direction:column;border-radius:8px 8px 3px 3px;overflow:hidden;min-height:0;transform-origin:bottom;transition:transform .2s,box-shadow .2s;animation:dsgrow .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--k,0)*35ms)}
+.ds-bc .ds-bst i{display:block;min-height:0;transition:filter .2s,opacity .2s}
+.ds-bc small{position:absolute;bottom:16px;font-size:.7rem;color:var(--m);white-space:nowrap;transition:color .2s}.ds-bc small.ds-wn{bottom:2px;font-size:.62rem}
 .ds-bars:not(.ds-hb) .ds-bc:not(:has(.ds-wn)) small{bottom:12px}
+.ds-bars:hover .ds-bc{opacity:.4}
+.ds-bars .ds-bc:hover{opacity:1}
+.ds-bc:hover .ds-bst{transform:scaleX(1.18);box-shadow:0 6px 16px rgba(15,23,42,.22)}
+.ds-bc:hover .ds-bv,.ds-bc:hover small{color:var(--navy);font-weight:800}
+.ds-bc .ds-bst i:hover{filter:brightness(1.18) saturate(1.2)}
+.ds-bc:hover .ds-bst i:not(:hover){opacity:.75}
+@keyframes dsgrow{from{height:0}}
 .ds-lgh{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;font-size:.8rem;color:var(--m)}.ds-lgh i,.ds-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px}
 .ds-seg2{display:flex;background:var(--bg);border-radius:999px;padding:3px}.ds-seg2 button{border:0;background:none;padding:5px 12px;border-radius:999px;cursor:pointer;color:var(--m);font:inherit;font-size:.8rem}.ds-seg2 button.on{background:#fff;color:var(--p);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+/* دونات SVG */
 .ds-dn{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:12px}
-.ds-dnr{width:140px;height:140px;border-radius:50%;display:grid;place-items:center;flex:none}
-.ds-dnc{width:98px;height:98px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}.ds-dnc b{font-size:1.4rem;color:var(--navy);line-height:1.1}.ds-dnc small{color:var(--m);font-size:.75rem}
-.ds-lg{list-style:none;padding:0;margin:0;display:grid;gap:8px;min-width:150px}.ds-lg li{display:flex;align-items:center;font-size:.85rem}.ds-lg li span{flex:1}.ds-lg li b{margin-inline-end:8px}.ds-lg li small{color:var(--m);width:34px;text-align:end}
-.ds-rbs{display:grid;gap:8px;margin-top:8px}.ds-rb{display:flex;align-items:center;gap:10px;font-size:.85rem}.ds-rb>span{width:34px;color:var(--warn);font-weight:700}.ds-rb b{width:28px;text-align:end;color:var(--navy)}
-.ds-rt{flex:1;height:10px;background:var(--bg);border-radius:99px;overflow:hidden}.ds-rt i{display:block;height:100%;background:#f59e0b;border-radius:99px}
+.ds-dnr{position:relative;width:150px;height:150px;flex:none}
+.ds-dnr svg{width:100%;height:100%;overflow:visible}
+.ds-seg{cursor:pointer;transition:stroke-width .2s,opacity .2s,filter .2s;animation:dsdraw .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--k,0)*120ms)}
+@keyframes dsdraw{from{stroke-dasharray:0 100}}
+.ds-dn.hov .ds-seg{opacity:.28}
+.ds-dn.hov .ds-seg.hl{opacity:1;stroke-width:8.5;filter:drop-shadow(0 2px 4px rgba(15,23,42,.35))}
+.ds-dnc{position:absolute;inset:0;margin:auto;width:96px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.ds-dnc b{font-size:1.4rem;color:var(--navy);line-height:1.1;transition:color .2s}.ds-dnc small{color:var(--m);font-size:.75rem}
+.ds-lg{list-style:none;padding:0;margin:0;display:grid;gap:4px;min-width:150px}.ds-lg li{display:flex;align-items:center;font-size:.85rem;padding:5px 8px;border-radius:10px;transition:background .2s,transform .2s;cursor:pointer}.ds-lg li span{flex:1}.ds-lg li b{margin-inline-end:8px}.ds-lg li small{color:var(--m);width:34px;text-align:end}
+.ds-lg li.hl{background:var(--bg);transform:translateX(-4px)}
+.ds-dn.hov .ds-lg li:not(.hl){opacity:.45}
+/* تقييمات */
+.ds-rbs{display:grid;gap:4px;margin-top:8px}.ds-rb{display:flex;align-items:center;gap:10px;font-size:.85rem;padding:4px 6px;border-radius:10px;transition:background .2s}.ds-rb:hover{background:var(--bg)}.ds-rb>span{width:34px;color:var(--warn);font-weight:700}.ds-rb b{width:28px;text-align:end;color:var(--navy)}
+.ds-rt{flex:1;height:10px;background:var(--bg);border-radius:99px;overflow:hidden}.ds-rt i{display:block;height:100%;background:#f59e0b;border-radius:99px;transform-origin:right;animation:dsfill .8s cubic-bezier(.2,.8,.2,1) both;transition:filter .2s}.ds-rb:hover .ds-rt i{filter:brightness(1.1) saturate(1.3)}
+@keyframes dsfill{from{transform:scaleX(0)}}
+/* تولتيب */
+.ds-tip{position:fixed;z-index:120;pointer-events:none;display:flex;align-items:center;gap:10px;background:#0b1f44;color:#fff;border-radius:12px;padding:8px 12px;font-size:.82rem;box-shadow:0 10px 28px rgba(2,12,40,.35);opacity:0;transform:translateY(4px) scale(.96);transition:opacity .15s,transform .15s;max-width:240px}
+.ds-tip.on{opacity:1;transform:none}
+.ds-tip i{flex:none;width:14px;height:14px;border-radius:5px;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.ds-tip b{display:block;font-size:.85rem}.ds-tip span{display:block;opacity:.85;font-size:.76rem}
+@media(prefers-reduced-motion:reduce){.ds-bst,.ds-seg,.ds-rt i{animation:none!important}}
 .bs{font-weight:700}.bs.c{color:var(--ok)}.bs.x{color:var(--err)}.bs.p{color:var(--p)}.bs.w{color:var(--m)}
 @media(max-width:520px){.dpc{flex-direction:column;text-align:center}.dpu{width:100%}.dps{gap:8px}.dps .st{padding:10px 4px}.dps .st b{font-size:1.3rem}.dp .ql li{flex-wrap:wrap}.dp .ql time{margin-inline-start:0;width:100%}}
 
@@ -1186,47 +1213,80 @@ function dview({ doctor: d, current: c, waiting: w }) {
   done();
 }
 
-/* ---------- داشبورد الإحصائيات (رسوم بـ HTML/CSS بدون مكتبات) ---------- */
-let SD = null, SRANGE = 14;
+/* ---------- داشبورد الإحصائيات (رسوم بـ HTML/CSS/SVG بدون مكتبات) ---------- */
+let SD = null, SJ = '', SRANGE = 14, DST = null;
 function dstats() {
-  document.title = 'الإحصائيات — دورك';
-  cur = async () => { try { SD = await api('/doctor/stats'); dsview(); } catch (e) { toast(e.message); } }; cur();
+  document.title = 'الإحصائيات — دورك'; SJ = '';
+  cur = async () => { try { const d = await api('/doctor/stats'), j = JSON.stringify(d); if (j === SJ) return; SJ = j; SD = d; dsview(); } catch (e) { toast(e.message); } }; cur();
 }
 const nfmt = n => (+n || 0).toLocaleString('ar-EG');
 const hfmt = h => new Date(2000, 0, 1, h).toLocaleTimeString('ar-EG', { hour: 'numeric' });
 const dsRange = r => { SRANGE = r; dsview(); };
-// دونات بـ conic-gradient: parts = [[قيمة, لون, اسم]]
+const tip = (c, l, v, x = '') => `${c}|${l}|${v}|${x}`;
+// دونات SVG: parts = [[قيمة, لون, اسم]]
 function donut(parts, center, label) {
   const tot = parts.reduce((a, p) => a + p[0], 0);
   if (!tot) return '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
-  let acc = 0; const g = parts.filter(p => p[0] > 0).map(p => { const a = acc / tot * 100; acc += p[0]; return `${p[1]} ${a}% ${acc / tot * 100}%`; }).join(',');
-  return `<div class="ds-dn"><div class="ds-dnr" style="background:conic-gradient(${g})"><div class="ds-dnc"><b>${nfmt(center)}</b><small>${label}</small></div></div>
-  <ul class="ds-lg">${parts.map(p => `<li><i style="background:${p[1]}"></i><span>${p[2]}</span><b>${nfmt(p[0])}</b><small>${Math.round(p[0] / tot * 100)}%</small></li>`).join('')}</ul></div>`;
+  const vis = parts.map((p, i) => [...p, i]).filter(p => p[0] > 0), gap = vis.length > 1 ? 1 : 0; let acc = 0;
+  const segs = vis.map((p, k) => { const len = p[0] / tot * 100, off = 25 - acc; acc += len;
+    return `<circle class="ds-seg" data-i="${p[3]}" style="stroke:${p[1]};--k:${k}" data-tip="${tip(p[1], p[2], nfmt(p[0]) + ' حجز', Math.round(len) + '٪')}" cx="21" cy="21" r="15.915" fill="none" stroke-width="6" stroke-dasharray="${Math.max(len - gap, .01)} ${100 - len + gap}" stroke-dashoffset="${off}"/>`; }).join('');
+  return `<div class="ds-dn"><div class="ds-dnr"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.915" fill="none" stroke="#eef3fb" stroke-width="6"/>${segs}</svg><div class="ds-dnc" data-b="${nfmt(center)}" data-s="${label}"><b>${nfmt(center)}</b><small>${label}</small></div></div>
+  <ul class="ds-lg">${parts.map((p, i) => `<li data-i="${i}" data-tip="${tip(p[1], p[2], nfmt(p[0]) + ' حجز', tot ? Math.round(p[0] / tot * 100) + '٪' : '')}"><i style="background:${p[1]}"></i><span>${p[2]}</span><b>${nfmt(p[0])}</b><small>${Math.round(p[0] / tot * 100)}٪</small></li>`).join('')}</ul></div>`;
+}
+// تفاعل الرسوم: تولتيب + تركيز على الجزء + ربط الدونات بالليجند (مرة واحدة على مستوى الصفحة)
+if (!window.__dsHover) {
+  window.__dsHover = 1;
+  const tipEl = () => DST || (DST = Object.assign(document.createElement('div'), { className: 'ds-tip' }), document.body.append(DST), DST);
+  const move = e => {
+    const t = e.target.closest && e.target.closest('.dsb [data-tip]'), el = tipEl();
+    if (!t) { el.classList.remove('on'); return; }
+    const [c, l, v, x] = t.dataset.tip.split('|');
+    el.innerHTML = `<i style="background:${c}"></i><div><b>${l}</b><span>${v}${x ? ' · ' + x : ''}</span></div>`;
+    const w = el.offsetWidth, h = el.offsetHeight; let X = e.clientX + 14, Y = e.clientY - h - 12;
+    if (X + w > innerWidth - 8) X = e.clientX - w - 14; if (X < 8) X = 8; if (Y < 8) Y = e.clientY + 18;
+    el.style.left = X + 'px'; el.style.top = Y + 'px'; el.classList.add('on');
+  };
+  const hi = e => {
+    const dn = e.target.closest && e.target.closest('.ds-dn'); if (!dn) return;
+    const it = e.target.closest('.ds-seg,.ds-lg li'), c = dn.querySelector('.ds-dnc');
+    dn.querySelectorAll('.hl').forEach(n => n.classList.remove('hl'));
+    if (!it) { dn.classList.remove('hov'); c.innerHTML = `<b>${c.dataset.b}</b><small>${c.dataset.s}</small>`; return; }
+    const i = it.dataset.i; dn.classList.add('hov');
+    dn.querySelectorAll(`[data-i="${i}"]`).forEach(n => n.classList.add('hl'));
+    const li = dn.querySelector(`.ds-lg li[data-i="${i}"]`);
+    c.innerHTML = `<b>${li.querySelector('b').textContent}</b><small>${li.querySelector('span').textContent}</small>`;
+  };
+  document.addEventListener('pointermove', e => { move(e); hi(e); });
+  document.addEventListener('pointerdown', e => { move(e); hi(e); });
+  document.addEventListener('scroll', () => DST?.classList.remove('on'), true);
 }
 function dsview() {
   const { stats: s, days, hours, dist, reviews } = SD;
   const dd = days.slice(-SRANGE), mx = Math.max(1, ...dd.map(x => x.completed + x.cancelled + x.active));
   const wd = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { day: 'numeric' });
   const wn = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'short' });
+  const wl = d => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+  const C = { c: 'var(--p)', x: '#f87171', a: '#93c5fd' };
   const sumC = dd.reduce((a, x) => a + x.completed, 0), sumX = dd.reduce((a, x) => a + x.cancelled, 0);
-  const bars = dd.map(x => { const t = x.completed + x.cancelled + x.active, h = v => v / mx * 100;
-    return `<div class="ds-bc" title="${fds(x.day)}: ${x.completed} مكتمل، ${x.cancelled} ملغي، ${x.active} منتظر"><span class="ds-bv">${t ? nfmt(t) : ''}</span><div class="ds-bst" style="height:${h(t)}%"><i style="flex:${x.active};background:#93c5fd"></i><i style="flex:${x.cancelled};background:#f87171"></i><i style="flex:${x.completed};background:var(--p)"></i></div><small>${wd(x.day)}</small>${SRANGE <= 7 ? `<small class="ds-wn">${wn(x.day)}</small>` : ''}</div>`; }).join('');
+  const seg = (n, key, lbl, day) => n ? `<i style="flex:${n};background:${C[key]}" data-tip="${tip(C[key], lbl, nfmt(n) + ' حجز', wl(day))}"></i>` : '';
+  const bars = dd.map((x, k) => { const t = x.completed + x.cancelled + x.active;
+    return `<div class="ds-bc" style="--k:${k}" data-tip="${tip('#64748b', wl(x.day), nfmt(t) + ' حجز إجمالاً')}"><span class="ds-bv">${t ? nfmt(t) : ''}</span><div class="ds-bst" style="height:${t / mx * 100}%">${seg(x.active, 'a', 'منتظر', x.day)}${seg(x.cancelled, 'x', 'ملغي', x.day)}${seg(x.completed, 'c', 'مكتمل', x.day)}</div><small>${wd(x.day)}</small>${SRANGE <= 7 ? `<small class="ds-wn">${wn(x.day)}</small>` : ''}</div>`; }).join('');
   // ساعات الذروة
   const hm = Object.fromEntries(hours.map(x => [x.h, x.n])), hs = hours.map(x => x.h);
   const h0 = hs.length ? Math.min(...hs) : 9, h1 = hs.length ? Math.max(...hs) : 17, hmx = Math.max(1, ...hours.map(x => x.n));
   const hcols = []; for (let h = h0; h <= h1; h++) hcols.push(h);
   const peak = hours.length ? hours.reduce((a, x) => x.n > a.n ? x : a) : null;
-  const hbars = hours.length ? `<div class="ds-bars ds-hb">${hcols.map(h => `<div class="ds-bc" title="${hfmt(h)}: ${hm[h] || 0} حجز"><span class="ds-bv">${hm[h] ? nfmt(hm[h]) : ''}</span><div class="ds-bst" style="height:${(hm[h] || 0) / hmx * 100}%"><i style="flex:1;background:${peak && h === peak.h ? 'var(--warn)' : '#60a5fa'}"></i></div><small>${hfmt(h)}</small></div>`).join('')}</div>` : '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
+  const hbars = hours.length ? `<div class="ds-bars ds-hb">${hcols.map((h, k) => { const col = peak && h === peak.h ? 'var(--warn)' : '#60a5fa';
+    return `<div class="ds-bc" style="--k:${k}" data-tip="${tip(col, 'الساعة ' + hfmt(h), nfmt(hm[h] || 0) + ' حجز', peak && h === peak.h ? 'ساعة الذروة' : '')}"><span class="ds-bv">${hm[h] ? nfmt(hm[h]) : ''}</span><div class="ds-bst" style="height:${(hm[h] || 0) / hmx * 100}%"><i style="flex:1;background:${col}"></i></div><small>${hfmt(h)}</small></div>`; }).join('')}</div>
+    <div class="ds-lgh"><span><i style="background:var(--warn)"></i>ساعة الذروة</span><span><i style="background:#60a5fa"></i>باقي الساعات</span></div>` : '<p class="mt" style="text-align:center;padding:24px 0">لا توجد بيانات بعد.</p>';
   // التقييمات
-  const dmx = Math.max(1, ...dist), rows = dist.map((n, i) => `<div class="ds-rb"><span>${5 - i} ★</span><div class="ds-rt"><i style="width:${n / dmx * 100}%"></i></div><b>${nfmt(n)}</b></div>`).join('');
-  const real = s.real_avg, set = s.avg_set, diff = real != null ? Math.round(real - set) : null;
+  const dmx = Math.max(1, ...dist), rows = dist.map((n, i) => `<div class="ds-rb" data-tip="${tip('#f59e0b', nfmt(5 - i) + ' نجوم', nfmt(n) + ' تقييم', s.reviews ? Math.round(n / s.reviews * 100) + '٪' : '')}"><span>${5 - i} ★</span><div class="ds-rt"><i style="width:${n / dmx * 100}%"></i></div><b>${nfmt(n)}</b></div>`).join('');
   const rate = s.completed + s.cancelled ? Math.round(s.completed / (s.completed + s.cancelled) * 100) : null;
   const kpi = (ico, v, l, sub, c) => `<div class="ds-kp"><span class="ds-ki" style="background:${c[0]};color:${c[1]}">${ic(ico)}</span><div><b>${v}</b><small>${l}</small>${sub ? `<em>${sub}</em>` : ''}</div></div>`;
   $('#m').innerHTML = `<div class="dp dsb"><h2 class="sec2">الإحصائيات</h2>
   <div class="ds-kg">
     ${kpi('calendar-check', nfmt(s.done_today), 'أنهوا اليوم', `${nfmt(s.waiting_today)} منتظر الآن`, ['#dcfce7', '#15803d'])}
     ${kpi('users', nfmt(s.week), 'كشوفات آخر 7 أيام', `${nfmt(s.completed)} إجمالي المكتملة`, ['#dbeafe', '#1d4ed8'])}
-    ${kpi('timer', real != null ? nfmt(Math.round(real)) + ' د' : '—', 'متوسط الكشف الفعلي', real != null ? (diff === 0 ? 'مطابق للمحدد' : `${nfmt(Math.abs(diff))} د ${diff > 0 ? 'أكثر' : 'أقل'} من المحدد (${nfmt(set)} د)`) : `المحدد ${nfmt(set)} د`, ['#fef3c7', '#b45309'])}
     ${kpi('check', rate != null ? nfmt(rate) + '٪' : '—', 'نسبة إتمام الحجوزات', `${nfmt(s.cancelled)} ملغي من ${nfmt(s.completed + s.cancelled)}`, ['#ede9fe', '#6d28d9'])}
   </div>
   <section class="card"><div class="row sb"><h3>الحجوزات اليومية</h3><div class="ds-seg2"><button class="${SRANGE === 7 ? 'on' : ''}" onclick="dsRange(7)">٧ أيام</button><button class="${SRANGE === 14 ? 'on' : ''}" onclick="dsRange(14)">١٤ يوم</button></div></div>
