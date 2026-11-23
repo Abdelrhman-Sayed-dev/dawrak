@@ -1437,10 +1437,10 @@ function rwalk() {
   $('#rnw').onclick = () => rnew(qi.value.trim());
 }
 function rnew(v) {
-  modal(`<h3>مريض جديد</h3><form id="rnf" novalidate><label>الاسم الكامل<input name="pname" maxlength="60" value="${/\d/.test(v) ? '' : esc(v)}"></label><label>رقم الهاتف<input name="phone" type="tel" dir="ltr" inputmode="tel" value="${/^[\d+\s-]+$/.test(v) ? esc(v) : ''}"></label><label>العمر<input name="age" type="number" min="0" max="120"></label><div class="err" id="er"></div><button class="btn p lg">تسجيل وحجز دور</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rwalk()">رجوع للبحث</button></form>`);
+  modal(`<h3>مريض جديد</h3><form id="rnf" novalidate><label>الاسم الكامل<input name="pname" maxlength="60" value="${/\d/.test(v) ? '' : esc(v)}"></label><label>رقم الهاتف<input name="phone" type="tel" dir="ltr" inputmode="tel" value="${/^[\d+\s-]+$/.test(v) ? esc(v) : ''}"></label><div class="err" id="er"></div><button class="btn p lg">تسجيل وحجز دور</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rwalk()">رجوع للبحث</button></form>`);
   $('#rnf').onsubmit = async e => {
     e.preventDefault(); const f = e.target.elements, ph = f.phone.value.replace(/[\s-]/g, '');
-    const data = { name: f.pname.value, phone: f.phone.value, age: f.age.value };
+    const data = { name: f.pname.value, phone: f.phone.value };
     if (/^\+?\d{8,15}$/.test(ph)) {
       try {
         const k = s => String(s).replace(/\D/g, '').slice(-10);

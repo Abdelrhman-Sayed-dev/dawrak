@@ -1085,10 +1085,9 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
     b, did = await body(request), rec["doctor_id"]
     kind, pid, wid = b.get("kind"), None, None
     if kind == "new":
-        name, phone, age = str(b.get("name") or "").strip(), re.sub(r"[\s-]", "", str(b.get("phone") or "")), toint(b.get("age"))
+        name, phone, age = str(b.get("name") or "").strip(), re.sub(r"[\s-]", "", str(b.get("phone") or "")), None
         if not 2 <= len(name) <= 60: raise Fail(400, "اكتب اسم المريض (حرفان على الأقل)")
         if not re.fullmatch(r"\+?\d{8,15}", phone): raise Fail(400, "رقم الهاتف غير صحيح")
-        if age is None or not 0 <= age <= 120: raise Fail(400, "العمر غير صحيح")
     elif kind in ("account", "walkin") and toint(b.get("id")):
         pass
     else:
