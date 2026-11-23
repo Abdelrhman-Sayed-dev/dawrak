@@ -1438,7 +1438,22 @@ function rwalk() {
 }
 function rnew(v) {
   modal(`<h3>مريض جديد</h3><form id="rnf" novalidate><label>الاسم الكامل<input name="pname" maxlength="60" value="${/\d/.test(v) ? '' : esc(v)}"></label><label>رقم الهاتف<input name="phone" type="tel" dir="ltr" inputmode="tel" value="${/^[\d+\s-]+$/.test(v) ? esc(v) : ''}"></label><label>العمر<input name="age" type="number" min="0" max="120"></label><div class="err" id="er"></div><button class="btn p lg">تسجيل وحجز دور</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rwalk()">رجوع للبحث</button></form>`);
-  $('#rnf').onsubmit = e => { e.preventDefault(); const f = e.target.elements; rbook('new', null, { name: f.pname.value, phone: f.phone.value, age: f.age.value }); };
+  $('#rnf').onsubmit = async e => {
+    e.preventDefault(); const f = e.target.elements, ph = f.phone.value.replace(/[\s-]/g, '');
+    const data = { name: f.pname.value, phone: f.phone.value, age: f.age.value };
+    if (/^\+?\d{8,15}$/.test(ph)) {
+      try {
+        const k = s => String(s).replace(/\D/g, '').slice(-10);
+        const m = (await api('/reception/patients?q=' + encodeURIComponent(ph))).filter(p => k(p.phone) === k(ph));
+        if (m.length) return rdup(m, data);
+      } catch (x) { /* لو فشل البحث يتحقق السيرفر على أي حال */ }
+    }
+    rbook('new', null, data);
+  };
+}
+// رقم الهاتف مسجّل من قبل: نعرض المريض الموجود بدل إنشاء سجل مكرر
+function rdup(list, data) {
+  modal(`<h3>المريض مسجّل بالفعل</h3><p class="mt">رقم الهاتف <b dir="ltr">${esc(data.phone)}</b> مسجّل مسبقاً، فلن يُنشأ سجل جديد. اختر المريض لحجز دور له:</p><div class="rs">${list.map(p => `<div class="rsi"><div class="fl"><b>${esc(p.name)}</b><small dir="ltr">${esc(p.phone)}${p.age != null ? ' · ' + esc(p.age) + ' سنة' : ''}</small><small>${p.kind === 'account' ? 'حساب أونلاين' : 'سجل حضور سابق'}${p.booked ? ' · لديه حجز نشط اليوم' : ''}</small></div><button class="btn p sm" ${p.booked ? 'disabled' : ''} onclick="rbook('${p.kind}',${p.id})">حجز دور</button></div>`).join('')}</div><div class="err" id="er"></div><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rnew('${esc(data.phone)}')">رجوع</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="closeModal()">إغلاق</button>`);
 }
 async function rbook(kind, id, extra = {}) {
   try {

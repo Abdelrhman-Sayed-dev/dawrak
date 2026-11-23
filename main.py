@@ -1106,10 +1106,16 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
         else:
             if await has_active_dup(c, did, name, phone):
                 raise Fail(409, "هذا المريض لديه حجز نشط عند الطبيب اليوم (أونلاين أو حضور مباشر) بنفس الاسم والرقم")
-            if await c.fetchval("SELECT 1 FROM patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2))", phone_key(phone), name):
-                raise Fail(409, "هذا المريض مسجّل بحساب أونلاين، اختره من نتائج البحث بدل تسجيله من جديد")
-            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) ORDER BY id LIMIT 1", phone_key(phone), name)
+            # رقم الهاتف مسجّل من قبل => المريض موجود، لا ننشئ سجلاً مكرراً (اختره من نتائج البحث)
+            pk = phone_key(phone)
+            ex = await c.fetchrow("SELECT name FROM patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 OR right(regexp_replace(whatsapp,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
+            if ex:
+                raise Fail(409, f"رقم الهاتف مسجّل مسبقاً بحساب أونلاين باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
+            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) ORDER BY id LIMIT 1", pk, name)
             if not wid:
+                ex = await c.fetchrow("SELECT name FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
+                if ex:
+                    raise Fail(409, f"رقم الهاتف مسجّل مسبقاً باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
                 wid = await c.fetchval("INSERT INTO walkin_patients(name,phone,age,created_by) VALUES($1,$2,$3,$4) RETURNING id", name, phone, age, rec["id"])
         if await has_active_dup(c, did, name, phone, pid, None, wid):
             raise Fail(409, "لدى هذا المريض حجز نشط عند الطبيب اليوم")
