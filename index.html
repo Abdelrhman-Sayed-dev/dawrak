@@ -661,7 +661,7 @@ html,body{overflow-x:clip}
 .rbn svg{width:22px;height:22px}
 .rbn button.on{color:var(--p);font-weight:800}
 .rbn button.on::before{content:"";position:absolute;top:0;width:36px;height:3px;border-radius:0 0 3px 3px;background:var(--p)}
-.rbn .add{color:var(--p);font-weight:800}
+.rp .stats{grid-template-columns:repeat(2,minmax(0,1fr))}@media(min-width:700px){.rp .stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .rbn .add span{display:grid;place-items:center;width:46px;height:32px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;box-shadow:0 4px 10px rgba(37,99,235,.3)}
 .rbn .add svg{width:20px;height:20px}
 .rbn .bdg{position:absolute;top:5px;inset-inline-start:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#EF4444;color:#fff;font-style:normal;font-size:.7rem;line-height:18px;text-align:center}
@@ -1374,7 +1374,7 @@ const rdone = (id, rep) => (rep || confirm('الطبيب لم يكتب التق�
 const rskip = id => confirm('إرجاع المريض لآخر الطابور؟') && rop(`/bookings/${id}/skip`, null, 'تم نقل المريض لآخر الطابور');
 const rcancel = id => confirm('إلغاء هذا الحجز؟') && rop(`/bookings/${id}/cancel`, null, 'تم إلغاء الحجز');
 const rmove = (id, d) => { const i = QW.findIndex(x => x.id === id); if (i >= 0) rop(`/bookings/${id}/move`, { position: i + 1 + d }); };
-let rtab = 'call', RD = null;
+let rtab = 'home', RD = null;
 const setRTab = k => { rtab = k; if (RD) rview(RD); window.scrollTo(0, 0); };
 function rview(data) {
   RD = data; const { doctor: d, current: c, waiting: w, receptionist: me } = data;
@@ -1387,11 +1387,10 @@ function rview(data) {
   ${called && !c ? `<div class="rcallbox"><span>${ic('phone-call')} تم استدعاء <b>${esc(called.patient_name)}</b> (رقم ${called.queue_number})</span><button class="btn ok" onclick="rstart(${called.id})">${ic('play')} بدء الكشف</button></div>` : ''}
   <div class="rbar"><button class="btn p lg" ${nx ? '' : 'disabled'} onclick="rcall()">${ic('phone-call')} استدعاء المريض التالي${nx ? ' — رقم ' + nx.queue_number : ''}</button></div></section>`;
   const qCard = `<section class="card"><h3>الطابور الموحّد (${w.length})</h3>${w.length ? `<ul class="ql">${w.map(li).join('')}</ul>` : '<p class="mt">الطابور فارغ.</p>'}</section>`;
-  const body = rtab === 'queue' ? qCard : rtab === 'stats' ? stats : curCard + (w.length ? `<section class="card"><h3>التالي في الطابور</h3><ul class="ql">${w.slice(0, 3).map(x => `<li class="rq"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}</span></div></li>`).join('')}</ul></section>` : '');
-  const tabs = [['call', 'phone-call', 'الاستدعاء'], ['queue', 'users', 'الطابور', w.length], ['new', 'user-plus', 'حجز جديد'], ['stats', 'layout-dashboard', 'الإحصائيات']];
-  const bn = tabs.map(([k, i, l, n]) => k === 'new'
-    ? `<button class="add" onclick="rwalk()" aria-label="${l}"><span>${ic(i)}</span>${l}</button>`
-    : `<button class="${rtab === k ? 'on' : ''}" onclick="setRTab('${k}')">${ic(i)}${l}${n ? `<i class="bdg">${n}</i>` : ''}</button>`).join('');
+  const homeCard = `<section class="card"><h3>حجز جديد</h3><p class="mt">سجّل مريض حضور مباشر أو احجز لمريض مسجّل في الطابور.</p><button class="btn p lg" style="width:100%;margin-top:10px" onclick="rwalk()">${ic('user-plus')} تسجيل مريض / حجز جديد</button></section>`;
+  const body = rtab === 'queue' ? qCard : rtab === 'home' ? stats + homeCard : curCard + (w.length ? `<section class="card"><h3>التالي في الطابور</h3><ul class="ql">${w.slice(0, 3).map(x => `<li class="rq"><span class="n">${x.queue_number}</span><div class="rqi"><b>${esc(x.patient_name)}</b><span class="rqt">${srcB(x.source)}${x.called ? '<span class="src cl">تم استدعاؤه</span>' : ''}</span></div></li>`).join('')}</ul></section>` : '');
+  const tabs = [['home', 'layout-dashboard', 'الرئيسية'], ['call', 'phone-call', 'الاستدعاء'], ['queue', 'users', 'الطابور', w.length]];
+  const bn = tabs.map(([k, i, l, n]) => `<button class="${rtab === k ? 'on' : ''}" onclick="setRTab('${k}')">${ic(i)}${l}${n ? `<i class="bdg">${n}</i>` : ''}</button>`).join('');
   $('#m').innerHTML = `<div class="rp">${head}${body}</div><nav class="rbn"><div>${bn}</div></nav>`;
   done();
 }
