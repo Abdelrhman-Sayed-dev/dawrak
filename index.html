@@ -470,6 +470,10 @@ body{background:var(--bg)}
 /* كارت الطبيب */
 .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
 .dc3{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:34px 20px 0;border-radius:24px;transition:border-color .15s,box-shadow .15s}
+.dc3{padding-top:62px}.dc3 .rb{position:static;border-radius:999px;padding:3px 14px;margin-bottom:4px}
+.fx{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;background:var(--pl);border:1px solid var(--lb);border-radius:14px;padding:6px 11px;line-height:1.25;text-align:end}
+.fx b{font-size:1rem;color:var(--navy)}.fx small{font-size:.68rem;color:var(--m)}.fx em{font-style:normal;font-size:.7rem;color:#B45309;font-weight:700}
+.feeb{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}.feeb>div{background:var(--pl);border:1px solid var(--lb);border-radius:14px;padding:10px 12px}.feeb small{display:block;color:var(--m);font-size:.78rem}.feeb b{display:block;font-size:1.15rem;color:var(--navy);margin-top:2px}.feeb b.z{font-size:.95rem;color:var(--m);font-weight:600}
 .dc3:hover{border-color:var(--lb);box-shadow:0 14px 32px rgba(37,99,235,.12)}
 .rb{position:absolute;top:16px;right:0;padding:4px 14px 4px 18px;border-radius:999px 0 0 999px;font-size:.8rem;font-weight:700}
 .rb.ok{background:#DCFCE7;color:#15803D}.rb.warn{background:#FEF3C7;color:#B45309}.rb.off{background:#F1F5F9;color:#64748B}
@@ -902,7 +906,8 @@ const WD_ORDER = [6, 0, 1, 2, 3, 4, 5], WD_AR = ['الأحد', 'الاثنين',
 const t12 = t => { if (!t) return ''; const [h, m] = t.split(':').map(Number); return `${(h % 12) || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'ص' : 'م'}`.replace(/\d/g, x => '٠١٢٣٤٥٦٧٨٩'[x]); };
 const egp = n => nfmt(n) + ' ج.م';
 const feeTxt = d => [d.consultation_fee != null ? 'سعر الكشف: ' + egp(d.consultation_fee) : '', d.booking_fee > 0 ? 'رسوم الحجز الأونلاين: ' + egp(d.booking_fee) : ''].filter(Boolean).join(' · ');
-const feeBox = d => feeTxt(d) ? `<p class="mt" style="background:var(--bg);border-radius:12px;padding:8px 12px;margin:12px 0 0">${feeTxt(d)}</p>` : '';
+const feeBox = d => (d.consultation_fee != null || d.booking_fee > 0) ? `<div class="feeb"><div><small>سعر الكشف</small>${d.consultation_fee != null ? `<b>${egp(d.consultation_fee)}</b>` : '<b class="z">غير محدد</b>'}</div><div><small>رسوم الحجز الأونلاين</small>${d.booking_fee > 0 ? `<b>${egp(d.booking_fee)}</b>` : '<b class="z">بدون رسوم</b>'}</div></div>` : '';
+const feeCorner = d => (d.consultation_fee != null || d.booking_fee > 0) ? `<div class="fx">${d.consultation_fee != null ? `<b>${egp(d.consultation_fee)}</b><small>سعر الكشف</small>` : ''}${d.booking_fee > 0 ? `<em>+ ${egp(d.booking_fee)} رسوم حجز</em>` : ''}</div>` : '';
 const schedTxt = d => !d.work_days ? '' : `${d.work_days.length === 7 ? 'كل الأيام' : WD_ORDER.filter(x => d.work_days.includes(x)).map(x => WD_AR[x]).join('، ')} · ${t12(d.clinic_start)} – ${t12(d.clinic_end)}`;
 const pill = s => `<span class="pill ${PL[s][1]}">${PL[s][0]}</span>`;
 const ph0 = d => `<div class="ph0"><span>${esc([...String(d.name).replace(/^د\.?\s*/, '')][0] || '؟')}</span></div>`;
@@ -1044,11 +1049,11 @@ async function book(id, pick = 0) {
   const d = docs.find(x => x.id === id);
   try { FAM = await api('/me/family'); } catch (e) { toast(e.message); return; }
   const who = (v, name, sub) => `<label class="who"><input type="radio" name="w" value="${v}" ${v === pick ? 'checked' : ''}><span class="wv">${esc([...name][0])}</span><span><b>${esc(name)}</b><small>${esc(sub)}</small></span></label>`;
-  modal(`<h3>الحجز عند ${esc(d.name)}</h3><p class="mt">${esc(d.specialty)}</p>
+  modal(`<h3>الحجز عند ${esc(d.name)}</h3><p class="mt">${esc(d.specialty)}</p>${feeBox(d)}
     <h4 style="margin:14px 0 6px">الحجز لمن؟</h4>
     <div class="whos" id="who">${who(0, 'أنا', 'حسابي الشخصي')}${FAM.map(m => who(m.id, m.name, `${m.relation} · ${m.age} سنة`)).join('')}</div>
     <button type="button" class="btn o sm" onclick="famForm(0, ${id})">${ic('plus')} إضافة فرد من العيلة</button>
-    ${feeBox(d)}<div class="err" id="er"></div><button class="btn p lg" id="cb">تأكيد الحجز</button>`);
+    <div class="err" id="er"></div><button class="btn p lg" id="cb">تأكيد الحجز</button>`);
   $('#cb').onclick = async e => {
     const btn = e.currentTarget; btn.disabled = true;
     try {
@@ -1065,10 +1070,10 @@ const GI = { get: () => { try { return JSON.parse(localStorage.gi || '{}'); } ca
 function guestBook(id) {
   const d = docs.find(x => x.id === id); if (!d) return;
   const g = GI.get();
-  modal(`<h3>الحجز عند ${esc(d.name)}</h3><p class="mt">${esc(d.specialty)}</p>
+  modal(`<h3>الحجز عند ${esc(d.name)}</h3><p class="mt">${esc(d.specialty)}</p>${feeBox(d)}
     <form id="gbf" novalidate><label>الاسم<input name="gname" maxlength="60" autocomplete="name" value="${esc(g.name)}" placeholder="اسم المريض"></label>
     <label>رقم الهاتف<input name="gphone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" value="${esc(g.phone)}" placeholder="01xxxxxxxxx"></label>
-    ${feeBox(d)}<div class="err" id="er"></div><button class="btn p lg" id="cb">تأكيد الحجز</button>
+    <div class="err" id="er"></div><button class="btn p lg" id="cb">تأكيد الحجز</button>
     <button type="button" class="btn" style="width:100%;margin-top:10px" onclick="closeModal()">إلغاء</button></form>`);
   const f = $('#gbf'); (f.gname.value ? f.gphone : f.gname).focus();
   f.onsubmit = async e => {
@@ -1328,6 +1333,8 @@ function dpview(p) {
     <label>التخصص<input name="specialty" required maxlength="80" value="${esc(p.specialty)}"></label>
     <label>نبذة مختصرة<textarea name="description" rows="3" maxlength="300">${esc(p.description)}</textarea></label>
     <label>متوسط مدة الكشف (دقيقة)<input name="avg" type="number" min="1" max="240" required value="${p.avg}"></label>
+    <label>سعر الكشف (ج.م)<input name="fee" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="غير محدد" value="${p.consultation_fee ?? ''}"></label>
+    ${p.booking_fee > 0 ? `<p class="mt" style="font-size:.8rem;margin:-4px 0 10px">رسوم الحجز الأونلاين (${egp(p.booking_fee)}) يحددها المدير.</p>` : ''}
     <div class="err" id="er1"></div><button class="btn p lg">حفظ البيانات</button></form></details>
   <section class="card"><h3>بيانات الدخول</h3><p class="mt">تحتاج كلمة المرور الحالية لتغيير اسم المستخدم أو كلمة المرور.</p>
     <div class="dlb"><button class="btn o" onclick="chUser()">${ic('user')} تغيير اسم المستخدم</button><button class="btn o" onclick="chPass()">${ic('pencil')} تغيير كلمة المرور</button></div></section></div>`;
@@ -1338,7 +1345,7 @@ function dpview(p) {
   };
   $('#dpi').onsubmit = async e => {
     e.preventDefault(); const f = e.target; $('#er1').textContent = '';
-    try { await api('/doctor/profile', { method: 'PUT', body: { name: f.name.value, specialty: f.specialty.value, description: f.description.value, average_consultation_time: f.avg.value, profile_image: dimg } }); toast('تم حفظ البيانات', 1); dprofile(); }
+    try { await api('/doctor/profile', { method: 'PUT', body: { name: f.name.value, specialty: f.specialty.value, description: f.description.value, average_consultation_time: f.avg.value, consultation_fee: f.fee.value, profile_image: dimg } }); toast('تم حفظ البيانات', 1); dprofile(); }
     catch (x) { $('#er1').textContent = x.message; }
   };
   done();
@@ -1690,7 +1697,7 @@ const stars = v => `<span class="stars" style="--v:${+v || 0}" aria-hidden="true
 const rateLine = d => d.reviews ? `<button class="rt" onclick="revs(${d.id})" aria-label="عرض التقييمات، المتوسط ${d.rating} من 5">${stars(d.rating)}<b>${d.rating}</b><small>(${d.reviews})</small></button>` : '<span class="rt0">لا توجد تقييمات بعد</span>';
 let FAVS = new Set();
 const heartBtn = d => { if (!SHOW_LOGIN && localStorage.role !== 'patient') return ''; const on = FAVS.has(d.id); return `<button class="fv ${on ? 'on' : ''}" onclick="fav(${d.id})" aria-pressed="${on}" aria-label="${on ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}">${ic('heart')}</button>`; };
-const dcard = d => `<article class="card dc3">${heartBtn(d)}<span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span>${rateLine(d)}<p class="ds">${esc(d.description)}</p>${d.work_days ? `<p class="mt" style="font-size:.78rem;margin:0 0 8px">${ic('calendar-check')} ${schedTxt(d)}</p>` : ''}${feeTxt(d) ? `<p class="mt" style="font-size:.78rem;margin:0 0 8px">${feeTxt(d)}</p>` : ''}<div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div>${!d.accepting && d.booking_note ? `<p class="mt" style="font-size:.78rem;margin:8px 0 0;text-align:center">${esc(d.booking_note)}</p>` : ''}</article>`;
+const dcard = d => `<article class="card dc3">${heartBtn(d)}${feeCorner(d)}<span class="rb ${PL[d.status][1]}">${PL[d.status][0]}</span><div class="av3">${d.profile_image ? `<img src="${esc(d.profile_image)}" alt="${esc(d.name)}">` : ph0(d)}</div><h3 class="dn">${esc(d.name)}</h3><span class="sp3">${ic('stethoscope')} ${esc(d.specialty)}</span>${rateLine(d)}<p class="ds">${esc(d.description)}</p>${d.work_days ? `<p class="mt" style="font-size:.78rem;margin:0 0 8px">${ic('calendar-check')} ${schedTxt(d)}</p>` : ''}<div class="ft3"><span class="tm">${ic('clock')} ${d.avg} دقيقة</span><button class="btn p bk" ${d.accepting ? '' : 'disabled'} onclick="book(${d.id})">${d.accepting ? 'احجز موعدك الآن' : 'الحجز مغلق حالياً'}</button></div>${!d.accepting && d.booking_note ? `<p class="mt" style="font-size:.78rem;margin:8px 0 0;text-align:center">${esc(d.booking_note)}</p>` : ''}</article>`;
 async function loadFavs() {
   FAVS = new Set();
   if (localStorage.role !== 'patient' || !localStorage.tok) return [];
