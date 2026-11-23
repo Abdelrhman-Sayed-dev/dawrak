@@ -1655,7 +1655,7 @@ function rwalk() {
       const my = ++seq;
       try {
         const r = await api('/reception/patients?q=' + encodeURIComponent(v)); if (my !== seq) return;
-        $('#rsr').innerHTML = r.length ? r.map(p => `<div class="rsi"><div class="fl"><b>${esc(p.name)}</b><small dir="ltr">${esc(p.phone)}${p.age != null ? ' · ' + esc(p.age) + ' سنة' : ''}</small><small>${p.kind === 'account' ? 'حساب أونلاين' : 'سجل حضور سابق'}${p.booked ? ' · لديه حجز نشط اليوم' : ''}</small></div><button class="btn p sm" ${p.booked ? 'disabled' : ''} onclick="rbook('${p.kind}',${p.id})">حجز دور</button></div>`).join('') : '<p class="mt">لا توجد نتائج. سجّله كمريض جديد.</p>';
+        $('#rsr').innerHTML = r.length ? r.map(p => rsi(p)).join('') : '<p class="mt">لا توجد نتائج. سجّله كمريض جديد.</p>';
       } catch (x) { $('#er').textContent = x.message; }
     }, 300);
   };
@@ -1677,8 +1677,15 @@ function rnew(v) {
   };
 }
 // رقم الهاتف مسجّل من قبل: نعرض المريض الموجود بدل إنشاء سجل مكرر
+let RDN = {}, RSL = [];
+// صف مريض في نتائج البحث (guest = حجز أونلاين بدون حساب أو باسم فرد عيلة: موجود في الحجوزات فقط)
+const rsi = p => { const i = RSL.push(p) - 1, lb = { account: 'حساب أونلاين', walkin: 'سجل حضور سابق', guest: 'حجز أونلاين سابق' }[p.kind];
+  return `<div class="rsi"><div class="fl"><b>${esc(p.name)}</b><small dir="ltr">${esc(p.phone)}${p.age != null ? ' · ' + esc(p.age) + ' سنة' : ''}</small><small>${lb}${p.booked ? ' · لديه حجز نشط اليوم' : ''}</small></div><button class="btn p sm" ${p.booked ? 'disabled' : ''} onclick="rpick(${i})">حجز دور</button></div>`; };
+const rpick = i => { const p = RSL[i]; p.kind === 'guest' ? rbook('new', null, { name: p.name, phone: p.phone, confirm_new: true }) : rbook(p.kind, p.id); };
 function rdup(list, data) {
-  modal(`<h3>المريض مسجّل بالفعل</h3><p class="mt">رقم الهاتف <b dir="ltr">${esc(data.phone)}</b> مسجّل مسبقاً، فلن يُنشأ سجل جديد. اختر المريض لحجز دور له:</p><div class="rs">${list.map(p => `<div class="rsi"><div class="fl"><b>${esc(p.name)}</b><small dir="ltr">${esc(p.phone)}${p.age != null ? ' · ' + esc(p.age) + ' سنة' : ''}</small><small>${p.kind === 'account' ? 'حساب أونلاين' : 'سجل حضور سابق'}${p.booked ? ' · لديه حجز نشط اليوم' : ''}</small></div><button class="btn p sm" ${p.booked ? 'disabled' : ''} onclick="rbook('${p.kind}',${p.id})">حجز دور</button></div>`).join('')}</div><div class="err" id="er"></div><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rnew('${esc(data.phone)}')">رجوع</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="closeModal()">إغلاق</button>`);
+  RDN = { name: data.name.trim(), phone: data.phone };
+  const same = list.some(p => String(p.name).trim().toLowerCase() === data.name.trim().toLowerCase());
+  modal(`<h3>المريض مسجّل بالفعل</h3><p class="mt">رقم الهاتف <b dir="ltr">${esc(data.phone)}</b> مسجّل قبل كده باسم ${list.length > 1 ? 'الأسماء دي' : 'الاسم ده'}. تحجز على اسم موجود ولا تسجّل اسم جديد على نفس الرقم؟</p><div class="rs">${list.map(p => rsi(p)).join('')}</div><div class="err" id="er"></div>${same ? '' : `<button type="button" class="btn o lg" style="margin-top:10px" onclick="rbook('new',null,{name:RDN.name,phone:RDN.phone,confirm_new:true})">${ic('user-plus')} تسجيل باسم جديد: ${esc(data.name.trim())}</button>`}<button type="button" class="btn" style="width:100%;margin-top:10px" onclick="rnew('${esc(data.phone)}')">رجوع</button><button type="button" class="btn" style="width:100%;margin-top:10px" onclick="closeModal()">إغلاق</button>`);
 }
 async function rbook(kind, id, extra = {}) {
   try {
