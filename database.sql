@@ -1,12 +1,20 @@
 -- الإنشاء:  createdb clinic_queue  ثم  psql -d clinic_queue -f database.sql
 -- تنبيه: الملف يعيد إنشاء الجداول (يحذف البيانات الحالية).
-DROP TABLE IF EXISTS medicine_doses, medicine_reminders, favorite_doctors, doctor_reviews, auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
+DROP TABLE IF EXISTS free_booking, medicine_doses, medicine_reminders, favorite_doctors, doctor_reviews, auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
 
 CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- حملة الحجز المجاني لكل الأطباء (صف واحد فقط): رسوم الحجز الأونلاين = 0 حتى تاريخ free_until (شاملاً)
+CREATE TABLE free_booking (
+  id INT PRIMARY KEY CHECK (id = 1),
+  free_until DATE NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  set_by INT REFERENCES admins(id) ON DELETE SET NULL
 );
 
 CREATE TABLE doctors (

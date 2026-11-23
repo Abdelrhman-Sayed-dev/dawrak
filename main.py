@@ -71,6 +71,12 @@ class LazyPool:
               ADD COLUMN IF NOT EXISTS booking_fee INT NOT NULL DEFAULT 0""")
         except Exception as e:
             print("doctor schedule:", e)
+        try:  # حملة «الحجز المجاني لكل الأطباء» (صف واحد فقط): ينتهي تلقائياً بعد free_until
+            await p.execute("""CREATE TABLE IF NOT EXISTS free_booking (
+              id INT PRIMARY KEY CHECK (id = 1), free_until DATE NOT NULL,
+              started_at TIMESTAMPTZ NOT NULL DEFAULT now(), set_by INT REFERENCES admins(id) ON DELETE SET NULL)""")
+        except Exception as e:
+            print("free_booking:", e)
         return p
 
     async def get(self):
@@ -202,7 +208,8 @@ def cnt(st=None):
 
 
 # أعمدة الجدول الزمني + حالة اليوم (تُقرأ مع الطبيب لتحديد هل الحجز الأونلاين مفتوح الآن)
-SCHED_COLS = """d.consultation_fee,d.booking_fee,d.work_days,d.clinic_start,d.clinic_end,d.max_patients,d.booking_opens_at,d.booking_closes_at,
+SCHED_COLS = """d.consultation_fee,d.booking_fee,
+  (SELECT f.free_until FROM free_booking f WHERE f.id=1 AND f.free_until>=CURRENT_DATE) AS free_until,d.work_days,d.clinic_start,d.clinic_end,d.max_patients,d.booking_opens_at,d.booking_closes_at,
   CASE WHEN d.override_date=CURRENT_DATE THEN d.override_state END AS ovr,
   COALESCE(d.is_accepting_bookings AND d.booking_open_date=CURRENT_DATE,FALSE) AS legacy_open,
   (SELECT count(*) FROM bookings b WHERE b.doctor_id=d.id AND b.booking_date=CURRENT_DATE AND b.status<>'Cancelled')::int AS booked"""
@@ -259,7 +266,8 @@ def hm(t):
 def view(r):
     op, note, mode = sched(r)
     return {"id": r["id"], "name": r["name"], "specialty": r["specialty"], "description": r["description"],
-            "profile_image": r["profile_image"], "avg": r["avg"], "consultation_fee": r["consultation_fee"], "booking_fee": r["booking_fee"], "accepting": op, "booking_note": note, "booking_mode": mode,
+            "profile_image": r["profile_image"], "avg": r["avg"], "consultation_fee": r["consultation_fee"], "booking_fee": 0 if r["free_until"] else r["booking_fee"],
+            "booking_fee_base": r["booking_fee"], "free_until": r["free_until"].isoformat() if r["free_until"] else None, "accepting": op, "booking_note": note, "booking_mode": mode,
             "work_days": list(r["work_days"]) if r["work_days"] is not None else None,
             "clinic_start": hm(r["clinic_start"]), "clinic_end": hm(r["clinic_end"]),
             "waiting": r["waiting"], "in_progress": r["in_progress"], "completed": r["completed"],
@@ -268,7 +276,7 @@ def view(r):
 
 def adm(r):
     return {**view(r), "username": r["username"], "is_active": r["is_active"], "total": r["total"],
-            "max_patients": r["max_patients"], "booking_opens_at": hm(r["booking_opens_at"]), "booking_closes_at": hm(r["booking_closes_at"])}
+            "booking_fee": r["booking_fee"], "max_patients": r["max_patients"], "booking_opens_at": hm(r["booking_opens_at"]), "booking_closes_at": hm(r["booking_closes_at"])}
 
 
 def auth(role):
@@ -1097,7 +1105,29 @@ def hashpw(p):
 async def a_list(u=Depends(auth("admin"))):
     rows = await pool.fetch(STATS + " ORDER BY d.id")
     qs = await pool.fetch("SELECT doctor_id,queue_number,patient_name,status FROM bookings WHERE booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress') ORDER BY queue_number")
-    return {"doctors": [{**adm(r), "queue": [dict(x) for x in qs if x["doctor_id"] == r["id"]]} for r in rows]}
+    return {"doctors": [{**adm(r), "queue": [dict(x) for x in qs if x["doctor_id"] == r["id"]]} for r in rows], "free_booking": await free_state()}
+
+
+async def free_state():
+    r = await pool.fetchrow("SELECT free_until,(free_until-CURRENT_DATE+1)::int AS days_left FROM free_booking WHERE id=1 AND free_until>=CURRENT_DATE")
+    return {"active": bool(r), "until": r["free_until"].isoformat() if r else None, "days_left": r["days_left"] if r else 0}
+
+
+@app.post("/api/admin/free-booking")
+async def a_free_booking(request: Request, u=Depends(auth("admin"))):
+    """تفعيل الحجز المجاني لكل الأطباء لمدة days يوماً تبدأ من اليوم (1 = اليوم فقط، 7 = أسبوع، 30 = شهر)، أو إنهاؤه بـ off=true.
+    خلال المدة تصبح رسوم الحجز الإلكتروني صفراً في كل مكان تلقائياً، وتعود رسوم كل طبيب بعد انتهائها. سعر الكشف لا يتأثر."""
+    b = await body(request)
+    if b.get("off") is True:
+        await pool.execute("DELETE FROM free_booking WHERE id=1")
+    else:
+        try: n = int(b.get("days"))
+        except Exception: raise Fail(400, "المدة غير صحيحة")
+        if not 1 <= n <= 365: raise Fail(400, "المدة بين 1 و365 يوماً")
+        await pool.execute("""INSERT INTO free_booking(id,free_until,set_by) VALUES(1,CURRENT_DATE+($1::int-1),$2)
+          ON CONFLICT (id) DO UPDATE SET free_until=EXCLUDED.free_until,started_at=now(),set_by=EXCLUDED.set_by""", n, u["id"])
+    await changed()
+    return await free_state()
 
 
 @app.post("/api/admin/doctors", status_code=201)

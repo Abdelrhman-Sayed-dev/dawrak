@@ -13,4 +13,10 @@ ALTER TABLE doctors
   ADD COLUMN IF NOT EXISTS override_state VARCHAR(6),
   ADD COLUMN IF NOT EXISTS consultation_fee INT,
   ADD COLUMN IF NOT EXISTS booking_fee INT NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS free_booking (
+  id INT PRIMARY KEY CHECK (id = 1),
+  free_until DATE NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  set_by INT REFERENCES admins(id) ON DELETE SET NULL
+);
 COMMIT;
