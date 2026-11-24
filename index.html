@@ -280,7 +280,7 @@ body{overflow-x:hidden}
 .rx-br svg{width:34px;height:34px;color:var(--rp)}
 .rx-br b{display:block;font-size:1.2rem;font-weight:800;line-height:1}
 .rx-br small{display:block;direction:ltr;letter-spacing:.3em;font-size:.58rem;font-weight:700;color:var(--rm);margin-top:3px}
-.rx-meta{display:grid;grid-template-columns:2fr 1.2fr .8fr 1.3fr;gap:0;margin:16px 0 4px;background:var(--rl);border-radius:8px}
+.rx-meta{display:grid;grid-template-columns:1.6fr 1fr;gap:0;margin:16px 0 4px;background:var(--rl);border-radius:8px}
 .rx-meta>div{padding:10px 14px;min-width:0}.rx-meta>div+div{border-inline-start:1px solid var(--rb)}
 .rx-meta small{display:block;color:var(--rm);font-size:.75rem;font-weight:600}
 .rx-meta b{display:block;color:var(--rn);font-size:1rem;font-weight:700;word-break:break-word;line-height:1.5}
@@ -307,7 +307,7 @@ body{overflow-x:hidden}
 .rx-fu svg{width:24px;height:24px;color:var(--rp);flex:none}.rx-fu small{display:block;color:var(--rm);font-size:.76rem}.rx-fu b{color:var(--rn)}
 .rx-nt{margin:14px 0 0;font-size:.82rem;color:var(--rm);line-height:1.8}
 .rx-ft{margin-top:auto;padding-top:26px;break-inside:avoid}
-.rx-sg{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+.rx-sg{display:flex;justify-content:flex-end;align-items:flex-end;gap:24px}
 .rx-sig{min-width:220px;padding-top:34px;border-top:1.5px solid var(--rn);text-align:center}.rx-sig b{display:block;color:var(--rn)}.rx-sig small{color:var(--rm)}
 .rx-stamp{width:88px;height:88px;border:1.5px dashed #b4c2dc;border-radius:50%;display:grid;place-items:center;text-align:center;color:#9aaccb;font-size:.78rem;font-weight:600;line-height:1.3}
 .rx-end{margin-top:16px;padding-top:8px;border-top:1px solid var(--rb);display:flex;justify-content:space-between;gap:10px;color:var(--rm);font-size:.74rem}.rx-end b{color:var(--rp);font-size:.85rem}
@@ -326,8 +326,10 @@ body{overflow-x:hidden}
   .rx-sg{flex-direction:column;align-items:center}.rx-sig{min-width:0;width:100%}
   .rx-end{flex-direction:column;text-align:center}.rx-a{flex-wrap:wrap}
 }
+body.rx-direct .ov{opacity:0;pointer-events:none}
 @media print{
   @page{size:A4;margin:0}
+  body.printing-rx .ov{opacity:1}
   body.printing-rx{background:#fff;overflow:visible}
   body.printing-rx #app,body.printing-rx .toast,body.printing-rx .bn,body.printing-rx .bn-sp{display:none!important}
   body.printing-rx .ov{position:static;background:none;display:block;padding:0}
@@ -335,7 +337,7 @@ body{overflow-x:hidden}
   body.printing-rx .rx-a{display:none!important}
   body.printing-rx .rx{-webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:visible;border-radius:0;box-shadow:none;min-height:295mm;padding:0 14mm 9mm}
   body.printing-rx .rx-top{margin:0 -14mm}
-  body.printing-rx .rx-meta{grid-template-columns:2fr 1.2fr .8fr 1.3fr}
+  body.printing-rx .rx-meta{grid-template-columns:1.6fr 1fr}
   body.printing-rx .rx-meta>div{border-top:0!important}body.printing-rx .rx-meta>div+div{border-inline-start:1px solid var(--rb)}
   body.printing-rx .rx-t{display:table;table-layout:fixed;border:1px solid var(--rb);border-radius:8px}
   body.printing-rx .rx-t thead{display:table-header-group}body.printing-rx .rx-t tbody{display:table-row-group}
@@ -1517,11 +1519,11 @@ function track() {
         else if (o && x.status === 'Waiting' && x.ahead === 0 && o.a > 0) { toast('أنت التالي في الدور، استعد', 1); navigator.vibrate?.(200); }
         GPREV[x.id] = { s: x.status, c: x.called, a: x.ahead }; });
       const fin = tickets.filter(x => x.status === 'Completed');
-      fin.forEach(x => { const o = GPREV['d' + x.id]; if (o && x.has_report && !o.r) { toast('الروشتة جاهزة، اضغط «عرض الروشتة»', 1); navigator.vibrate?.(300); } GPREV['d' + x.id] = { r: x.has_report }; });
+      fin.forEach(x => { const o = GPREV['d' + x.id]; if (o && x.has_report && !o.r) { toast('الروشتة جاهزة، اضغط «تحميل الروشتة»', 1); navigator.vibrate?.(300); } GPREV['d' + x.id] = { r: x.has_report }; });
       GT.set(items.filter(i => tickets.some(t => t.id === i.id)));
       gl.innerHTML = (live.length ? live.map(x => `<div style="margin-bottom:14px">${tkCard(x)}<div class="tkx"><button class="btn d sm" ${x.status === 'Waiting' ? '' : 'disabled'} onclick="gcx(${x.id})">إلغاء الحجز</button></div></div>`).join('')
         : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>')
-        + (fin.length ? `<h2 class="sec2">كشوفاتي</h2><div class="grid tkg">${fin.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)} · ${fds(x.booking_date)}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.has_report ? `<button class="btn p lg" onclick="grpt(${x.id})">${ic('file-text')} عرض الروشتة</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا فور جاهزيتها</div>'}</article>`).join('')}</div>` : '');
+        + (fin.length ? `<h2 class="sec2">كشوفاتي</h2><div class="grid tkg">${fin.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)} · ${fds(x.booking_date)}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.has_report ? `<button class="btn p lg" onclick="grpt(${x.id})">${ic('download')} تحميل الروشتة (PDF / طباعة)</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا فور جاهزيتها</div>'}</article>`).join('')}</div>` : '');
     } catch (e) { toast(e.message); }
   };
   cur(); pushCardFill('pbt');
@@ -1532,7 +1534,7 @@ async function grpt(id) {
   try {
     const r = await api(`/guest/bookings/${id}/report`, { method: 'POST', body: { phone: it.phone } });
     PN = r.patient_name; HB = HB.filter(v => v.id !== id).concat({ ...r, id, guest: 1, member_name: null, follow_up_date: r.follow_up_date });
-    rpt(id);
+    dlRpt(id);
   } catch (e) { toast(e.message); }
 }
 const gcx = id => { const it = GT.get().find(x => x.id === id); return it && confirm('إلغاء هذا الحجز؟') && api(`/guest/bookings/${id}/cancel`, { method: 'POST', body: { phone: it.phone } }).then(() => { toast('تم إلغاء الحجز', 1); cur(); }).catch(e => toast(e.message)); };
@@ -1652,9 +1654,9 @@ function mview({ profile: p, bookings: b }) {
   });
   $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p><div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="btn o sm" href="/patient/favorites">${ic('heart')} أطبائي المفضلون</a><a class="btn o sm" href="/patient/reminders">${ic('bell')} تذكير الأدوية</a></div>` +
     (live.length ? `<div class="grid tkg">${live.map(x => tkCard(x, true)).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
-    (fresh.length ? `<h2 class="sec2">تم الكشف اليوم</h2><div class="grid tkg">${fresh.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.report ? `<button class="btn p lg" onclick="rpt(${x.id})">${ic('file-text')} عرض الروشتة</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا وتصلك إشعاراً فور جاهزيتها</div>'}${x.follow_up_date ? `<div class="tkm g">موعد الاستشارة: ${fuTxt(x)}</div>` : ''}${x.review ? '' : `<button class="btn o" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`}</article>`).join('')}</div>` : '') +
+    (fresh.length ? `<h2 class="sec2">تم الكشف اليوم</h2><div class="grid tkg">${fresh.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.report ? `<button class="btn p lg" onclick="dlRpt(${x.id})">${ic('download')} تحميل الروشتة (PDF / طباعة)</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا وتصلك إشعاراً فور جاهزيتها</div>'}${x.follow_up_date ? `<div class="tkm g">موعد الاستشارة: ${fuTxt(x)}</div>` : ''}${x.review ? '' : `<button class="btn o" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`}</article>`).join('')}</div>` : '') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
-    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : x.status === 'Completed' ? '<span class="fb warn">بانتظار الروشتة</span>' : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
+    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="dlRpt(${x.id})">${ic('download')} تحميل الروشتة</button>` : x.status === 'Completed' ? '<span class="fb warn">بانتظار الروشتة</span>' : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
 }
 
 /* ---------- لوحة الطبيب ---------- */
@@ -1884,24 +1886,29 @@ function rpt(id) {
   const list = x.medications || [];
   const cell = (l, v, c = '') => v ? `<td class="${c}" data-l="${l}"><bdi>${esc(v)}</bdi></td>` : `<td class="e ${c}" data-l="${l}">—</td>`;
   const meds = list.map((m, i) => `<tr><td class="ix"><span class="rx-i">${i + 1}</span></td><td class="nm"><bdi>${esc(m.name)}</bdi></td>${cell('الجرعة', m.dose)}${cell('عدد المرات', m.freq)}${cell('المدة / طريقة الاستخدام', m.notes || m.duration, 'nt2')}</tr>`).join('');
-  const no = 'RX-' + String(x.id).padStart(6, '0');
   modal(`<div class="rx">
   <div class="rx-top"></div>
   <header class="rx-hd"><div class="rx-dr"><b>${esc(x.doctor_name)}</b><span>${esc(x.specialty)}</span></div><div class="rx-br">${ic('heart-pulse')}<span><b>دورك</b><small>DAWRAK</small></span></div></header>
-  <div class="rx-meta"><div><small>اسم المريض</small><b>${esc(x.member_name || PN)}</b></div><div><small>تاريخ الكشف</small><b>${fds(x.booking_date)}</b></div><div><small>رقم الدور</small><b>${esc(x.queue_number)}</b></div><div><small>رقم الروشتة</small><b class="l">${no}</b></div></div>
+  <div class="rx-meta"><div><small>اسم المريض</small><b>${esc(x.member_name || PN)}</b></div><div><small>تاريخ الكشف</small><b>${fds(x.booking_date)}</b></div></div>
   <section class="rx-sec"><h4>التشخيص وتقرير الكشف</h4><p class="rx-dx">${esc(x.report)}</p></section>
-  <section class="rx-sec"><h4><span class="rx-rx">Rx</span> الأدوية الموصوفة${list.length ? `<span class="rx-cnt">${list.length}</span>` : ''}</h4>${meds ? `<table class="rx-t"><thead><tr><th class="c1">#</th><th class="c2">اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th><th>المدة / طريقة الاستخدام</th></tr></thead><tbody>${meds}</tbody></table>` : '<div class="rx-none">لا توجد أدوية في هذه الروشتة.</div>'}</section>
+  <section class="rx-sec"><h4>الأدوية الموصوفة${list.length ? `<span class="rx-cnt">${list.length}</span>` : ''}</h4>${meds ? `<table class="rx-t"><thead><tr><th class="c1">#</th><th class="c2">اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th><th>المدة / طريقة الاستخدام</th></tr></thead><tbody>${meds}</tbody></table>` : '<div class="rx-none">لا توجد أدوية في هذه الروشتة.</div>'}</section>
   ${x.follow_up_date ? `<div class="rx-fu">${ic('calendar-check')}<div><small>موعد المتابعة (الاستشارة)</small><b>${fuTxt(x)}</b></div></div>` : ''}
   ${meds ? '<p class="rx-nt">التزم بالجرعة وعدد المرات ومدة العلاج كما هي مكتوبة، ولا توقف العلاج دون الرجوع لطبيبك.</p>' : ''}
-  <footer class="rx-ft"><div class="rx-sg"><div class="rx-sig"><b>${esc(x.doctor_name)}</b><small>توقيع الطبيب</small></div><div class="rx-stamp">ختم<br>العيادة</div></div>
-  <div class="rx-end"><b>مع تمنياتنا لك بالشفاء العاجل</b><small>صدرت إلكترونياً عبر دورك · ${no}</small></div></footer></div>
+  <footer class="rx-ft"><div class="rx-sg"><div class="rx-sig"><b>${esc(x.doctor_name)}</b><small>توقيع الطبيب</small></div></div>
+  <div class="rx-end"><b>مع تمنياتنا لك بالشفاء العاجل</b><small>صدرت إلكترونياً عبر دورك</small></div></footer></div>
   <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF / طباعة</button>${meds && !x.guest ? `<button class="btn o" onclick="remPick(${x.id})">${ic('bell')} تذكير بالأدوية</button>` : ''}<button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
 }
 // طباعة الروشتة فقط (CSS للطباعة يخفي باقي الصفحة)
-function printRx() {
+function printRx(direct) {
   const t = document.title; document.title = 'روشتة طبية - دورك'; document.body.classList.add('printing-rx');
-  const end = () => { document.body.classList.remove('printing-rx'); document.title = t; removeEventListener('afterprint', end); };
+  const end = () => { document.body.classList.remove('printing-rx', 'rx-direct'); document.title = t; removeEventListener('afterprint', end); if (direct) closeModal(); };
   addEventListener('afterprint', end); print();
+}
+// تحميل مباشر: نبني الروشتة مخفية على الشاشة ونفتح نافذة الطباعة / الحفظ كـ PDF فوراً
+function dlRpt(id) {
+  const x = HB.find(v => v.id === id); if (!x || !x.report) { toast('الروشتة غير جاهزة بعد'); return; }
+  rpt(id); document.body.classList.add('rx-direct');
+  setTimeout(() => printRx(true), 150);
 }
 function addMed(m = {}) {
   const d = document.createElement('div'); d.className = 'med';
