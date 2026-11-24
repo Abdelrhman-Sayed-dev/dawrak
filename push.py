@@ -94,7 +94,9 @@ class Push:
         async def one(s):
             async with sem:
                 try:
-                    code, _ = await asyncio.to_thread(webpush.send, self.vapid, s["endpoint"], s["p256dh"], s["auth"], payload)
+                    code, txt = await asyncio.to_thread(webpush.send, self.vapid, s["endpoint"], s["p256dh"], s["auth"], payload)
+                    if not 200 <= code < 300:
+                        print("push status", code, str(txt)[:120])   # يظهر في Logs على Render لتشخيص رفض خدمة الدفع
                 except Exception as e:
                     print("push send:", repr(e))
                     code = 0
