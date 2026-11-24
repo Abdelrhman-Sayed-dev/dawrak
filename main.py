@@ -773,7 +773,8 @@ async def has_active_dup(c, did, name, phone, pid=None, mid=None, wid=None):
 
 
 async def guest_ticket(bid):
-    t = await pool.fetchrow("""SELECT b.id,b.queue_number,b.status,b.patient_name,b.booking_date,(b.called_at IS NOT NULL) AS called,
+    t = await pool.fetchrow("""SELECT b.id,b.queue_number,b.status,b.patient_name,b.booking_date,(b.called_at IS NOT NULL) AS called,b.completed_at,
+      EXISTS(SELECT 1 FROM visit_reports v WHERE v.booking_id=b.id) AS has_report,
       d.name AS doctor_name,d.specialty,d.average_consultation_time AS avg,
       CASE WHEN b.status='Waiting' THEN (SELECT count(*) FROM bookings x WHERE x.doctor_id=b.doctor_id AND x.booking_date=b.booking_date
         AND x.status='Waiting' AND x.queue_number<b.queue_number)::int ELSE 0 END AS ahead
@@ -824,9 +825,23 @@ async def guest_tickets(request: Request):
             bid = int(it.get("id"))
         except Exception:
             continue
-        if await pool.fetchval("SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL", bid, norm_phone(it.get("phone"))):
+        # يشمل المنتهي (آخر 30 يوماً) ليبقى الحجز ظاهراً بحالة «تم الكشف» وتصل الروشتة بعد كتابتها
+        if await pool.fetchval("SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL AND booking_date>=CURRENT_DATE-30", bid, norm_phone(it.get("phone"))):
             out.append(await guest_ticket(bid))
     return {"tickets": out}
+
+
+@app.post("/api/guest/bookings/{bid}/report")
+async def guest_report(bid: int, request: Request):
+    """روشتة وتقرير كشف الضيف (حجز بلا حساب). تتطلب رقم الحجز + نفس رقم الهاتف، ومحدودة المحاولات."""
+    guest_limit(request, "report", 20, 600)
+    phone = norm_phone((await body(request)).get("phone"))
+    r = await pool.fetchrow("""SELECT r.report,r.medications,r.follow_up_days,(b.booking_date + r.follow_up_days) AS follow_up_date,b.booking_date,b.patient_name,
+        d.name AS doctor_name,d.specialty FROM bookings b JOIN visit_reports r ON r.booking_id=b.id JOIN doctors d ON d.id=b.doctor_id
+        WHERE b.id=$1 AND b.patient_phone=$2 AND b.patient_id IS NULL AND b.walkin_id IS NULL""", bid, phone)
+    if not r:
+        raise Fail(404, "الروشتة غير جاهزة بعد")
+    return {**dict(r), "medications": jl(r["medications"])}
 
 
 @app.post("/api/guest/bookings/{bid}/cancel")
@@ -1370,6 +1385,7 @@ async def r_complete(bid: int, rec=Depends(rec_ctx)):
         has = await c.fetchval("SELECT EXISTS(SELECT 1 FROM visit_reports WHERE booking_id=$1)", bid)
         await c.execute("UPDATE bookings SET status='Completed',completed_at=now() WHERE id=$1", bid)
         await audit(c, rec, bid, "complete", patient=b["patient_name"], queue=b["queue_number"], has_report=has)
+    await PUSH.fire(PUSH.ev_completed(bid))
     return await r_state(rec)
 
 
@@ -1849,6 +1865,34 @@ async def push_guest_subscribe(request: Request):
         raise Fail(409, "لا يوجد حجز نشط اليوم لتفعيل الإشعارات عليه")
     await PUSH.subscribe_guest(ep, p, a, request.headers.get("user-agent", ""), bids, bool(b.get("welcome")))
     return {"ok": True, "bookings": len(bids)}
+
+
+@app.get("/api/push/inbox")
+async def push_inbox_account(u=Depends(push_user)):
+    """سجل إشعارات المريض (بحسابه): يبقى محفوظاً 30 يوماً داخل التطبيق حتى لو فاته الإشعار على الموبايل."""
+    if u["role"] != "patient":
+        return {"items": []}
+    await PUSH.ensure()
+    rows = await pool.fetch("SELECT id,booking_id,title,body,kind,created_at FROM push_inbox WHERE patient_id=$1 ORDER BY id DESC LIMIT 50", u["id"])
+    return {"items": [dict(r) for r in rows]}
+
+
+@app.post("/api/push/guest/inbox")
+async def push_inbox_guest(request: Request):
+    """سجل إشعارات الضيف: يرسل الجهاز [{id, phone}] ولا يُرجَع إلا إشعارات الحجوزات التي يطابق هاتفها."""
+    guest_limit(request, "inbox", 120, 600)
+    await PUSH.ensure()
+    bids = []
+    for it in (lambda v: v if isinstance(v, list) else [])((await body(request)).get("items"))[:10]:
+        if not isinstance(it, dict):
+            continue
+        bid = toint(it.get("id"))
+        if bid and await pool.fetchval("SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL AND booking_date>=CURRENT_DATE-30", bid, norm_phone(it.get("phone"))):
+            bids.append(bid)
+    if not bids:
+        return {"items": []}
+    rows = await pool.fetch("SELECT id,booking_id,title,body,kind,created_at FROM push_inbox WHERE booking_id=ANY($1::int[]) AND patient_id IS NULL ORDER BY id DESC LIMIT 50", bids)
+    return {"items": [dict(r) for r in rows]}
 
 
 @app.post("/api/push/release")
