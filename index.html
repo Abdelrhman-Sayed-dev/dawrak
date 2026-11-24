@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232a776f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'/%3E%3C/svg%3E">
 <title>دورك — احجز دورك واطمئن على صحتك</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1b4486">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="دورك">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--p:#1b4486;--pd:#113163;--pl:#e6effd;--bg:#f2f7fe;--c:#fff;--t:#0c2753;--m:#657896;--b:#dee7f5;--ok:#15803d;--warn:#b45309;--err:#b91c1c;--sh:0 8px 24px rgba(37,99,235,.09);--navy:#07234f;--ac:#2b68ca}
@@ -825,6 +832,20 @@ html,body{overflow-x:clip}
 @media(max-width:400px){.tkwv b{font-size:3rem}.tkwb{font-size:1.8rem}}
 @media(prefers-reduced-motion:reduce){.tkdot{animation:none}}
 
+/* ---------- PWA: بانر التثبيت/الإشعارات + زر الجرس ---------- */
+.pwab{position:fixed;inset-inline:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));max-width:440px;margin-inline:auto;z-index:31;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--b);border-radius:18px;box-shadow:0 12px 32px rgba(7,35,79,.18);padding:12px;animation:up .22s ease-out}
+.pwab.nobn{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.pwab .pi{width:40px;height:40px;border-radius:12px;background:var(--pl);color:var(--p);display:grid;place-items:center;flex:none}.pwab .pi svg{width:22px;height:22px}
+.pwab .pt{flex:1;min-width:0;font-size:.85rem;line-height:1.45;color:var(--m)}.pwab .pt b{display:block;color:var(--navy);font-size:.95rem}
+.pwab .pa{display:flex;flex-direction:column;gap:4px;flex:none}.pwab .pa .btn{white-space:nowrap}
+.pwab .pl{background:none;border:0;color:var(--m);font-size:.78rem;cursor:pointer;padding:2px 4px}
+.tb-bell{position:absolute;inset-inline-start:12px;top:calc(50% + env(safe-area-inset-top,0px)/2);transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--b);border-radius:12px;background:#fff;color:var(--navy);cursor:pointer;padding:0}
+.tb-bell svg{width:20px;height:20px}.tb-bell.on::after{content:"";position:absolute;top:7px;inset-inline-end:8px;width:9px;height:9px;border-radius:50%;background:var(--ok);border:2px solid #fff}
+.pm-st{display:flex;align-items:center;gap:8px;margin:10px 0 6px}.pm-st .chip{margin-inline-start:0}
+.pm-h{margin:16px 0 4px;font-size:1rem}.pm-n{color:var(--m);font-size:.9rem;margin-bottom:8px}.pm-ol{margin:6px 0 10px;padding-inline-start:22px;color:var(--t);font-size:.9rem;line-height:1.9}
+.pm-b .btn{width:100%;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.pwab{animation:none}}
+@media(display-mode:standalone){body{-webkit-tap-highlight-color:transparent}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -941,7 +962,8 @@ function head() {
   const href = r === 'doctor' ? '/doctor/dashboard' : r === 'admin' ? '/admin/dashboard' : r === 'receptionist' ? '/receptionist/dashboard' : '#/';
   const oc = r === 'doctor' || r === 'admin' || r === 'receptionist' ? '' : ` onclick="return go('top')"`;
   const out = r === 'admin' || r === 'receptionist' ? `<button class="tb-out" aria-label="خروج" onclick="logout()">${ic('log-out')}</button>` : '';
-  return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${out}</header>`;
+  const bell = pushEligible() ? `<button class="tb-bell ${PUSHST === 'on' ? 'on' : ''}" id="bell" aria-label="الإشعارات" onclick="pushModal()">${ic('bell')}</button>` : '';
+  return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${bell}${out}</header>`;
 }
 function goMe() { closeModal(); nav(DASH.patient); }
 Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'list': '<path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/>', 'bar-chart': '<path d=\"M3 3v18h18\"/><path d=\"M18 17V9\"/><path d=\"M13 17V5\"/><path d=\"M8 17v-3\"/>', 'chevron-down': '<path d=\"m6 9 6 6 6-6\"/>', 'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' });
@@ -968,6 +990,7 @@ function go(id) {
 }
 function logout(auto) {
   const r = localStorage.role, t = localStorage.tok;
+  pushRelease();
   if (t && !auto) fetch('/api/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {});
   localStorage.removeItem('tok'); localStorage.removeItem('role');
   nav(r && r !== 'patient' && LOGIN[r] ? LOGIN[r] : '/');
@@ -1107,14 +1130,15 @@ function guestBook(id) {
       const t = await api('/guest/bookings', { method: 'POST', body: { doctor_id: id, name, phone } });
       try { localStorage.gi = JSON.stringify({ name, phone }); } catch (x) {}
       GT.set([{ id: t.id, phone }, ...GT.get().filter(x => x.id !== t.id)]);
-      modal(`<div class="ok-box">${ic('circle-check')}<h3 style="margin:6px 0 14px">تم الحجز بنجاح!</h3></div><div style="text-align:start">${tkCard(t)}</div><p class="mt" style="margin-top:10px">احتفظ برقم دورك. يمكنك متابعته من صفحة «حجزي» على نفس الجهاز.</p><button class="btn p lg" style="margin-top:10px" onclick="closeModal();nav('/track')">تتبع حجزي</button>`);
+      modal(`<div class="ok-box">${ic('circle-check')}<h3 style="margin:6px 0 14px">تم الحجز بنجاح!</h3></div><div style="text-align:start">${tkCard(t)}</div><p class="mt" style="margin-top:10px">احتفظ برقم دورك. يمكنك متابعته من صفحة «حجزي» على نفس الجهاز.</p><button class="btn p lg" style="margin-top:10px" onclick="closeModal();nav('/track')">تتبع حجزي</button><div id="pbx"></div>`);
+      pushSync(true); pushCardFill('pbx');
     } catch (x) { $('#er').textContent = x.message; btn.disabled = false; }
   };
 }
 let GPREV = {};
 function track() {
   document.title = 'حجزي — دورك';
-  $('#m').innerHTML = '<h2 class="sec2">حجزي</h2><div id="gl"></div>';
+  $('#m').innerHTML = '<h2 class="sec2">حجزي</h2><div id="pbt"></div><div id="gl"></div>';
   cur = async () => {
     const items = GT.get(); const gl = $('#gl'); if (!gl) return;
     if (!items.length) { gl.innerHTML = '<p class="empty card">لا توجد حجوزات على هذا الجهاز. احجز من صفحة الأطباء وسيظهر دورك هنا.</p>'; return; }
@@ -1131,7 +1155,7 @@ function track() {
         : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>';
     } catch (e) { toast(e.message); }
   };
-  cur();
+  cur(); pushCardFill('pbt');
 }
 const gcx = id => { const it = GT.get().find(x => x.id === id); return it && confirm('إلغاء هذا الحجز؟') && api(`/guest/bookings/${id}/cancel`, { method: 'POST', body: { phone: it.phone } }).then(() => { toast('تم إلغاء الحجز', 1); cur(); }).catch(e => toast(e.message)); };
 
@@ -1872,6 +1896,159 @@ setInterval(remPoll, 30000); setTimeout(remPoll, 3000);
 // يتوقف التحديث أثناء إخفاء التبويب أو فتح نافذة (حتى لا نقاطع الكتابة).
 setInterval(() => { if (cur && !document.hidden && !$('.ov')) cur(); }, 5000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && cur && !$('.ov')) cur(); });
+/* ---------- PWA: تثبيت التطبيق + إشعارات الموبايل (Web Push) ---------- */
+// الـ Service Worker في /sw.js. الإشعارات الحقيقية تُرسل من السيرفر (VAPID) حتى والتطبيق مغلق.
+// الحساب (مريض/طبيب/استقبال) يشترك بتوكنه، والضيف (حجز بالاسم والهاتف) يشترك بحجوزاته المحفوظة على جهازه.
+const PUSH_ROLES = ['patient', 'doctor', 'receptionist'];
+let PUSHST = '', DIP = null, BN = '', SYNC_KEY = '', SYNC_AT = 0;
+const PEP = { v: '' }, T0 = Date.now();
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const pushOK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const pushAcct = () => !!localStorage.tok && PUSH_ROLES.includes(localStorage.role);
+const pushEligible = () => pushAcct() || (!localStorage.tok && GT.get().length > 0);
+const u8 = s => { const b = atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+const b64u = u => btoa(String.fromCharCode(...new Uint8Array(u))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const vkey = async () => (await CFG).vapid_public_key || '';
+const sameKey = (sub, key) => { try { const k = sub.options && sub.options.applicationServerKey; return !k || b64u(k) === key; } catch (e) { return true; } };
+
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  navigator.serviceWorker.addEventListener('message', e => {
+    const t = e.data && e.data.type;
+    if (t === 'dawrak-push') { if (cur && !$('.ov')) cur(); } else if (t === 'dawrak-resubscribe') pushSync(true);
+  });
+}
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); DIP = e; pwaTick(); });
+addEventListener('appinstalled', () => { DIP = null; toast('تم تثبيت دورك على جهازك', 1); showBn(''); });
+
+async function pushReg() { await navigator.serviceWorker.register('/sw.js'); return navigator.serviceWorker.ready; }
+async function pushSub() { try { const r = await navigator.serviceWorker.getRegistration('/'); return r ? await r.pushManager.getSubscription() : null; } catch (e) { return null; } }
+const pushSend = (sub, welcome) => pushAcct()
+  ? api('/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON(), welcome } })
+  : api('/push/guest/subscribe', { method: 'POST', body: { subscription: sub.toJSON(), items: GT.get(), welcome } });
+
+// حالة الإشعارات على هذا الجهاز: on | granted | default | denied | ios | unsupported | noserver
+async function pushState() {
+  if (!pushOK()) return IOS && !standalone() ? 'ios' : 'unsupported';
+  if (!await vkey()) return 'noserver';
+  if (Notification.permission === 'denied') return 'denied';
+  if (Notification.permission === 'default') return 'default';
+  const sub = await pushSub(); if (sub) PEP.v = sub.endpoint;
+  return sub && !localStorage.push_off ? 'on' : 'granted';
+}
+// تفعيل بطلب من المستخدم (ضغطة زر): يطلب الإذن ثم يشترك ثم يسجّل الاشتراك على السيرفر
+async function pushEnable(welcome) {
+  const key = await vkey();
+  if (!pushOK()) throw new Error(IOS ? 'على iPhone ثبّت التطبيق على الشاشة الرئيسية أولاً ثم فعّل الإشعارات' : 'هذا المتصفح لا يدعم الإشعارات');
+  if (!key) throw new Error('الإشعارات غير مفعّلة من إدارة الموقع حالياً');
+  let p = Notification.permission; if (p === 'default') p = await Notification.requestPermission();
+  if (p === 'denied') throw new Error('الإشعارات محظورة. فعّلها من إعدادات الموقع في المتصفح');
+  if (p !== 'granted') throw new Error('لم يتم السماح بالإشعارات');
+  const reg = await pushReg(); let sub = await reg.pushManager.getSubscription();
+  if (sub && !sameKey(sub, key)) { await sub.unsubscribe(); sub = null; }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key) });
+  PEP.v = sub.endpoint; await pushSend(sub, welcome);
+  try { localStorage.removeItem('push_off'); } catch (e) {}
+  SYNC_KEY = pushSyncId(); SYNC_AT = Date.now();
+}
+const pushSyncId = () => (localStorage.role || 'guest') + ':' + (localStorage.tok || '').slice(-12) + ':' + GT.get().map(x => x.id).join(',');
+// مزامنة صامتة (بدون ضغطة): تعمل فقط لو الإذن ممنوح مسبقاً. تربط الجهاز بالحساب الحالي أو بحجوزات الضيف الجديدة
+async function pushSync(force) {
+  try {
+    if (!pushOK() || Notification.permission !== 'granted' || localStorage.push_off || !pushEligible()) return;
+    const key = await vkey(); if (!key) return;
+    const id = pushSyncId();
+    if (!force && id === SYNC_KEY && Date.now() - SYNC_AT < 6 * 36e5) return;
+    SYNC_KEY = id; SYNC_AT = Date.now();
+    const reg = await pushReg(); let sub = await reg.pushManager.getSubscription();
+    if (sub && !sameKey(sub, key)) { await sub.unsubscribe(); sub = null; }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(key) });
+    PEP.v = sub.endpoint; await pushSend(sub, false);
+  } catch (e) { if (!e.status) SYNC_AT = Date.now() - 6 * 36e5 + 6e4; /* خطأ شبكة: أعد المحاولة بعد دقيقة */ }
+}
+// الجهاز يتخلى عن اشتراكه (عند الخروج): لا تصل إشعارات الحساب السابق لمن يستخدم الجهاز بعده
+function pushRelease() {
+  SYNC_KEY = '';
+  if (!PEP.v) return;
+  try { fetch('/api/push/release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: PEP.v }), keepalive: true }).catch(() => {}); } catch (e) {}
+}
+async function pushDisable() {
+  try { localStorage.push_off = '1'; } catch (e) {}
+  const sub = await pushSub();
+  if (sub) { try { await fetch('/api/push/release', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }); } catch (e) {} await sub.unsubscribe().catch(() => {}); }
+  PEP.v = ''; SYNC_KEY = ''; await pwaTick();
+}
+async function pushToggleOn(btn) {
+  if (btn) btn.disabled = true;
+  try { await pushEnable(true); toast('تم تفعيل الإشعارات على هذا الجهاز', 1); } catch (e) { toast(e.message || 'تعذّر تفعيل الإشعارات'); }
+  if (btn) btn.disabled = false;
+  await pwaTick(); if ($('.pm-b')) pushModal();
+}
+async function pwaInstall() {
+  if (DIP) { const e = DIP; DIP = null; e.prompt(); try { const r = await e.userChoice; if (r.outcome !== 'accepted') localStorage.pwa_x_inst = Date.now(); } catch (x) {} showBn(''); return; }
+  pushModal();
+}
+
+const SHARE_STEPS = '<ol class="pm-ol"><li>افتح الموقع من متصفح <b>Safari</b></li><li>اضغط زر المشاركة <b>⬆︎</b> أسفل الشاشة</li><li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> ثم «إضافة»</li><li>افتح <b>دورك</b> من الشاشة الرئيسية وفعّل الإشعارات من أيقونة الجرس</li></ol><p class="pm-n">يتطلب iOS 16.4 أو أحدث.</p>';
+async function pushModal() {
+  const st = PUSHST = await pushState(), staff = ['doctor', 'receptionist'].includes(localStorage.role);
+  const what = staff ? 'الحجوزات الجديدة وإلغاءاتها وتحديثات الطابور' : 'تأكيد حجزك واقتراب دورك وبدء الكشف' + (pushAcct() ? ' وصدور الروشتة' : '');
+  const ST = { on: ['مفعّلة', 'ok'], granted: ['غير مفعّلة', 'off'], default: ['غير مفعّلة', 'off'], denied: ['محظورة', 'warn'], ios: ['تتطلب تثبيت التطبيق', 'warn'], unsupported: ['غير مدعومة', 'off'], noserver: ['غير متاحة حالياً', 'off'] }[st];
+  const body = {
+    on: `<p class="pm-n">ستصلك إشعارات ${what} على هذا الجهاز حتى لو كان التطبيق مغلقاً.</p><button class="btn o" onclick="pushDisable().then(()=>pushModal())">إيقاف الإشعارات على هذا الجهاز</button>`,
+    granted: `<p class="pm-n">فعّل الإشعارات لتصلك ${what} حتى لو كان التطبيق مغلقاً.</p><button class="btn p" onclick="pushToggleOn(this)">${ic('bell')} تفعيل الإشعارات</button>`,
+    default: `<p class="pm-n">فعّل الإشعارات لتصلك ${what} حتى لو كان التطبيق مغلقاً.</p><button class="btn p" onclick="pushToggleOn(this)">${ic('bell')} تفعيل الإشعارات</button>`,
+    denied: '<p class="pm-n">تم حظر الإشعارات لهذا الموقع. لتفعيلها: اضغط على رمز القفل بجوار عنوان الموقع ← الإشعارات ← السماح، ثم ارجع وأعد فتح هذه النافذة.</p>',
+    ios: '<p class="pm-n">على iPhone تعمل الإشعارات بعد تثبيت التطبيق على الشاشة الرئيسية:</p>' + SHARE_STEPS,
+    unsupported: '<p class="pm-n">هذا المتصفح لا يدعم إشعارات المواقع. استخدم Google Chrome على أندرويد أو الكمبيوتر.</p>',
+    noserver: '<p class="pm-n">إشعارات الموبايل غير مفعّلة من إدارة الموقع حالياً.</p>'
+  }[st];
+  const inst = standalone() ? '<p class="pm-n">التطبيق مثبّت على جهازك.</p>'
+    : DIP ? '<p class="pm-n">ثبّت دورك على الشاشة الرئيسية ليفتح كتطبيق مستقل، بدون متجر تطبيقات.</p><button class="btn p" onclick="pwaInstall()">' + ic('download') + ' تثبيت دورك</button>'
+    : IOS ? SHARE_STEPS
+    : '<p class="pm-n">من قائمة المتصفح ⋮ اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</p>';
+  modal(`<div class="pm-b"><h3>الإشعارات</h3><div class="pm-st"><span class="chip ${ST[1]}">${ST[0]}</span></div>${body}<h4 class="pm-h">تثبيت التطبيق</h4>${inst}<button class="btn" style="width:100%;margin-top:14px" onclick="closeModal()">إغلاق</button></div>`);
+}
+// بطاقة تفعيل مضمّنة (بعد الحجز كضيف وفي صفحة «حجزي»)
+async function pushCardFill(id) {
+  const el = document.getElementById(id); if (!el) return;
+  const st = PUSHST = await pushState();
+  el.innerHTML = st === 'on' ? `<p class="mt" style="margin-top:10px">${ic('bell')} إشعارات دورك مفعّلة على هذا الجهاز</p>`
+    : st === 'default' || st === 'granted' ? `<button class="btn o lg" style="margin-top:10px" onclick="pushToggleOn(this).then(()=>pushCardFill('${id}'))">${ic('bell')} فعّل إشعارات دورك</button><p class="mt" style="margin-top:6px">يصلك تنبيه عند تأكيد الحجز واقتراب دورك وبدء الكشف حتى لو قفلت التطبيق.</p>`
+    : st === 'ios' ? `<button class="btn o lg" style="margin-top:10px" onclick="pushModal()">${ic('bell')} كيف أفعّل الإشعارات على iPhone؟</button>` : '';
+}
+
+// بانر صغير (إشعارات أو تثبيت) يظهر بعد ثوانٍ، ويُخفى أسبوعاً لو اختار «لاحقاً»
+const bnHidden = k => Date.now() - Number(localStorage['pwa_x_' + k] || 0) < (k === 'push' ? 3 : 7) * 864e5;
+function showBn(kind) {
+  let b = $('#pwab');
+  if (!kind) { b && b.remove(); BN = ''; return; }
+  if (BN === kind && b) { b.classList.toggle('nobn', !$('.bn')); return; }
+  b && b.remove(); BN = kind;
+  const push = kind === 'push', staff = ['doctor', 'receptionist'].includes(localStorage.role);
+  b = document.createElement('div'); b.id = 'pwab'; b.className = 'pwab' + ($('.bn') ? '' : ' nobn'); b.setAttribute('role', 'region'); b.setAttribute('aria-label', push ? 'تفعيل الإشعارات' : 'تثبيت التطبيق');
+  b.innerHTML = `<div class="pi">${ic(push ? 'bell' : 'download')}</div><div class="pt"><b>${push ? 'فعّل الإشعارات' : 'ثبّت دورك على موبايلك'}</b>${push ? (staff ? 'لتصلك الحجوزات الجديدة وتحديثات الطابور فور حدوثها' : 'لتعرف تأكيد حجزك واقتراب دورك حتى لو قفلت التطبيق') : 'يفتح كتطبيق مستقل من الشاشة الرئيسية، بدون متجر'}</div><div class="pa"><button class="btn p sm" id="pwab-go">${push ? 'تفعيل' : 'تثبيت'}</button><button class="pl" id="pwab-x">لاحقاً</button></div>`;
+  document.body.append(b);
+  $('#pwab-go').onclick = () => push ? pushToggleOn($('#pwab-go')).then(() => showBn('')) : pwaInstall();
+  $('#pwab-x').onclick = () => { try { localStorage['pwa_x_' + kind] = Date.now(); } catch (e) {} showBn(''); };
+}
+async function pwaTick() {
+  try {
+    const st = PUSHST = await pushState();
+    $('#bell') && $('#bell').classList.toggle('on', st === 'on');
+    if ((st === 'on' || st === 'granted') && pushEligible()) pushSync();
+    let want = '';
+    if (!$('.ov') && Date.now() - T0 > 6000) {
+      if (pushEligible() && st === 'default' && !bnHidden('push')) want = 'push';
+      else if (!standalone() && !bnHidden('inst') && (DIP || IOS)) want = 'inst';
+    }
+    showBn(want);
+  } catch (e) { /* لا يؤثر على الصفحة */ }
+}
+setInterval(pwaTick, 3000); setTimeout(pwaTick, 1200);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pwaTick(); });
+
 route();
 </script>
 </body>

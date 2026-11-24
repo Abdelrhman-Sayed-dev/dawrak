@@ -1,6 +1,6 @@
 -- الإنشاء:  createdb clinic_queue  ثم  psql -d clinic_queue -f database.sql
 -- تنبيه: الملف يعيد إنشاء الجداول (يحذف البيانات الحالية).
-DROP TABLE IF EXISTS free_booking, medicine_doses, medicine_reminders, favorite_doctors, doctor_reviews, auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
+DROP TABLE IF EXISTS push_events, push_guest_bookings, push_subscriptions, free_booking, medicine_doses, medicine_reminders, favorite_doctors, doctor_reviews, auth_log, queue_audit, booking_files, visit_reports, bookings, walkin_patients, receptionists, family_members, patients, doctors, admins CASCADE;
 
 CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
@@ -220,6 +220,33 @@ CREATE INDEX idx_doses_due ON medicine_doses (scheduled_at) WHERE status = 'Pend
 
 CREATE INDEX idx_patient_bookings ON bookings (patient_id, booking_date DESC);
 CREATE INDEX idx_queue ON bookings (doctor_id, booking_date, status, queue_number);
+
+-- إشعارات الموبايل (Web Push): اشتراكات الأجهزة + ربط أجهزة الضيف بحجوزاتهم + منع تكرار الإشعار (السيرفر ينشئها تلقائياً لو لم توجد)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id BIGSERIAL PRIMARY KEY,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  role VARCHAR(12) NOT NULL CHECK (role IN ('patient','doctor','receptionist','guest')),
+  user_id INT,
+  user_agent VARCHAR(200) NOT NULL DEFAULT '',
+  fail_count INT NOT NULL DEFAULT 0,
+  last_ok_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (role, user_id);
+CREATE TABLE IF NOT EXISTS push_guest_bookings (
+  subscription_id BIGINT NOT NULL REFERENCES push_subscriptions(id) ON DELETE CASCADE,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  PRIMARY KEY (subscription_id, booking_id)
+);
+CREATE INDEX IF NOT EXISTS idx_push_guest_booking ON push_guest_bookings (booking_id);
+CREATE TABLE IF NOT EXISTS push_events (
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  kind VARCHAR(12) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (booking_id, kind)
+);
 
 -- لا توجد حسابات افتراضية ولا كلمات مرور داخل الملف عمداً:
 --   * المدير:  python create_admin.py <username>   (جهة السيرفر فقط، كلمة المرور تُدخل وقت التنفيذ)

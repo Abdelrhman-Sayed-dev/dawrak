@@ -25,6 +25,8 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import asyncpg, bcrypt, jwt
+
+import push, webpush
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from asyncpg.exceptions import UniqueViolationError
@@ -111,6 +113,19 @@ class _Acquire:
 
 
 pool = LazyPool()
+
+
+def _env_int(k, d):
+    try:
+        return int(os.getenv(k, "") or d)
+    except ValueError:
+        return d
+
+
+# إشعارات الموبايل (Web Push). لو VAPID_PRIVATE_KEY غير مضبوط تتعطل بهدوء ولا يتأثر أي شيء آخر (بما فيه تثبيت التطبيق).
+PUSH = push.Push(pool, webpush.load_vapid(), near=_env_int("PUSH_NEAR_AHEAD", 2), sync=os.getenv("PUSH_SYNC") == "1")
+CRON_SECRET = os.getenv("CRON_SECRET", "")   # يحمي /api/push/cron (تذكير الأدوية من خادم)
+STATIC = Path(__file__).parent / "static"
 _last_cleanup = 0.0
 tries: dict = {}
 
@@ -177,6 +192,11 @@ async def cleanup_if_due():
         await pool.execute("DELETE FROM auth_log WHERE created_at < now() - interval '90 days'")
     except Exception as e:
         print("auth_log cleanup:", e)
+    if PUSH.enabled:
+        try:
+            await PUSH.cleanup()
+        except Exception as e:
+            print("push cleanup:", e)
 
 
 app = FastAPI(docs_url=None, redoc_url=None)
@@ -443,7 +463,7 @@ async def register(request: Request):
 # ---------- Google Sign-In (للمرضى) ----------
 @app.get("/api/config")
 async def config():
-    return {"google_client_id": GOOGLE_CLIENT_ID}
+    return {"google_client_id": GOOGLE_CLIENT_ID, "vapid_public_key": PUSH.public_key}
 
 
 def verify_google(token):
@@ -586,6 +606,7 @@ async def cancel_booking(bid: int, u=Depends(auth("patient"))):
     if not r:
         raise Fail(409, "لا يمكن إلغاء هذا الحجز (ربما بدأ الكشف بالفعل)")
     await changed()
+    await PUSH.fire(PUSH.ev_cancelled(bid, "patient"))
     return {"ok": True}
 
 
@@ -601,6 +622,7 @@ async def postpone_booking(bid: int, u=Depends(auth("patient"))):  # التأج�
             raise Fail(409, "أنت بالفعل آخر شخص في الطابور")
         await c.execute("UPDATE bookings SET queue_number=$2,called_at=NULL WHERE id=$1", bid, mx + 1)
     await changed()
+    await PUSH.fire(PUSH.ev_postponed(bid))
     return {"ok": True}
 
 
@@ -708,6 +730,7 @@ async def create_booking(request: Request, u=Depends(auth("patient"))):
         bid = await c.fetchval("""INSERT INTO bookings(doctor_id,patient_name,patient_phone,patient_id,member_id,queue_number)
           SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE RETURNING id""", did, name, phone, u["id"], mid)
     await changed()
+    await PUSH.fire(PUSH.ev_booked(bid))
     return await ticket(bid)
 
 
@@ -784,6 +807,7 @@ async def guest_book(request: Request):
           SELECT $1::int,$2::text,$3::text,COALESCE(MAX(queue_number),0)+1 FROM bookings WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE
           RETURNING id""", did, name, phone)
     await changed()
+    await PUSH.fire(PUSH.ev_booked(bid))
     return await guest_ticket(bid)
 
 
@@ -817,6 +841,7 @@ async def guest_cancel(bid: int, request: Request):
         if not await c.fetchval("UPDATE bookings SET status='Cancelled' WHERE id=$1 AND status='Waiting' RETURNING id", bid):
             raise Fail(409, "لا يمكن إلغاء هذا الحجز في حالته الحالية")
     await changed()
+    await PUSH.fire(PUSH.ev_cancelled(bid, "patient"))
     return {"ok": True}
 
 
@@ -876,9 +901,12 @@ async def d_report(bid: int, request: Request, u=Depends(auth("doctor"))):  # ا
     rep, meds, fu = vreport(await body(request))
     if not await pool.fetchval("SELECT 1 FROM bookings WHERE id=$1 AND doctor_id=$2 AND status IN ('In Progress','Completed')", bid, u["id"]):
         raise Fail(403, "لا يمكنك كتابة تقرير لهذا الكشف")
+    first_report = PUSH.enabled and not await pool.fetchval("SELECT 1 FROM visit_reports WHERE booking_id=$1", bid)
     await pool.execute("""INSERT INTO visit_reports(booking_id,report,medications,follow_up_days) VALUES($1,$2,$3::jsonb,$4)
       ON CONFLICT (booking_id) DO UPDATE SET report=EXCLUDED.report,medications=EXCLUDED.medications,
       follow_up_days=EXCLUDED.follow_up_days,updated_at=now()""", bid, rep, json.dumps(meds, ensure_ascii=False), fu)
+    if first_report:
+        await PUSH.fire(PUSH.ev_report(bid))
     return {"ok": True}
 
 
@@ -1298,6 +1326,7 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
           SELECT $1::int,$2::text,$3::text,$4::int,$5::int,COALESCE(MAX(queue_number),0)+1,'Walk-in',$6::int FROM bookings
           WHERE doctor_id=$1::int AND booking_date=CURRENT_DATE RETURNING id,queue_number""", did, name, phone, pid, wid, rec["id"])
         await audit(c, rec, row["id"], "add", patient=name, queue=row["queue_number"])
+    await PUSH.fire(PUSH.ev_booked(row["id"]))
     return await r_state(rec, booking={"id": row["id"], "queue_number": row["queue_number"]})
 
 
@@ -1329,6 +1358,7 @@ async def r_start(bid: int, rec=Depends(rec_ctx)):
             raise Fail(409, "أنهِ الكشف الحالي أولاً")
         await c.execute("UPDATE bookings SET status='In Progress',started_at=now(),called_at=COALESCE(called_at,now()) WHERE id=$1", bid)
         await audit(c, rec, bid, "start", patient=b["patient_name"], queue=b["queue_number"])
+    await PUSH.fire(PUSH.ev_started(bid))
     return await r_state(rec)
 
 
@@ -1350,6 +1380,7 @@ async def r_cancel(bid: int, request: Request, rec=Depends(rec_ctx)):
         b = await lock_get(c, rec, bid, ("Waiting", "In Progress"))
         await c.execute("UPDATE bookings SET status='Cancelled' WHERE id=$1", bid)
         await audit(c, rec, bid, "cancel", patient=b["patient_name"], queue=b["queue_number"], reason=reason)
+    await PUSH.fire(PUSH.ev_cancelled(bid, "staff"))
     return await r_state(rec)
 
 
@@ -1372,6 +1403,7 @@ async def r_move(bid: int, request: Request, rec=Depends(rec_ctx)):
             await c.execute("SET CONSTRAINTS uq_queue_number DEFERRED")
             await c.execute("UPDATE bookings x SET queue_number=v.n FROM unnest($1::int[],$2::int[]) AS v(id,n) WHERE x.id=v.id", ids, nums)
             await audit(c, rec, bid, "move", patient=b["patient_name"], queue=b["queue_number"], **{"from": old, "to": pos})
+    await PUSH.fire(PUSH.ev_queue(did))
     return await r_state(rec)
 
 
@@ -1732,12 +1764,116 @@ async def dose_set(did: int, request: Request, u=Depends(auth("patient"))):
     return {"ok": True}
 
 
-@app.get("/sw.js")
+# ================= PWA (تثبيت التطبيق) + إشعارات الموبايل =================
+# الملفات الثابتة في مجلد static/. الأسماء محددة صراحةً (لا مسار حر من المستخدم) فلا يوجد Path Traversal.
+ICON_RE = re.compile(r"[a-z0-9-]{3,40}\.png")
+
+
+@app.get("/sw.js", include_in_schema=False)
 async def service_worker():
-    """Service worker صغير لعرض إشعارات التذكير (يعمل والموقع مفتوح في أي تبويب)."""
-    js = ("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));"
-          "self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/patient/reminders'))});")
-    return Response(js, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
+    """Service worker واحد للتطبيق كله (نطاق /): يخدم التثبيت واستقبال الإشعارات وصفحة «لا يوجد اتصال». لا يُخزَّن أبداً حتى يصل التحديث فوراً."""
+    return FileResponse(STATIC / "sw.js", media_type="application/javascript",
+                        headers={"Cache-Control": "no-cache, max-age=0", "Service-Worker-Allowed": "/"})
+
+
+@app.get("/manifest.webmanifest", include_in_schema=False)
+async def manifest():
+    return FileResponse(STATIC / "manifest.webmanifest", media_type="application/manifest+json", headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/offline.html", include_in_schema=False)
+async def offline_page():
+    return FileResponse(STATIC / "offline.html", media_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/icons/{name}", include_in_schema=False)
+async def icon(name: str):
+    f = STATIC / "icons" / name
+    if not ICON_RE.fullmatch(name) or not f.is_file():
+        raise Fail(404, "غير موجود")
+    return FileResponse(f, media_type="image/png", headers={"Cache-Control": "public, max-age=604800"})
+
+
+def push_sub(b):
+    """يتحقق من اشتراك المتصفح (endpoint من خدمة دفع معروفة + مفاتيح صحيحة)."""
+    s = b.get("subscription") if isinstance(b.get("subscription"), dict) else {}
+    k = s.get("keys") if isinstance(s.get("keys"), dict) else {}
+    ep, p, a = str(s.get("endpoint") or ""), str(k.get("p256dh") or ""), str(k.get("auth") or "")
+    if not webpush.endpoint_ok(ep) or not webpush.valid_keys(p, a):
+        raise Fail(400, "اشتراك الإشعارات غير صالح")
+    return ep, p, a
+
+
+async def push_user(request: Request):
+    """أي مستخدم مسجّل دخوله من الأدوار التي تستقبل إشعارات (مريض / طبيب / موظف استقبال). الأدمن لا يستقبل."""
+    try:
+        role = jwt.decode(request.headers.get("authorization", "").replace("Bearer ", ""), SECRET, algorithms=["HS256"])["role"]
+    except Exception:
+        raise Fail(401, "غير مصرح، سجّل الدخول من جديد")
+    if role not in ("patient", "doctor", "receptionist"):
+        raise Fail(403, "هذا الدور لا يستقبل إشعارات")
+    return await auth(role)(request)
+
+
+def push_ready():
+    if not PUSH.enabled:
+        raise Fail(503, "الإشعارات غير مفعّلة على الخادم")
+
+
+@app.post("/api/push/subscribe")
+async def push_subscribe(request: Request, u=Depends(push_user)):
+    push_ready()
+    b = await body(request)
+    ep, p, a = push_sub(b)
+    await PUSH.subscribe_account(u["role"], u["id"], ep, p, a, request.headers.get("user-agent", ""), bool(b.get("welcome")))
+    return {"ok": True}
+
+
+@app.post("/api/push/guest/subscribe")
+async def push_guest_subscribe(request: Request):
+    """إشعارات الضيف (حجز بالاسم والهاتف بدون حساب): يرسل الجهاز [{id, phone}] ولا نربط إلا الحجوزات النشطة التي يطابق هاتفها."""
+    push_ready()
+    guest_limit(request, "push", 30, 600)
+    b = await body(request)
+    ep, p, a = push_sub(b)
+    await PUSH.ensure()
+    bids = []
+    for it in (b.get("items") if isinstance(b.get("items"), list) else [])[:10]:
+        if not isinstance(it, dict):
+            continue
+        bid = toint(it.get("id"))
+        if bid and await pool.fetchval("""SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL
+                AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')""", bid, norm_phone(it.get("phone"))):
+            bids.append(bid)
+    if not bids:
+        raise Fail(409, "لا يوجد حجز نشط اليوم لتفعيل الإشعارات عليه")
+    await PUSH.subscribe_guest(ep, p, a, request.headers.get("user-agent", ""), bids, bool(b.get("welcome")))
+    return {"ok": True, "bookings": len(bids)}
+
+
+@app.post("/api/push/release")
+async def push_release(request: Request):
+    """الجهاز يتخلى عن اشتراكه (خروج من الحساب، أو إيقاف الإشعارات). لا يحتاج توكن لأن الجلسة قد تكون انتهت،
+    ورابط الاشتراك (endpoint) سرّ لا يعرفه إلا الجهاز نفسه. هكذا لا تصل إشعارات مريض سابق إلى جهاز يستعمله شخص آخر."""
+    guest_limit(request, "push-off", 60, 600)
+    ep = str((await body(request)).get("endpoint") or "")[:700]
+    if ep and PUSH.enabled:
+        await PUSH.ensure()
+        await PUSH.unsubscribe(ep)
+    return {"ok": True}
+
+
+@app.api_route("/api/push/cron", methods=["GET", "POST"], include_in_schema=False)
+async def push_cron(request: Request):
+    """نبضة دورية من خدمة خارجية (cron-job.org مثلاً كل دقيقة): ترسل تذكيرات الأدوية كإشعارات حتى والتطبيق مغلق، وتبقي الخدمة صاحية."""
+    key = request.headers.get("x-cron-key") or request.query_params.get("key") or ""
+    if not CRON_SECRET or not secrets.compare_digest(key.encode(), CRON_SECRET.encode()):
+        raise Fail(403, "غير مصرح")
+    await cleanup_if_due()
+    if not PUSH.enabled:
+        return {"ok": True, "push": False}
+    await ensure_features()
+    return {"ok": True, "doses": await PUSH.cron_doses()}
 
 
 if __name__ == "__main__":

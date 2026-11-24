@@ -15,3 +15,9 @@ services:
         generateValue: true  # Render يولّد قيمة عشوائية آمنة
       - key: GOOGLE_CLIENT_ID
         sync: false          # اختياري
+      - key: VAPID_PRIVATE_KEY
+        sync: false          # إشعارات الموبايل: شغّل python generate_vapid.py وانسخ القيمتين هنا
+      - key: VAPID_SUBJECT
+        sync: false          # مثال: mailto:you@example.com (بريد التواصل المطلوب في بروتوكول VAPID)
+      - key: CRON_SECRET
+        generateValue: true  # يحمي /api/push/cron (تذكير الأدوية كإشعارات)

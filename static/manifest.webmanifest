@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "دورك — حجز دور العيادات",
+  "short_name": "دورك",
+  "description": "احجز دورك عند الطبيب وتابع الطابور لحظة بلحظة، وتصلك إشعارات حجزك ودورك والروشتة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f7fe",
+  "theme_color": "#1b4486",
+  "categories": ["medical", "health"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "الأطباء", "short_name": "الأطباء", "url": "/doctors", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "حجزي", "short_name": "حجزي", "url": "/track", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

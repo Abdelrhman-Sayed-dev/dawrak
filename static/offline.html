@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1b4486">
+<title>لا يوجد اتصال — دورك</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:'Cairo',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;background:#f2f7fe;color:#0c2753;min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px;text-align:center;line-height:1.7}
+.c{max-width:360px}
+img{width:96px;height:96px;border-radius:24px;box-shadow:0 8px 24px rgba(37,99,235,.18);margin-bottom:18px}
+h1{font-size:1.4rem;color:#07234f;margin-bottom:8px}
+p{color:#657896;margin-bottom:22px}
+button{font:inherit;font-weight:700;border:0;border-radius:14px;background:#1b4486;color:#fff;padding:14px 28px;cursor:pointer;width:100%}
+button:active{background:#113163}
+</style>
+</head>
+<body>
+<div class="c">
+<img src="/icons/icon-192.png" alt="دورك">
+<h1>لا يوجد اتصال بالإنترنت</h1>
+<p>تأكد من اتصالك ثم حاول مرة أخرى. حجزك ودورك محفوظان ولن يضيعا.</p>
+<button onclick="location.reload()">إعادة المحاولة</button>
+</div>
+<script>addEventListener('online',()=>location.reload())</script>
+</body>
+</html>

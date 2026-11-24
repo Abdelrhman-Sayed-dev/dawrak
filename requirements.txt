@@ -3,6 +3,7 @@ uvicorn[standard]
 asyncpg
 bcrypt
 PyJWT
+cryptography
 google-auth
 requests
 tzdata
