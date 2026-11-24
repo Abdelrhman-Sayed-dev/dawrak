@@ -844,6 +844,11 @@ html,body{overflow-x:clip}
 .pm-st{display:flex;align-items:center;gap:8px;margin:10px 0 6px}.pm-st .chip{margin-inline-start:0}
 .pm-h{margin:16px 0 4px;font-size:1rem}.pm-n{color:var(--m);font-size:.9rem;margin-bottom:8px}.pm-ol{margin:6px 0 10px;padding-inline-start:22px;color:var(--t);font-size:.9rem;line-height:1.9}
 .pm-b .btn{width:100%;margin-top:8px}
+.tb-bell.un::before{content:attr(data-n);position:absolute;top:-5px;inset-inline-end:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#dc2626;color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center;border:2px solid #fff;box-sizing:content-box;line-height:1}
+.nx{list-style:none;margin:6px 0 4px;padding:0;max-height:38vh;overflow:auto;display:grid;gap:8px}
+.nx li{border:1px solid var(--b);border-radius:12px;padding:9px 11px;background:#fff}.nx li.nw{border-color:var(--p);background:var(--pl)}
+.nx b{display:block;color:var(--navy);font-size:.92rem}.nx span{display:block;color:var(--t);font-size:.85rem;line-height:1.5}.nx small{color:var(--m);font-size:.74rem}
+.ip{text-align:center}.ip .pi{width:64px;height:64px;border-radius:18px;background:var(--pl);color:var(--p);display:grid;place-items:center;margin:0 auto 10px}.ip .pi svg{width:32px;height:32px}.ip h3{margin-bottom:6px}
 @media(prefers-reduced-motion:reduce){.pwab{animation:none}}
 @media(display-mode:standalone){body{-webkit-tap-highlight-color:transparent}}
 </style>
@@ -1150,12 +1155,24 @@ function track() {
         else if (o && x.called && !o.c) { toast('تم استدعاؤك! توجّه إلى العيادة', 1); navigator.vibrate?.(400); }
         else if (o && x.status === 'Waiting' && x.ahead === 0 && o.a > 0) { toast('أنت التالي في الدور، استعد', 1); navigator.vibrate?.(200); }
         GPREV[x.id] = { s: x.status, c: x.called, a: x.ahead }; });
+      const fin = tickets.filter(x => x.status === 'Completed');
+      fin.forEach(x => { const o = GPREV['d' + x.id]; if (o && x.has_report && !o.r) { toast('الروشتة جاهزة، اضغط «عرض الروشتة»', 1); navigator.vibrate?.(300); } GPREV['d' + x.id] = { r: x.has_report }; });
       GT.set(items.filter(i => tickets.some(t => t.id === i.id)));
-      gl.innerHTML = live.length ? live.map(x => `<div style="margin-bottom:14px">${tkCard(x)}<div class="tkx"><button class="btn d sm" ${x.status === 'Waiting' ? '' : 'disabled'} onclick="gcx(${x.id})">إلغاء الحجز</button></div></div>`).join('')
-        : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>';
+      gl.innerHTML = (live.length ? live.map(x => `<div style="margin-bottom:14px">${tkCard(x)}<div class="tkx"><button class="btn d sm" ${x.status === 'Waiting' ? '' : 'disabled'} onclick="gcx(${x.id})">إلغاء الحجز</button></div></div>`).join('')
+        : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>')
+        + (fin.length ? `<h2 class="sec2">كشوفاتي</h2><div class="grid tkg">${fin.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)} · ${fds(x.booking_date)}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.has_report ? `<button class="btn p lg" onclick="grpt(${x.id})">${ic('file-text')} عرض الروشتة</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا فور جاهزيتها</div>'}</article>`).join('')}</div>` : '');
     } catch (e) { toast(e.message); }
   };
   cur(); pushCardFill('pbt');
+}
+// عرض روشتة الضيف: تُجلب برقم الحجز + رقم الهاتف المحفوظ على الجهاز
+async function grpt(id) {
+  const it = GT.get().find(x => x.id === id); if (!it) return;
+  try {
+    const r = await api(`/guest/bookings/${id}/report`, { method: 'POST', body: { phone: it.phone } });
+    PN = r.patient_name; HB = HB.filter(v => v.id !== id).concat({ ...r, id, guest: 1, member_name: null, follow_up_date: r.follow_up_date });
+    rpt(id);
+  } catch (e) { toast(e.message); }
 }
 const gcx = id => { const it = GT.get().find(x => x.id === id); return it && confirm('إلغاء هذا الحجز؟') && api(`/guest/bookings/${id}/cancel`, { method: 'POST', body: { phone: it.phone } }).then(() => { toast('تم إلغاء الحجز', 1); cur(); }).catch(e => toast(e.message)); };
 
@@ -1256,6 +1273,7 @@ function tkCard(x, act) {
 }
 function mview({ profile: p, bookings: b }) {
   HB = b; PN = p.name; const live = b.filter(x => x.status === 'Waiting' || x.status === 'In Progress'), hist = b.filter(x => !live.includes(x));
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }), fresh = hist.filter(x => x.status === 'Completed' && String(x.booking_date).slice(0, 10) === today);
   live.forEach(x => {
     const o = prev[x.id];
     if (o && x.status === 'In Progress' && o.s !== 'In Progress') { toast('جاء دورك الآن! توجّه إلى الطبيب', 1); navigator.vibrate?.(400); }
@@ -1265,20 +1283,22 @@ function mview({ profile: p, bookings: b }) {
   });
   $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p><div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="btn o sm" href="/patient/favorites">${ic('heart')} أطبائي المفضلون</a><a class="btn o sm" href="/patient/reminders">${ic('bell')} تذكير الأدوية</a></div>` +
     (live.length ? `<div class="grid tkg">${live.map(x => tkCard(x, true)).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
+    (fresh.length ? `<h2 class="sec2">تم الكشف اليوم</h2><div class="grid tkg">${fresh.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.report ? `<button class="btn p lg" onclick="rpt(${x.id})">${ic('file-text')} عرض الروشتة</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا وتصلك إشعاراً فور جاهزيتها</div>'}${x.follow_up_date ? `<div class="tkm g">موعد الاستشارة: ${fuTxt(x)}</div>` : ''}${x.review ? '' : `<button class="btn o" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`}</article>`).join('')}</div>` : '') +
     `<h2 class="sec2">كشوفاتي السابقة</h2>` +
-    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
+    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="rpt(${x.id})">${ic('paperclip')} الروشتة</button>` : x.status === 'Completed' ? '<span class="fb warn">بانتظار الروشتة</span>' : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
 }
 
 /* ---------- لوحة الطبيب ---------- */
 // لوحة الطبيب (الرئيسية): بيانات الطبيب + إحصائيات اليوم + المريض الحالي
 function doctor() { cur = async () => { try { dview(await api('/doctor/queue')); } catch (e) { toast(e.message); } }; cur(); }
-function dview({ doctor: d, current: c, waiting: w }) {
-  const nx = w[0];
+function dview({ doctor: d, current: c, waiting: w, done: dn }) {
+  const nx = w[0], dl = dn || [], miss = dl.filter(x => !x.has_report).length;
   $('#m').innerHTML = `<section class="card dh"><div class="row">${av(d, 'lg')}<div><h2>${esc(d.name)}</h2><span class="sp">${esc(d.specialty)}</span></div>${chip(d.status)}</div></section>
   <div class="stats"><div class="st"><b>${d.waiting}</b><small>منتظرون</small></div><div class="st"><b>${d.completed}</b><small>أنهوا اليوم</small></div><div class="st"><b>${d.avg} د</b><small>متوسط الكشف</small></div></div>
   <section class="card cur">${c ? `<small class="mt">المريض الحالي</small><div class="row"><div class="num">${c.queue_number}</div><div><h3>${esc(c.patient_name)}</h3><div class="rqt">${srcB(c.source)}${c.files ? `<span class="fb">${ic('paperclip')} ${c.files} ملف</span>` : ''}<span dir="ltr" class="mt">${esc(c.patient_phone)}</span></div></div></div>${c.patient_id ? `<button class="btn o" onclick="pf(${c.patient_id},${c.member_id || 0})">${ic('user')} ملف المريض</button>` : ''}<button class="btn p lg" onclick="fin(${c.id})">${ic('file-text')} ${c.has_report ? 'تعديل التقرير والروشتة' : 'كتابة التقرير والروشتة'}</button>` : '<p class="mt">لا يوجد كشف جارٍ حالياً.</p>'}
   <p class="mt">${nx ? `المريض التالي: <b>${esc(nx.patient_name)}</b> (رقم ${nx.queue_number})` : 'لا يوجد مرضى في الانتظار.'}</p>
-  <p class="mt">${ic('users')} بدء الحجز وإنهاؤه وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>`;
+  <p class="mt">${ic('users')} بدء الحجز وإنهاؤه وبدء الكشف وإنهاؤه يتم من موظف الاستقبال، وتظهر التحديثات هنا تلقائياً.</p></section>
+  <section class="card" style="margin-top:14px"><div class="row sb"><h3>انتهوا اليوم (${dl.length})</h3>${miss ? `<span class="fb warn">${miss} بدون روشتة</span>` : ''}</div><p class="mt">اكتب أو عدّل التقرير والروشتة بعد انتهاء الكشف، وتصل للمريض فوراً.</p>${dl.length ? `<ul class="ql">${dl.map(x => `<li><span class="n">${x.queue_number}</span><div class="fl"><b>${esc(x.patient_name)}</b><small>${srcB(x.source)} ${x.completed_at ? tm(x.completed_at) : ''}</small></div><button class="btn ${x.has_report ? 'o' : 'p'} sm" onclick="fin(${x.id})">${ic('file-text')} ${x.has_report ? 'تعديل الروشتة' : 'كتابة الروشتة'}</button></li>`).join('')}</ul>` : '<p class="mt" style="margin-top:8px">لا يوجد كشوفات منتهية اليوم بعد.</p>'}</section>`;
   done();
 }
 
@@ -1501,7 +1521,7 @@ function rpt(id) {
   <div class="rx-n"><b>ملاحظات الطبيب (تقرير الكشف):</b><p>${esc(x.report)}</p></div>
   ${x.follow_up_date ? `<div class="rx-fu">${ic('calendar-check')} <b>موعد الاستشارة (المتابعة):</b> ${fuTxt(x)}</div>` : ''}
   <div class="rx-f">(مع تمنياتنا لك بالشفاء العاجل)</div></div>
-  <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF</button>${rows ? `<button class="btn o" onclick="remPick(${x.id})">${ic('bell')} تذكير بالأدوية</button>` : ''}<button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
+  <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF</button>${rows && !x.guest ? `<button class="btn o" onclick="remPick(${x.id})">${ic('bell')} تذكير بالأدوية</button>` : ''}<button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
 }
 // طباعة الروشتة فقط (CSS للطباعة يخفي باقي الصفحة)
 function printRx() {
@@ -1636,7 +1656,7 @@ function reception() {
 const rop = (path, body, ok) => api('/reception' + path, { method: 'POST', body }).then(() => { if (ok) toast(ok, 1); return cur(); }).catch(e => { toast(e.message); cur && cur(); });
 const racc = m => (m !== 'closed' || confirm('إغلاق الحجز الأونلاين لليوم؟ لن يستطيع المرضى الحجز أونلاين، والحجوزات الحالية تبقى في الطابور.')) && rop('/accepting', { mode: m }, { open: 'تم فتح الحجز', closed: 'تم إغلاق الحجز', auto: 'عاد الحجز لجدول العيادة' }[m]);
 const rstart = id => rop(`/bookings/${id}/start`, null, 'بدأ الكشف');
-const rdone = (id, rep) => (rep || confirm('الطبيب لم يكتب التقرير والروشتة بعد. إنهاء الكشف على أي حال؟ (يستطيع الطبيب كتابتها بعد الإنهاء)')) && rop(`/bookings/${id}/complete`, null, 'تم إنهاء الكشف');
+const rdone = (id, rep) => (rep || confirm('الطبيب لم يكتب التقرير والروشتة بعد. إنهاء الكشف على أي حال؟ (سيكتبها الطبيب من قائمة «انتهوا اليوم» في لوحته وتصل للمريض فوراً)')) && rop(`/bookings/${id}/complete`, null, 'تم إنهاء الكشف');
 const rcancel = id => confirm('إلغاء هذا الحجز؟') && rop(`/bookings/${id}/cancel`, null, 'تم إلغاء الحجز');
 const rmove = (id, d) => { const i = QW.findIndex(x => x.id === id); if (i >= 0) rop(`/bookings/${id}/move`, { position: i + 1 + d }); };
 let rtab = 'home', RD = null;
@@ -1991,7 +2011,29 @@ async function pwaInstall() {
 }
 
 const SHARE_STEPS = '<ol class="pm-ol"><li>افتح الموقع من متصفح <b>Safari</b></li><li>اضغط زر المشاركة <b>⬆︎</b> أسفل الشاشة</li><li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> ثم «إضافة»</li><li>افتح <b>دورك</b> من الشاشة الرئيسية وفعّل الإشعارات من أيقونة الجرس</li></ol><p class="pm-n">يتطلب iOS 16.4 أو أحدث.</p>';
+// ---------- سجل الإشعارات المحفوظ (يبقى 30 يوماً على السيرفر حتى لو فات الإشعار على الموبايل) ----------
+let INBOX = [];
+const nSeen = () => Number(localStorage.nseen || 0);
+async function inboxLoad() {
+  try {
+    if (['doctor', 'receptionist'].includes(localStorage.role) || !pushEligible()) return;
+    const r = pushAcct() ? await api('/push/inbox') : await api('/push/guest/inbox', { method: 'POST', body: { items: GT.get() } });
+    INBOX = (r && r.items) || [];
+    inboxBadge();
+  } catch (e) { /* لا يؤثر على الصفحة */ }
+}
+function inboxBadge() {
+  const b = $('#bell'); if (!b) return;
+  const n = INBOX.filter(x => x.id > nSeen()).length;
+  b.classList.toggle('un', n > 0); b.dataset.n = n > 9 ? '9+' : n;
+}
+setInterval(() => { if (!document.hidden) inboxLoad(); }, 20000); setTimeout(inboxLoad, 1500);
+const inboxHtml = () => INBOX.length ? `<h4 class="pm-h">إشعاراتي</h4><ul class="nx">${INBOX.map(x => `<li class="${x.id > nSeen() ? 'nw' : ''}"><b>${esc(x.title)}</b><span>${esc(x.body)}</span><small>${fdt(x.created_at)}</small></li>`).join('')}</ul>` : '';
 async function pushModal() {
+  await inboxLoad();
+  const inboxH = inboxHtml();
+  try { if (INBOX.length) localStorage.nseen = Math.max(...INBOX.map(x => x.id)); } catch (e) {}
+  inboxBadge();
   const st = PUSHST = await pushState(), staff = ['doctor', 'receptionist'].includes(localStorage.role);
   const what = staff ? 'الحجوزات الجديدة وإلغاءاتها وتحديثات الطابور' : 'تأكيد حجزك واقتراب دورك وبدء الكشف' + (pushAcct() ? ' وصدور الروشتة' : '');
   const ST = { on: ['مفعّلة', 'ok'], granted: ['غير مفعّلة', 'off'], default: ['غير مفعّلة', 'off'], denied: ['محظورة', 'warn'], ios: ['تتطلب تثبيت التطبيق', 'warn'], unsupported: ['غير مدعومة', 'off'], noserver: ['غير متاحة حالياً', 'off'] }[st];
@@ -2004,23 +2046,23 @@ async function pushModal() {
     unsupported: '<p class="pm-n">هذا المتصفح لا يدعم إشعارات المواقع. استخدم Google Chrome على أندرويد أو الكمبيوتر.</p>',
     noserver: '<p class="pm-n">إشعارات الموبايل غير مفعّلة من إدارة الموقع حالياً.</p>'
   }[st];
-  const inst = standalone() ? '<p class="pm-n">التطبيق مثبّت على جهازك.</p>'
+  const inst = standalone() ? ''
     : DIP ? '<p class="pm-n">ثبّت دورك على الشاشة الرئيسية ليفتح كتطبيق مستقل، بدون متجر تطبيقات.</p><button class="btn p" onclick="pwaInstall()">' + ic('download') + ' تثبيت دورك</button>'
     : IOS ? SHARE_STEPS
     : '<p class="pm-n">من قائمة المتصفح ⋮ اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</p>';
-  modal(`<div class="pm-b"><h3>الإشعارات</h3><div class="pm-st"><span class="chip ${ST[1]}">${ST[0]}</span></div>${body}<h4 class="pm-h">تثبيت التطبيق</h4>${inst}<button class="btn" style="width:100%;margin-top:14px" onclick="closeModal()">إغلاق</button></div>`);
+  modal(`<div class="pm-b"><h3>الإشعارات</h3>${inboxH}${st === 'on' ? '' : `<div class="pm-st"><span class="chip ${ST[1]}">${ST[0]}</span></div>${body}`}${inst ? `<h4 class="pm-h">تثبيت التطبيق</h4>${inst}` : ''}${st === 'on' ? `<button class="btn o" style="margin-top:14px" onclick="pushDisable().then(()=>pushModal())">إيقاف الإشعارات على هذا الجهاز</button>` : ''}<button class="btn" style="width:100%;margin-top:14px" onclick="closeModal()">إغلاق</button></div>`);
 }
 // بطاقة تفعيل مضمّنة (بعد الحجز كضيف وفي صفحة «حجزي»)
 async function pushCardFill(id) {
   const el = document.getElementById(id); if (!el) return;
   const st = PUSHST = await pushState();
-  el.innerHTML = st === 'on' ? `<p class="mt" style="margin-top:10px">${ic('bell')} إشعارات دورك مفعّلة على هذا الجهاز</p>`
+  el.innerHTML = st === 'on' ? ''
     : st === 'default' || st === 'granted' ? `<button class="btn o lg" style="margin-top:10px" onclick="pushToggleOn(this).then(()=>pushCardFill('${id}'))">${ic('bell')} فعّل إشعارات دورك</button><p class="mt" style="margin-top:6px">يصلك تنبيه عند تأكيد الحجز واقتراب دورك وبدء الكشف حتى لو قفلت التطبيق.</p>`
     : st === 'ios' ? `<button class="btn o lg" style="margin-top:10px" onclick="pushModal()">${ic('bell')} كيف أفعّل الإشعارات على iPhone؟</button>` : '';
 }
 
 // بانر صغير (إشعارات أو تثبيت) يظهر بعد ثوانٍ، ويُخفى أسبوعاً لو اختار «لاحقاً»
-const bnHidden = k => Date.now() - Number(localStorage['pwa_x_' + k] || 0) < (k === 'push' ? 3 : 7) * 864e5;
+const bnHidden = k => Date.now() - Number(localStorage['pwa_x_' + k] || 0) < (k === 'push' ? 3 : 1) * 864e5;
 function showBn(kind) {
   let b = $('#pwab');
   if (!kind) { b && b.remove(); BN = ''; return; }
@@ -2033,6 +2075,14 @@ function showBn(kind) {
   $('#pwab-go').onclick = () => push ? pushToggleOn($('#pwab-go')).then(() => showBn('')) : pwaInstall();
   $('#pwab-x').onclick = () => { try { localStorage['pwa_x_' + kind] = Date.now(); } catch (e) {} showBn(''); };
 }
+// بوب أب تحميل التطبيق: يظهر لمن يفتح الموقع من المتصفح (وليس من التطبيق المثبّت)، مرة كل يوم كحد أقصى
+function installPopup() {
+  try { if (sessionStorage.ipShown) return false; sessionStorage.ipShown = 1; } catch (e) {}
+  const how = DIP ? `<button class="btn p lg" onclick="closeModal();pwaInstall()">${ic('download')} حمّل التطبيق الآن</button>`
+    : IOS ? SHARE_STEPS : '<p class="pm-n">من قائمة المتصفح ⋮ اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</p>';
+  modal(`<div class="pm-b ip"><div class="pi">${ic('download')}</div><h3>حمّل تطبيق دورك</h3><p class="pm-n">احجز أسرع، وتصلك إشعارات تأكيد الحجز واقتراب دورك والروشتة حتى لو قفلت التطبيق. بدون متجر تطبيقات.</p>${how}<button class="btn" onclick="try{localStorage.pwa_x_inst=Date.now()}catch(e){};closeModal()">لاحقاً</button></div>`);
+  return true;
+}
 async function pwaTick() {
   try {
     const st = PUSHST = await pushState();
@@ -2040,8 +2090,8 @@ async function pwaTick() {
     if ((st === 'on' || st === 'granted') && pushEligible()) pushSync();
     let want = '';
     if (!$('.ov') && Date.now() - T0 > 6000) {
+      if (!standalone() && !bnHidden('inst') && installPopup()) return;
       if (pushEligible() && st === 'default' && !bnHidden('push')) want = 'push';
-      else if (!standalone() && !bnHidden('inst') && (DIP || IOS)) want = 'inst';
     }
     showBn(want);
   } catch (e) { /* لا يؤثر على الصفحة */ }
