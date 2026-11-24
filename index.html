@@ -268,91 +268,83 @@ body{overflow-x:hidden}
 @media(max-width:700px){.fi{grid-template-columns:1fr;gap:24px;padding-top:32px}}
 /* ===== الروشتة الطبية ===== */
 .mdl.wide{max-width:820px;padding:14px}
-/* ===== الروشتة الطبية الإلكترونية (مستند A4) ===== */
-.mdl.wide:has(.rx){background:#e8eef9}
-.rx{--rn:#0b2d5b;--rp:#1d4ed8;--rl:#eef4ff;--rb:#c7d6ef;--rm:#5b6b86;position:relative;overflow:hidden;display:flex;flex-direction:column;background:#fff;color:#0f2447;border-radius:6px;box-shadow:0 12px 34px rgba(11,45,91,.16);padding:0 34px 22px;font-family:'Cairo',system-ui,sans-serif;line-height:1.7;text-align:start}
-@media(min-width:700px){.rx{min-height:1040px}}
-.rx>*{position:relative}
-.rx>.rx-wm{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:var(--rp);opacity:.04}.rx-wm svg{width:320px;height:320px}
-.rx-band{height:10px;margin:0 -34px;background:linear-gradient(90deg,var(--rn),var(--rp) 65%,#7aa7ff)}
-.rx-lh{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:16px 0 12px;border-bottom:3px double var(--rn)}
-.rx-dr b{display:block;font-size:1.7rem;font-weight:800;color:var(--rn);line-height:1.3;word-break:break-word}
-.rx-dr span{display:block;color:var(--rp);font-weight:700;font-size:1.02rem}
-.rx-br{display:flex;align-items:center;gap:10px;color:var(--rn);padding-inline-start:18px;border-inline-start:1.5px solid var(--rb)}
-.rx-br>svg{width:46px;height:46px;color:var(--rp);flex:none}
-.rx-br span{display:flex;flex-direction:column;line-height:1.2}.rx-br b{font-size:1.5rem;font-weight:800}
-.rx-br small{direction:ltr;text-align:start;letter-spacing:.34em;font-weight:800;font-size:.62rem;color:var(--rm)}
-.rx-br em{font-style:normal;font-size:.7rem;color:var(--rm);margin-top:2px}
-.rx-ti{display:flex;align-items:center;gap:14px;margin:10px 0 8px}
-.rx-ti::before,.rx-ti::after{content:"";flex:1;height:1px;background:var(--rb)}
-.rx-ti b{font-size:1.3rem;font-weight:800;color:var(--rn)}
-.rx-ti small{direction:ltr;letter-spacing:.3em;font-size:.68rem;font-weight:700;color:var(--rm)}
-.rx-pt{display:grid;grid-template-columns:2.2fr 1.4fr .9fr 1.4fr;border:1px solid var(--rb);border-radius:6px;background:var(--rl);overflow:hidden}
-.rx-pt>div{padding:8px 14px;display:flex;flex-direction:column;min-width:0}.rx-pt>div+div{border-inline-start:1px solid var(--rb)}
-.rx-pt small{color:var(--rm);font-size:.76rem;font-weight:600}
-.rx-pt b{color:var(--rn);font-size:1.05rem;font-weight:700;line-height:1.5;word-break:break-word}
-.rx-pt .l{direction:ltr;text-align:end;font-size:.95rem;letter-spacing:.03em}
-.rx-sec{margin-top:14px}
-.rx-st{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:1.05rem;font-weight:800;color:var(--rn)}
-.rx-st::before{content:"";width:5px;height:19px;border-radius:3px;background:var(--rp)}
-.rx-dx{white-space:pre-wrap;font-size:1.03rem;line-height:1.85;padding:8px 16px;border:1px solid var(--rb);border-radius:6px;word-break:break-word;unicode-bidi:plaintext;text-align:start}
-.rx-rxh{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.rx-rx{font:italic 700 3.1rem/1 Georgia,'Times New Roman',serif;color:var(--rp);direction:ltr}
-.rx-rxh .rx-st{margin:0}
-.rx-cnt{margin-inline-start:auto;background:var(--rl);border:1px solid var(--rb);color:var(--rn);border-radius:99px;padding:1px 14px;font-size:.82rem;font-weight:700}
-.rx-tbl{border:1px solid var(--rb);border-radius:6px;overflow:hidden}
-.rx-mh,.rx-m{display:grid;grid-template-columns:34px 2.3fr 1.1fr 1.2fr 2fr;gap:0 12px;align-items:start;padding:9px 14px}
-.rx-mh{background:var(--rn);color:#fff;font-size:.82rem;font-weight:700;padding:7px 14px;align-items:center}
-.rx-ml{list-style:none;margin:0;padding:0}
-.rx-m{border-top:1px solid var(--rb);break-inside:avoid;page-break-inside:avoid}.rx-m:first-child{border-top:0}
-.rx-m:nth-child(even){background:#f8fbff}
-.rx-mi{width:28px;height:28px;border-radius:50%;background:var(--rn);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.9rem;margin-top:2px}
-.rx-mn{font-size:1.2rem;font-weight:800;color:var(--rn);line-height:1.45;word-break:break-word;text-align:start}
-.rx-c{font-size:1rem;font-weight:600;line-height:1.6;word-break:break-word;text-align:start}.rx-c.e{color:#9aa9c2;font-weight:400}
-.rx-c::before{display:none}
-.rx-none{padding:14px;color:var(--rm);border:1px solid var(--rb);border-radius:6px}
-.rx-fu{display:flex;align-items:center;gap:12px;margin-top:12px;padding:8px 16px;border:1.5px solid var(--rp);border-radius:6px;background:var(--rl);break-inside:avoid}
-.rx-fu svg{width:28px;height:28px;color:var(--rp);flex:none}.rx-fu small{display:block;color:var(--rm);font-size:.78rem}.rx-fu b{color:var(--rn);font-size:1.05rem}
-.rx-nt{margin-top:12px;padding:7px 16px;border:1px dashed var(--rb);border-radius:6px;background:#fbfdff;break-inside:avoid}
-.rx-nt .rx-st{font-size:.92rem;margin-bottom:3px}.rx-nt .rx-st::before{height:15px}
-.rx-nt ul{margin:0;padding:0;list-style:none;font-size:.86rem;color:#2c3f63;line-height:1.8}
-.rx-nt li{position:relative;padding-inline-start:16px}.rx-nt li::before{content:"";position:absolute;inset-inline-start:0;top:.7em;width:6px;height:6px;border-radius:50%;background:var(--rp)}
-.rx-ft{margin-top:auto;padding-top:18px;break-inside:avoid}
-.rx-sg{display:grid;grid-template-columns:1fr auto;align-items:end;gap:30px}
-.rx-sig{padding-top:38px;border-top:1.5px solid var(--rn);text-align:center;max-width:270px;width:100%}.rx-sig b{display:block;color:var(--rn)}.rx-sig small{color:var(--rm)}
-.rx-stamp{width:96px;height:96px;border:2px dashed #9db5de;border-radius:50%;display:grid;place-items:center;text-align:center;color:#8aa0c6;font-size:.82rem;font-weight:600;line-height:1.3}
-.rx-end{margin-top:12px;padding-top:8px;border-top:1px solid var(--rb);display:flex;justify-content:space-between;align-items:center;gap:12px}
-.rx-end b{color:var(--rp);font-size:.98rem}.rx-end small{color:var(--rm);font-size:.74rem}
+/* ===== الروشتة الطبية الإلكترونية (مستند A4 — تصميم نظيف بجدول أدوية) ===== */
+.mdl.wide:has(.rx){background:#eaf0f9}
+.rx{--rn:#0b2d5b;--rp:#1d4ed8;--rl:#f3f7ff;--rb:#d5dfef;--rm:#64748b;display:flex;flex-direction:column;background:#fff;color:#0f2447;border-radius:8px;box-shadow:0 10px 30px rgba(11,45,91,.12);padding:0 32px 22px;font-family:'Cairo',system-ui,sans-serif;line-height:1.7;text-align:start;overflow:hidden}
+@media(min-width:700px){.rx{min-height:1000px}}
+.rx-top{height:6px;margin:0 -32px;background:var(--rp)}
+.rx-hd{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0 16px;border-bottom:1px solid var(--rb)}
+.rx-dr b{display:block;font-size:1.55rem;font-weight:800;color:var(--rn);line-height:1.3;word-break:break-word}
+.rx-dr span{color:var(--rm);font-weight:600;font-size:.98rem}
+.rx-br{display:flex;align-items:center;gap:8px;color:var(--rn);flex:none}
+.rx-br svg{width:34px;height:34px;color:var(--rp)}
+.rx-br b{display:block;font-size:1.2rem;font-weight:800;line-height:1}
+.rx-br small{display:block;direction:ltr;letter-spacing:.3em;font-size:.58rem;font-weight:700;color:var(--rm);margin-top:3px}
+.rx-meta{display:grid;grid-template-columns:2fr 1.2fr .8fr 1.3fr;gap:0;margin:16px 0 4px;background:var(--rl);border-radius:8px}
+.rx-meta>div{padding:10px 14px;min-width:0}.rx-meta>div+div{border-inline-start:1px solid var(--rb)}
+.rx-meta small{display:block;color:var(--rm);font-size:.75rem;font-weight:600}
+.rx-meta b{display:block;color:var(--rn);font-size:1rem;font-weight:700;word-break:break-word;line-height:1.5}
+.rx-meta .l{direction:ltr;text-align:end;font-size:.9rem}
+.rx-sec{margin-top:20px}
+.rx-sec>h4{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:800;color:var(--rn);margin:0 0 8px}
+.rx-sec>h4::after{content:"";flex:1;height:1px;background:var(--rb)}
+.rx-rx{font:italic 700 1.9rem/1 Georgia,'Times New Roman',serif;color:var(--rp);direction:ltr}
+.rx-cnt{font-size:.78rem;font-weight:700;color:var(--rm);background:var(--rl);border-radius:99px;padding:1px 10px}
+.rx-dx{white-space:pre-wrap;font-size:1rem;line-height:1.85;margin:0;padding:2px 2px 0;word-break:break-word;unicode-bidi:plaintext;text-align:start}
+.rx-t{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid var(--rb);border-radius:8px;overflow:hidden}
+.rx-t th{background:var(--rn);color:#fff;font-size:.8rem;font-weight:700;text-align:start;padding:9px 12px}
+.rx-t td{padding:11px 12px;vertical-align:top;border-top:1px solid var(--rb);font-size:.98rem;font-weight:600;line-height:1.6;word-break:break-word;text-align:start}
+.rx-t tbody tr:nth-child(even) td{background:#f8fafd}
+.rx-t tr{break-inside:avoid;page-break-inside:avoid}
+.rx-t .c1{width:42px;text-align:center}
+.rx-t .c2{width:32%}
+.rx-t td.nm{font-size:1.1rem;font-weight:800;color:var(--rn)}
+.rx-t td.ix{text-align:center}
+.rx-i{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--rl);color:var(--rp);font-weight:800;font-size:.85rem}
+.rx-t td.e{color:#a3b0c6;font-weight:400}
+.rx-none{padding:14px;color:var(--rm);border:1px dashed var(--rb);border-radius:8px}
+.rx-fu{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 16px;border-radius:8px;background:var(--rl);border-inline-start:4px solid var(--rp);break-inside:avoid}
+.rx-fu svg{width:24px;height:24px;color:var(--rp);flex:none}.rx-fu small{display:block;color:var(--rm);font-size:.76rem}.rx-fu b{color:var(--rn)}
+.rx-nt{margin:14px 0 0;font-size:.82rem;color:var(--rm);line-height:1.8}
+.rx-ft{margin-top:auto;padding-top:26px;break-inside:avoid}
+.rx-sg{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+.rx-sig{min-width:220px;padding-top:34px;border-top:1.5px solid var(--rn);text-align:center}.rx-sig b{display:block;color:var(--rn)}.rx-sig small{color:var(--rm)}
+.rx-stamp{width:88px;height:88px;border:1.5px dashed #b4c2dc;border-radius:50%;display:grid;place-items:center;text-align:center;color:#9aaccb;font-size:.78rem;font-weight:600;line-height:1.3}
+.rx-end{margin-top:16px;padding-top:8px;border-top:1px solid var(--rb);display:flex;justify-content:space-between;gap:10px;color:var(--rm);font-size:.74rem}.rx-end b{color:var(--rp);font-size:.85rem}
 .rx-a{display:flex;gap:10px;margin-top:14px}.rx-a .btn{flex:1}
 @media(max-width:620px){
-  .rx{padding:0 16px 16px}.rx-band{margin:0 -16px}
-  .rx-lh{grid-template-columns:1fr}.rx-br{padding-inline-start:0;border-inline-start:0;padding-top:10px;border-top:1px solid var(--rb)}
-  .rx-pt{grid-template-columns:1fr 1fr}.rx-pt>div:first-child{grid-column:1/-1;border-bottom:1px solid var(--rb)}.rx-pt>div:nth-child(2){border-inline-start:0}.rx-pt>div:nth-child(4){grid-column:1/-1;border-inline-start:0;border-top:1px solid var(--rb)}
-  .rx-mh{display:none}
-  .rx-m{grid-template-columns:30px 1fr;gap:2px 10px}.rx-m>.rx-mi{grid-row:1/span 4}.rx-m>*:not(.rx-mi){grid-column:2}
-  .rx-c::before{display:block;content:attr(data-l);color:var(--rm);font-size:.76rem;font-weight:600}
-  .rx-sg{grid-template-columns:1fr;justify-items:center}.rx-end{flex-direction:column;text-align:center}.rx-a{flex-wrap:wrap}
+  .rx{padding:0 14px 16px}.rx-top{margin:0 -14px}
+  .rx-hd{padding:16px 0 12px}.rx-dr b{font-size:1.25rem}.rx-br small{display:none}
+  .rx-meta{grid-template-columns:1fr 1fr}.rx-meta>div:nth-child(odd){border-inline-start:0}.rx-meta>div:nth-child(n+3){border-top:1px solid var(--rb)}
+  .rx-t,.rx-t tbody,.rx-t tr,.rx-t td{display:block}.rx-t{border:0;border-radius:0}.rx-t thead{display:none}
+  .rx-t tr{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rb);border-radius:10px;margin-bottom:8px;overflow:hidden}
+  .rx-t td,.rx-t tbody tr:nth-child(even) td{background:none;border:0;padding:6px 10px}
+  .rx-t td.ix{display:none}
+  .rx-t td.nm{grid-column:1/-1;background:var(--rl)!important;font-size:1.05rem}
+  .rx-t td[data-l]::before{content:attr(data-l);display:block;color:var(--rm);font-size:.7rem;font-weight:600}
+  .rx-t td.nt2{grid-column:1/-1}
+  .rx-sg{flex-direction:column;align-items:center}.rx-sig{min-width:0;width:100%}
+  .rx-end{flex-direction:column;text-align:center}.rx-a{flex-wrap:wrap}
 }
 @media print{
   @page{size:A4;margin:0}
   body.printing-rx{background:#fff;overflow:visible}
-  body.printing-rx #app,body.printing-rx .toast{display:none!important}
+  body.printing-rx #app,body.printing-rx .toast,body.printing-rx .bn,body.printing-rx .bn-sp{display:none!important}
   body.printing-rx .ov{position:static;background:none;display:block;padding:0}
   body.printing-rx .mdl{max-width:none;max-height:none;overflow:visible;padding:0;border-radius:0;box-shadow:none;animation:none;background:#fff}
   body.printing-rx .rx-a{display:none!important}
-  body.printing-rx .rx{-webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:visible;border-radius:0;box-shadow:none;min-height:295mm;padding:10mm 13mm 8mm;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-  body.printing-rx .rx-band{margin:-10mm -13mm 0}
-  body.printing-rx .rx-lh{grid-template-columns:1fr auto}
-  body.printing-rx .rx-br{padding-inline-start:18px;border-inline-start:1.5px solid var(--rb);padding-top:0;border-top:0}
-  body.printing-rx .rx-pt{grid-template-columns:2.2fr 1.4fr .9fr 1.4fr}
-  body.printing-rx .rx-pt>div:first-child,body.printing-rx .rx-pt>div:nth-child(4){grid-column:auto;border-bottom:0;border-top:0}
-  body.printing-rx .rx-pt>div+div{border-inline-start:1px solid var(--rb)}
-  body.printing-rx .rx-mh{display:grid}
-  body.printing-rx .rx-m{grid-template-columns:34px 2.3fr 1.1fr 1.2fr 2fr;gap:0 12px}
-  body.printing-rx .rx-m>.rx-mi{grid-row:auto}body.printing-rx .rx-m>*:not(.rx-mi){grid-column:auto}
-  body.printing-rx .rx-c::before{display:none}
-  body.printing-rx .rx-sg{grid-template-columns:1fr auto;justify-items:stretch}
-  body.printing-rx .rx-end{flex-direction:row;text-align:start}
+  body.printing-rx .rx{-webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:visible;border-radius:0;box-shadow:none;min-height:295mm;padding:0 14mm 9mm}
+  body.printing-rx .rx-top{margin:0 -14mm}
+  body.printing-rx .rx-meta{grid-template-columns:2fr 1.2fr .8fr 1.3fr}
+  body.printing-rx .rx-meta>div{border-top:0!important}body.printing-rx .rx-meta>div+div{border-inline-start:1px solid var(--rb)}
+  body.printing-rx .rx-t{display:table;table-layout:fixed;border:1px solid var(--rb);border-radius:8px}
+  body.printing-rx .rx-t thead{display:table-header-group}body.printing-rx .rx-t tbody{display:table-row-group}
+  body.printing-rx .rx-t tr{display:table-row;border:0;margin:0}
+  body.printing-rx .rx-t td{display:table-cell;padding:11px 12px;border-top:1px solid var(--rb)}
+  body.printing-rx .rx-t td.ix{display:table-cell}
+  body.printing-rx .rx-t td.nm{background:none!important;font-size:1.1rem}
+  body.printing-rx .rx-t td[data-l]::before{display:none}
+  body.printing-rx .rx-sg{flex-direction:row}body.printing-rx .rx-end{flex-direction:row;text-align:start}
 }
 /* ===== ملف المريض (للطبيب) ===== */
 .pt{position:relative}
@@ -1136,14 +1128,12 @@ html[data-theme=dark] .ft.ft2 .f2-brand .logo>svg>path:nth-of-type(2){stroke:#07
 
 /* ---------- الروشتة الإلكترونية على الشاشة (الطباعة تبقى فاتحة كما هي) ---------- */
 html[data-theme=dark] .rx{--rn:#EAF1FF;--rp:#6EA8FF;--rl:#102446;--rb:#27406F;--rm:#93A7CC;background:linear-gradient(180deg,#0F1D38,#0C1830);color:#DCE8FF;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px #1E3360}
-html[data-theme=dark] .rx-band{background:linear-gradient(90deg,#2F6BEA,#4F8CFF 65%,#8DB6FF)}
-html[data-theme=dark] .rx-lh{border-bottom-color:#3A5694}
-html[data-theme=dark] .rx-mh{background:#16305C;color:#EAF1FF}
-html[data-theme=dark] .rx-mi{background:#2F6BEA;color:#fff}
-html[data-theme=dark] .rx-m:nth-child(even){background:rgba(110,168,255,.05)}
-html[data-theme=dark] .rx-c.e{color:#6F83A9}
-html[data-theme=dark] .rx-nt{background:rgba(110,168,255,.05)}
-html[data-theme=dark] .rx-nt ul{color:#B9C9E8}
+html[data-theme=dark] .rx-top{background:#4F8CFF}
+html[data-theme=dark] .rx-hd{border-bottom-color:#27406F}
+html[data-theme=dark] .rx-t th{background:#16305C;color:#EAF1FF}
+html[data-theme=dark] .rx-t tbody tr:nth-child(even) td{background:rgba(110,168,255,.05)}
+html[data-theme=dark] .rx-t td.e{color:#6F83A9}
+html[data-theme=dark] .rx-i{background:#16305C;color:#9CC4FF}
 html[data-theme=dark] .rx-stamp{border-color:#3A5694;color:#7F95BD}
 html[data-theme=dark] .rx-sig{border-top-color:#6EA8FF}
 
@@ -1892,21 +1882,19 @@ const fuTxt = v => v.follow_up_date ? `${fdn(v.follow_up_date)} (بعد ${v.foll
 function rpt(id) {
   const x = HB.find(v => v.id === id); if (!x || !x.report) return;
   const list = x.medications || [];
-  const cell = (l, v) => v ? `<div class="rx-c" data-l="${l}"><bdi>${esc(v)}</bdi></div>` : `<div class="rx-c e" data-l="${l}">—</div>`;
-  const meds = list.map((m, i) => `<li class="rx-m"><span class="rx-mi">${i + 1}</span><div class="rx-mn"><bdi>${esc(m.name)}</bdi></div>${cell('الجرعة', m.dose)}${cell('عدد المرات', m.freq)}${cell('طريقة الاستخدام / المدة', m.notes || m.duration)}</li>`).join('');
+  const cell = (l, v, c = '') => v ? `<td class="${c}" data-l="${l}"><bdi>${esc(v)}</bdi></td>` : `<td class="e ${c}" data-l="${l}">—</td>`;
+  const meds = list.map((m, i) => `<tr><td class="ix"><span class="rx-i">${i + 1}</span></td><td class="nm"><bdi>${esc(m.name)}</bdi></td>${cell('الجرعة', m.dose)}${cell('عدد المرات', m.freq)}${cell('المدة / طريقة الاستخدام', m.notes || m.duration, 'nt2')}</tr>`).join('');
   const no = 'RX-' + String(x.id).padStart(6, '0');
   modal(`<div class="rx">
-  <div class="rx-band"></div>
-  <div class="rx-wm">${ic('heart-pulse')}</div>
-  <header class="rx-lh"><div class="rx-dr"><b>${esc(x.doctor_name)}</b><span>تخصص: ${esc(x.specialty)}</span></div><div class="rx-br">${ic('heart-pulse')}<span><b>دورك</b><small>DAWRAK</small><em>منصة الحجز الطبي</em></span></div></header>
-  <div class="rx-ti"><b>روشتة طبية</b><small>PRESCRIPTION</small></div>
-  <div class="rx-pt"><div><small>اسم المريض</small><b>${esc(x.member_name || PN)}</b></div><div><small>تاريخ الكشف</small><b>${fds(x.booking_date)}</b></div><div><small>رقم الدور</small><b>${esc(x.queue_number)}</b></div><div><small>رقم الروشتة</small><b class="l">${no}</b></div></div>
-  <section class="rx-sec"><div class="rx-st">التشخيص وتقرير الكشف</div><div class="rx-dx">${esc(x.report)}</div></section>
-  <section class="rx-sec"><div class="rx-rxh"><span class="rx-rx">Rx</span><span class="rx-st">الأدوية الموصوفة</span>${list.length ? `<span class="rx-cnt">عدد الأدوية: ${list.length}</span>` : ''}</div>${meds ? `<div class="rx-tbl"><div class="rx-mh" aria-hidden="true"><span></span><span>اسم الدواء</span><span>الجرعة</span><span>عدد المرات</span><span>طريقة الاستخدام / المدة</span></div><ol class="rx-ml">${meds}</ol></div>` : '<div class="rx-none">لا توجد أدوية في هذه الروشتة.</div>'}</section>
+  <div class="rx-top"></div>
+  <header class="rx-hd"><div class="rx-dr"><b>${esc(x.doctor_name)}</b><span>${esc(x.specialty)}</span></div><div class="rx-br">${ic('heart-pulse')}<span><b>دورك</b><small>DAWRAK</small></span></div></header>
+  <div class="rx-meta"><div><small>اسم المريض</small><b>${esc(x.member_name || PN)}</b></div><div><small>تاريخ الكشف</small><b>${fds(x.booking_date)}</b></div><div><small>رقم الدور</small><b>${esc(x.queue_number)}</b></div><div><small>رقم الروشتة</small><b class="l">${no}</b></div></div>
+  <section class="rx-sec"><h4>التشخيص وتقرير الكشف</h4><p class="rx-dx">${esc(x.report)}</p></section>
+  <section class="rx-sec"><h4><span class="rx-rx">Rx</span> الأدوية الموصوفة${list.length ? `<span class="rx-cnt">${list.length}</span>` : ''}</h4>${meds ? `<table class="rx-t"><thead><tr><th class="c1">#</th><th class="c2">اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th><th>المدة / طريقة الاستخدام</th></tr></thead><tbody>${meds}</tbody></table>` : '<div class="rx-none">لا توجد أدوية في هذه الروشتة.</div>'}</section>
   ${x.follow_up_date ? `<div class="rx-fu">${ic('calendar-check')}<div><small>موعد المتابعة (الاستشارة)</small><b>${fuTxt(x)}</b></div></div>` : ''}
-  ${meds ? `<div class="rx-nt"><div class="rx-st">ملاحظات عامة للمريض</div><ul><li>التزم بالجرعة وعدد المرات ومدة العلاج كما هي مكتوبة أعلاه.</li><li>لا تغيّر الجرعة ولا توقف العلاج دون الرجوع لطبيبك.</li><li>عند ظهور أي أعراض جديدة أو تدهور في حالتك تواصل مع الطبيب.</li></ul></div>` : ''}
+  ${meds ? '<p class="rx-nt">التزم بالجرعة وعدد المرات ومدة العلاج كما هي مكتوبة، ولا توقف العلاج دون الرجوع لطبيبك.</p>' : ''}
   <footer class="rx-ft"><div class="rx-sg"><div class="rx-sig"><b>${esc(x.doctor_name)}</b><small>توقيع الطبيب</small></div><div class="rx-stamp">ختم<br>العيادة</div></div>
-  <div class="rx-end"><b>مع تمنياتنا لك بالشفاء العاجل</b><small>صدرت هذه الروشتة إلكترونياً عبر منصة دورك · ${no}</small></div></footer></div>
+  <div class="rx-end"><b>مع تمنياتنا لك بالشفاء العاجل</b><small>صدرت إلكترونياً عبر دورك · ${no}</small></div></footer></div>
   <div class="rx-a"><button class="btn p" onclick="printRx()">${ic('download')} تحميل PDF / طباعة</button>${meds && !x.guest ? `<button class="btn o" onclick="remPick(${x.id})">${ic('bell')} تذكير بالأدوية</button>` : ''}<button class="btn o" onclick="closeModal()">إغلاق</button></div>`, 'wide');
 }
 // طباعة الروشتة فقط (CSS للطباعة يخفي باقي الصفحة)
