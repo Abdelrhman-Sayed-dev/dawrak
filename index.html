@@ -763,7 +763,18 @@ html,body{overflow-x:clip}
 .hh .hv .n{width:26px;height:26px;border-radius:8px;font-size:.8rem}
 .hh .hv .hi b{font-size:.88rem;line-height:1.35}.hh .hv .hi small{font-size:.72rem}
 .hh .hv .btn.sm{padding:4px 9px;font-size:.74rem}.hh .hv .stars{font-size:.85rem}
-.hh .hgd{padding:12px 14px 14px;border-top:1px solid var(--b);margin:0}
+.hh .gvl{border-top:1px solid var(--b);padding:0 14px 4px}
+.gv{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0}
+.gv+.gv{border-top:1px solid var(--b)}
+.gva{position:relative;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);color:var(--p);display:grid;place-items:center;font-weight:800;font-size:.95rem}
+.gva i{position:absolute;bottom:-3px;inset-inline-end:-3px;width:15px;height:15px;border-radius:50%;background:#16A34A;color:#fff;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+.gva i svg{width:10px;height:10px;stroke-width:3.5}
+.gvi{min-width:0;display:flex;flex-direction:column;line-height:1.4}
+.gvi b{font-size:.9rem;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gvi small{font-size:.74rem;color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gv .btn{white-space:nowrap;padding:5px 10px;font-size:.76rem;gap:4px}.gv .btn svg{width:14px;height:14px}
+html[data-theme=dark] .gva{background:linear-gradient(135deg,#17315F,#0F2550);color:var(--p)}
+html[data-theme=dark] .gva i{box-shadow:0 0 0 2px var(--c)}
 @media(prefers-reduced-motion:reduce){.hh .chev svg{transition:none}}
 /* صفحة الأطباء */
 .ds2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;margin-bottom:18px}
@@ -1539,7 +1550,7 @@ function track() {
       GT.set(items.filter(i => tickets.some(t => t.id === i.id)));
       gl.innerHTML = (live.length ? live.map(x => `<div style="margin-bottom:14px">${tkCard(x)}<div class="tkx"><button class="btn d sm" ${x.status === 'Waiting' ? '' : 'disabled'} onclick="gcx(${x.id})">إلغاء الحجز</button></div></div>`).join('')
         : '<p class="empty card">لا يوجد حجز نشط الآن. احجز من صفحة الأطباء.</p>')
-        + (fin.length ? `<details class="card hh" ${GOPEN ? 'open' : ''} ontoggle="GOPEN=this.open"><summary><span>كشوفاتي</span><span class="hcn">${fin.length}</span><span class="chev">${ic('chevron-down')}</span></summary><div class="grid tkg hgd">${fin.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)} · ${fds(x.booking_date)}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.has_report ? `<button class="btn p lg" onclick="grpt(${x.id})">${ic('download')} تحميل الروشتة (PDF / طباعة)</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا فور جاهزيتها</div>'}</article>`).join('')}</div></details>` : '');
+        + (fin.length ? `<details class="card hh" ${GOPEN ? 'open' : ''} ontoggle="GOPEN=this.open"><summary><span>كشوفاتي</span><span class="hcn">${fin.length}</span><span class="chev">${ic('chevron-down')}</span></summary><div class="gvl">${fin.map(x => `<div class="gv"><span class="gva">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}<i>${ic('check')}</i></span><div class="gvi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)} · ${fds(x.booking_date)}</small></div>${x.has_report ? `<button class="btn o sm" onclick="grpt(${x.id})" aria-label="تحميل الروشتة (PDF / طباعة)">${ic('download')} الروشتة</button>` : '<span class="fb warn">قيد الكتابة</span>'}</div>`).join('')}</div></details>` : '');
     } catch (e) { toast(e.message); }
   };
   cur(); pushCardFill('pbt');
