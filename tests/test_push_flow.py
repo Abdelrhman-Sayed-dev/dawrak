@@ -14,6 +14,8 @@ class FakePool:
         s.bookings = {}        # id -> dict
         s.receptionists = {10: 1}   # id -> doctor_id
         s.deleted = []
+        s.inbox = []
+        s.reports = set()
     def waiting(s, did): return sorted([b for b in s.bookings.values() if b["doctor_id"] == did and b["status"] == "Waiting"], key=lambda b: b["queue_number"])
     def ahead(s, b): return len([x for x in s.waiting(b["doctor_id"]) if x["queue_number"] < b["queue_number"]])
     async def execute(s, q, *a):
@@ -22,6 +24,7 @@ class FakePool:
             for i in a[0]: s.events.discard((i, kind))
         elif "DELETE FROM push_subscriptions WHERE id=ANY" in q: s.deleted += a[0]
         elif "DELETE FROM push_guest_bookings WHERE subscription_id" in q: s.guest_links = {l for l in s.guest_links if l[0] != a[0]}
+        elif "INSERT INTO push_inbox" in q: s.inbox.append(a)
         elif "UPDATE push_subscriptions SET p256dh" in q or "last_ok_at" in q or "fail_count=fail_count+1" in q or "NOT IN (SELECT id" in q: pass
         else: raise AssertionError("unexpected execute: " + q[:80])
     async def fetchval(s, q, *a):
@@ -32,6 +35,7 @@ class FakePool:
         if "INSERT INTO push_guest_bookings" in q:
             if a in s.guest_links: return None
             s.guest_links.add(a); return 1
+        if "SELECT EXISTS(SELECT 1 FROM visit_reports" in q: return a[0] in s.reports
         if "SELECT name FROM doctors" in q: return "د. أحمد"
         if "INSERT INTO push_subscriptions" in q:
             ep, p, au, role, uid, ua = a
@@ -108,8 +112,22 @@ def test_started_cancel_report_postpone_routing():
     sent.clear(); run(P.ev_cancelled(5, "staff")); assert ("pat", "تم إلغاء حجزك", "/patient/dashboard") in titles()
     sent.clear(); run(P.ev_cancelled(5, "patient")); t = titles(); assert {x[0] for x in t} >= {"doc", "rec"} and not any(x[0] == "pat" for x in t), t
     sent.clear(); run(P.ev_report(5)); assert titles() == [("pat", "تم إصدار الروشتة", "/patient/dashboard")]
-    sent.clear(); run(P.ev_report(4)); assert titles() == [], "الضيف لا يرى التقارير"
+    sent.clear(); run(P.ev_report(4)); assert titles() == [("g1", "تم إصدار الروشتة", "/track")], titles()   # الضيف يستلم إشعار الروشتة ويراها من «حجزي»
     sent.clear(); run(P.ev_postponed(5)); assert {x[0] for x in titles()} >= {"doc", "rec"}
+
+def test_completed_notifies_guest_and_account_and_saves_inbox():
+    pool, P = mk(); sent.clear()
+    run(P.ev_completed(4)); assert titles() == [("g1", "تم الكشف", "/track")], titles()
+    assert "ستظهر الروشتة" in sent[0][1]["body"]
+    pool.reports.add(5); sent.clear(); run(P.ev_completed(5)); assert titles() == [("pat", "تم الكشف", "/patient/dashboard")], titles()
+    assert "الروشتة جاهزة" in sent[0][1]["body"]
+    assert [i[0] for i in pool.inbox] == [4, 5], pool.inbox          # محفوظة في السجل
+    sent.clear(); run(P.ev_report(4)); assert titles() == [("g1", "تم إصدار الروشتة", "/track")]
+
+def test_inbox_saved_even_without_device():
+    pool, P = mk(); sent.clear(); pool.subs.pop(4)
+    run(P.ev_started(5)); assert sent == [] or all(x[0] != "pat" for x in titles())
+    assert any(i[0] == 5 and i[3] == "جاء دورك الآن" or i[2] == "جاء دورك الآن" for i in pool.inbox), pool.inbox
 
 def test_guest_subscribe_links_and_confirms_once():
     pool, P = mk(); sent.clear()
