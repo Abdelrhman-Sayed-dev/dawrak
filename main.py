@@ -1282,11 +1282,13 @@ async def r_search(q: str = "", rec=Depends(rec_ctx)):
     pn, wn, bn = ar.format(c="p.name"), ar.format(c="w.name"), ar.format(c="b.patient_name")
     rows = await pool.fetch(f"""(SELECT 'account' AS kind,p.id,p.name,p.phone,p.age,
         EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.patient_id=p.id AND b.member_id IS NULL) AS booked
-        FROM patients p WHERE {pn} ILIKE $1 OR p.phone LIKE $2)
+        FROM patients p WHERE ({pn} ILIKE $1 OR p.phone LIKE $2)
+          AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$3 AND x.patient_id=p.id))
       UNION ALL
       (SELECT 'walkin',w.id,w.name,w.phone,w.age,
         EXISTS(SELECT 1 FROM bookings b WHERE {act} AND b.walkin_id=w.id) AS booked
-        FROM walkin_patients w WHERE {wn} ILIKE $1 OR w.phone LIKE $2)
+        FROM walkin_patients w WHERE ({wn} ILIKE $1 OR w.phone LIKE $2)
+          AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$3 AND x.walkin_id=w.id))
       UNION ALL
       (SELECT 'guest',0,b.patient_name,b.patient_phone,NULL::int,
         bool_or(b.booking_date=CURRENT_DATE AND b.status IN ('Waiting','In Progress'))
@@ -1314,11 +1316,11 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
     async with pool.acquire() as c, c.transaction():
         await c.fetchval("SELECT 1 FROM doctors WHERE id=$1 FOR UPDATE", did)  # نفس قفل الحجز الأونلاين: لا يتكرر رقم الدور
         if kind == "account":
-            p = await c.fetchrow("SELECT id,name,phone FROM patients WHERE id=$1", toint(b.get("id")))
+            p = await c.fetchrow("SELECT id,name,phone FROM patients WHERE id=$1 AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$2 AND x.patient_id=patients.id)", toint(b.get("id")), did)
             if not p: raise Fail(404, "المريض غير موجود")
             pid, name, phone = p["id"], p["name"], p["phone"]
         elif kind == "walkin":
-            w = await c.fetchrow("SELECT id,name,phone FROM walkin_patients WHERE id=$1", toint(b.get("id")))
+            w = await c.fetchrow("SELECT id,name,phone FROM walkin_patients WHERE id=$1 AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$2 AND x.walkin_id=walkin_patients.id)", toint(b.get("id")), did)
             if not w: raise Fail(404, "المريض غير موجود")
             wid, name, phone = w["id"], w["name"], w["phone"]
         else:
@@ -1326,12 +1328,12 @@ async def r_book(request: Request, rec=Depends(rec_ctx)):
                 raise Fail(409, "هذا المريض لديه حجز نشط عند الطبيب اليوم (أونلاين أو حضور مباشر) بنفس الاسم والرقم")
             # رقم الهاتف مسجّل من قبل: الواجهة تعرض الأسماء الموجودة وتسأل الموظف؛ confirm_new=true يعني أكّد تسجيله باسم جديد على نفس الرقم
             pk = phone_key(phone)
-            ex = await c.fetchrow("SELECT name FROM patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 OR right(regexp_replace(whatsapp,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
+            ex = await c.fetchrow("SELECT name FROM patients WHERE (right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 OR right(regexp_replace(whatsapp,'[^0-9]','','g'),10)=$1) AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$2 AND x.patient_id=patients.id) LIMIT 1", pk, did)
             if ex and not b.get("confirm_new"):
                 raise Fail(409, f"رقم الهاتف مسجّل مسبقاً بحساب أونلاين باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
-            wid = await c.fetchval("SELECT id FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) ORDER BY id LIMIT 1", pk, name)
+            wid = await c.fetchval("SELECT id FROM walkin_patients w WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND lower(btrim(name))=lower(btrim($2)) AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$3 AND x.walkin_id=w.id) ORDER BY id LIMIT 1", pk, name, did)
             if not wid:
-                ex = await c.fetchrow("SELECT name FROM walkin_patients WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 LIMIT 1", pk)
+                ex = await c.fetchrow("SELECT name FROM walkin_patients w WHERE right(regexp_replace(phone,'[^0-9]','','g'),10)=$1 AND EXISTS(SELECT 1 FROM bookings x WHERE x.doctor_id=$2 AND x.walkin_id=w.id) LIMIT 1", pk, did)
                 if ex and not b.get("confirm_new"):
                     raise Fail(409, f"رقم الهاتف مسجّل مسبقاً باسم «{ex['name']}». ابحث عنه واحجز له بدل تسجيله من جديد")
                 wid = await c.fetchval("INSERT INTO walkin_patients(name,phone,age,created_by) VALUES($1,$2,$3,$4) RETURNING id", name, phone, age, rec["id"])
