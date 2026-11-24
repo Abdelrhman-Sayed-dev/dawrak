@@ -749,6 +749,21 @@ html,body{overflow-x:clip}
 .hv .hi small{font-size:.78rem;color:var(--m);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hv .btn{white-space:nowrap;padding:6px 10px;font-size:.78rem;gap:4px}.hv .btn svg{width:14px;height:14px}
 
+
+/* كشوفاتي السابقة: قسم قابل للطي (مقفول افتراضياً) وصفوف مدمجة */
+.hh{padding:0;margin-top:18px}
+.hh>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:800;font-size:1.05rem;color:var(--navy);-webkit-tap-highlight-color:transparent}
+.hh>summary::-webkit-details-marker{display:none}
+.hh>summary>span:first-child{flex:1}
+.hcn{min-width:26px;height:26px;padding:0 8px;border-radius:99px;background:var(--pl);color:var(--p);font-size:.82rem;display:grid;place-items:center}
+.hh .chev svg{width:22px;height:22px;transition:transform .2s}.hh[open] .chev svg{transform:rotate(180deg)}
+.hh .hl{margin:0;padding:0 14px 6px;border-top:1px solid var(--b)}
+.hh .hn{padding:12px 16px 14px;margin:0;border-top:1px solid var(--b)}
+.hh .ql li.hv{padding:6px 0;gap:8px}
+.hh .hv .n{width:26px;height:26px;border-radius:8px;font-size:.8rem}
+.hh .hv .hi b{font-size:.88rem;line-height:1.35}.hh .hv .hi small{font-size:.72rem}
+.hh .hv .btn.sm{padding:4px 9px;font-size:.74rem}.hh .hv .stars{font-size:.85rem}
+@media(prefers-reduced-motion:reduce){.hh .chev svg{transition:none}}
 /* صفحة الأطباء */
 .ds2{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;margin-bottom:18px}
 .ds2f{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--b);border-radius:16px;padding:0 14px;box-shadow:var(--sh);min-width:0}
@@ -1609,7 +1624,7 @@ async function profile() {
     };
   } catch (e) { toast(e.message); }
 }
-let prev = {}, HB = [], PN = '', FAM = [];
+let prev = {}, HB = [], PN = '', FAM = [], HOPEN = false;
 // صفحة حجوزاتي (تتحدث لحظياً من WebSocket)
 function me() { cur = async () => { try { mview(await api('/me')); } catch (e) { toast(e.message); } }; cur(); }
 // رسم الحجوزات النشطة (مع إلغاء/تأجيل/ملفات) والكشوفات السابقة
@@ -1655,8 +1670,7 @@ function mview({ profile: p, bookings: b }) {
   $('#m').innerHTML = `<h2 class="sec2">حجوزاتي</h2><p class="mt" style="margin-bottom:12px">أهلاً ${esc(p.name)}</p><div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="btn o sm" href="/patient/favorites">${ic('heart')} أطبائي المفضلون</a><a class="btn o sm" href="/patient/reminders">${ic('bell')} تذكير الأدوية</a></div>` +
     (live.length ? `<div class="grid tkg">${live.map(x => tkCard(x, true)).join('')}</div>` : '<p class="empty card">لا توجد حجوزات نشطة. احجز من قائمة الأطباء.</p>') +
     (fresh.length ? `<h2 class="sec2">تم الكشف اليوم</h2><div class="grid tkg">${fresh.map(x => `<article class="tkc s2"><div class="tkh"><span class="tkav">${esc([...String(x.doctor_name).replace(/^د\.?\s*/, '')][0] || '؟')}</span><div class="tkd"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small></div><span class="tkpill">${ic('circle-check')} تم الكشف</span></div>${x.report ? `<button class="btn p lg" onclick="dlRpt(${x.id})">${ic('download')} تحميل الروشتة (PDF / طباعة)</button>` : '<div class="tkm a">الروشتة قيد الكتابة، ستظهر هنا وتصلك إشعاراً فور جاهزيتها</div>'}${x.follow_up_date ? `<div class="tkm g">موعد الاستشارة: ${fuTxt(x)}</div>` : ''}${x.review ? '' : `<button class="btn o" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`}</article>`).join('')}</div>` : '') +
-    `<h2 class="sec2">كشوفاتي السابقة</h2>` +
-    (hist.length ? `<div class="card hcard"><ul class="ql">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''}</small><small class="hd">${fds(x.booking_date)} · ${SL[x.status]}${x.completed_at ? ' · ' + tm(x.completed_at) : ''}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="dlRpt(${x.id})">${ic('download')} تحميل الروشتة</button>` : x.status === 'Completed' ? '<span class="fb warn">بانتظار الروشتة</span>' : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})">${ic('star')} قيّم الطبيب</button>`) : ''}</div></li>`).join('')}</ul></div>` : '<p class="mt">لا توجد كشوفات سابقة بعد.</p>');
+    `<details class="card hh" ${HOPEN ? 'open' : ''} ontoggle="HOPEN=this.open"><summary><span>كشوفاتي السابقة</span><span class="hcn">${hist.length}</span><span class="chev">${ic('chevron-down')}</span></summary>${hist.length ? `<ul class="ql hl">${hist.map(x => `<li class="hv"><span class="n">${x.queue_number}</span><div class="hi"><b>${esc(x.doctor_name)}</b><small>${esc(x.specialty)}${x.member_name ? ' · ' + esc(x.member_name) : ''} · ${fds(x.booking_date)} · ${SL[x.status]}</small></div><div class="hacts">${x.report ? `<button class="btn o sm" onclick="dlRpt(${x.id})" aria-label="تحميل الروشتة">${ic('download')} الروشتة</button>` : x.status === 'Completed' ? '<span class="fb warn">بانتظار الروشتة</span>' : ''}${x.status === 'Completed' ? (x.review ? `<span class="rt" title="تقييمك">${stars(x.review.rating)}</span>` : `<button class="btn o sm" onclick="rate(${x.id})" aria-label="قيّم الطبيب">${ic('star')}</button>`) : ''}</div></li>`).join('')}</ul>` : '<p class="mt hn">لا توجد كشوفات سابقة بعد.</p>'}</details>`;
 }
 
 /* ---------- لوحة الطبيب ---------- */
