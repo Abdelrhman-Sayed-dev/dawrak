@@ -1863,8 +1863,7 @@ async def push_guest_subscribe(request: Request):
         if bid and await pool.fetchval("""SELECT 1 FROM bookings WHERE id=$1 AND patient_phone=$2 AND patient_id IS NULL AND walkin_id IS NULL
                 AND booking_date=CURRENT_DATE AND status IN ('Waiting','In Progress')""", bid, norm_phone(it.get("phone"))):
             bids.append(bid)
-    if not bids:
-        raise Fail(409, "لا يوجد حجز نشط اليوم لتفعيل الإشعارات عليه")
+    # بدون حجز نشط: نسجّل الجهاز كضيف بلا ربط، وتُربط حجوزاته لاحقاً تلقائياً عند الحجز (pushSync)
     await PUSH.subscribe_guest(ep, p, a, request.headers.get("user-agent", ""), bids, bool(b.get("welcome")))
     return {"ok": True, "bookings": len(bids)}
 
