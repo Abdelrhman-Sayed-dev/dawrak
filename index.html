@@ -925,7 +925,7 @@ html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{transition:
 @media screen{
 /* ---------- الأساس: ألوان + خلفية بتوهّج أزرق هادئ ---------- */
 html[data-theme=dark]{color-scheme:dark;
-  --p:#6EA8FF;--pd:#A9CBFF;--pl:#12264A;--lb:#27437C;--bg:#0A1324;--c:#0F1B32;--t:#E7EEFB;--m:#8FA2C4;--b:#1E2F50;
+  --p:#6EA8FF;--pd:#A9CBFF;--pl:#12264A;--lb:#27437C;--bg:#050B17;--c:#0F1B32;--t:#E7EEFB;--m:#8FA2C4;--b:#1E2F50;
   --ok:#4ADE80;--warn:#FBBF24;--err:#F87171;--navy:#F3F7FF;--ac:#6EA8FF;
   --sh:inset 0 1px 0 rgba(255,255,255,.045),0 12px 30px rgba(0,0,0,.32);
   --c2:#13223F;--c3:#1A2D52;--b2:#2A4170;--pb:#2F6BEA;
@@ -934,8 +934,15 @@ html[data-theme=dark]{color-scheme:dark;
   --er-bg:rgba(239,68,68,.13);--er-tx:#FCA5A5;--er-bd:rgba(248,113,113,.3);
   --in-bg:rgba(96,165,250,.14);--in-tx:#9CC4FF;--in-bd:rgba(110,168,255,.28);
   --mu-bg:rgba(143,162,196,.14);--mu-tx:#A9B8D4;
-  background:radial-gradient(900px 520px at 88% -8%,rgba(47,107,234,.17),transparent 62%),radial-gradient(760px 480px at -6% 14%,rgba(30,64,140,.2),transparent 60%),radial-gradient(900px 600px at 50% 118%,rgba(20,50,110,.2),transparent 60%),var(--bg);
-  background-attachment:fixed;scrollbar-color:#2A4170 #0A1324}
+  /* خلفية شبه تصميم المرجع: كحلي شبه أسود + توهّج أزرق ناعم + خطوط منحنية خفيفة */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1600' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M1000 40C760 70 560 190 470 430' stroke='%234F8CFF' stroke-opacity='.16' stroke-width='2'/%3E%3Cpath d='M1000 150C800 190 650 300 590 520' stroke='%234F8CFF' stroke-opacity='.08' stroke-width='1.5'/%3E%3Cpath d='M0 1120C260 1060 520 1160 1000 1000' stroke='%234F8CFF' stroke-opacity='.12' stroke-width='2'/%3E%3Cpath d='M0 1260C300 1210 560 1300 1000 1170' stroke='%234F8CFF' stroke-opacity='.07' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E") center/cover no-repeat,
+    radial-gradient(720px 420px at 82% 4%,rgba(47,107,234,.2),transparent 65%),
+    radial-gradient(620px 460px at -8% 22%,rgba(24,60,140,.24),transparent 62%),
+    radial-gradient(760px 520px at 105% 62%,rgba(30,80,190,.12),transparent 62%),
+    radial-gradient(900px 560px at 40% 118%,rgba(18,52,130,.26),transparent 62%),
+    linear-gradient(180deg,#07101F 0%,#050B17 55%,#040913 100%),var(--bg);
+  background-attachment:fixed;scrollbar-color:#2A4170 #050B17}
 html[data-theme=dark] body{background:transparent;color:var(--t)}
 html[data-theme=dark] ::selection{background:rgba(110,168,255,.38);color:#fff}
 html[data-theme=dark] ::placeholder{color:#6B7FA3;opacity:1}
@@ -1143,7 +1150,57 @@ html[data-theme=dark] .rx-sig{border-top-color:#6EA8FF}
 /* ---------- عناصر تحمل ألوان inline من الجافاسكربت ---------- */
 html[data-theme=dark] [style*="background:#fffbeb"]{background:rgba(245,158,11,.1)!important;border-color:var(--wn-bd)!important}
 html[data-theme=dark] [style*="color:#15803d"]{color:var(--ok)!important}
+
+/* ---------- لمسة المرجع: أسطح زجاجية شبه سوداء + حدود ناعمة + توهّج أزرق في الركن ---------- */
+html[data-theme=dark]{--bg:#030710;--c:#0A1222;--c2:#0E182C;--c3:#14233F;--b:#17253F;--b2:#22385F;--lb:#1F3A6B;
+  --glass:linear-gradient(145deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.012) 38%,rgba(255,255,255,.02) 100%),#08101F;
+  --swoosh:radial-gradient(140px 70px at 100% 100%,rgba(47,107,234,.38),transparent 72%),radial-gradient(90px 50px at 0% 0%,rgba(110,168,255,.08),transparent 70%);
+  --edge:inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(110,168,255,.05),0 14px 34px rgba(0,0,0,.5)}
+html[data-theme=dark]{background:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1600' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M1000 40C760 70 560 190 470 430' stroke='%234F8CFF' stroke-opacity='.14' stroke-width='2'/%3E%3Cpath d='M0 1120C260 1060 520 1160 1000 1000' stroke='%234F8CFF' stroke-opacity='.1' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E") center/cover no-repeat,
+  radial-gradient(640px 380px at 85% 2%,rgba(40,100,230,.16),transparent 66%),
+  radial-gradient(560px 420px at -10% 30%,rgba(20,55,130,.16),transparent 62%),
+  radial-gradient(800px 520px at 45% 120%,rgba(16,48,120,.2),transparent 62%),
+  linear-gradient(180deg,#050B17 0%,#030710 60%,#02050C 100%);
+  background-attachment:fixed;scrollbar-color:#22385F #030710}
+/* الهيرو: داكن جداً مع ضوء خفيف من أعلى اليمين */
+html[data-theme=dark] :is(.hx,.hero){background:radial-gradient(520px 260px at 92% 0%,rgba(47,107,234,.2),transparent 65%),linear-gradient(150deg,#0B1527 0%,#070E1D 55%,#050A15 100%);border:1px solid #17294A;box-shadow:var(--edge)}
+html[data-theme=dark] .hx .eb{background:rgba(255,255,255,.03);border-color:#22385F;color:#7FB0FF}
+/* الكروت والمربعات */
+html[data-theme=dark] :is(.card,.dc2,.dc3,.tkc,.st,.stats .st,.ds-kp,.spt,.nx li,.rsi,.dz,.who){background:var(--swoosh),var(--glass);border:1px solid #1A2B4B;box-shadow:var(--edge)}
+html[data-theme=dark] :is(.hb div,.feat div){background:var(--swoosh),var(--glass);border:1px solid #1A2B4B;box-shadow:var(--edge)}
+html[data-theme=dark] :is(.hb span,.feat span){background:rgba(110,168,255,.1);border-color:#22385F;color:#6EA8FF}
+/* البحث + الأزرار الثانوية */
+html[data-theme=dark] :is(.sbox,.hx .sbox,.ds2f,.tabs){background:var(--glass);border:1px solid #1F3359;box-shadow:var(--edge)}
+html[data-theme=dark] .btn:not(.p):not(.ok):not(.d){background:rgba(255,255,255,.02);border-color:#26406B}
+html[data-theme=dark] :is(.hx-cta .btn.o,.btn.o){background:rgba(255,255,255,.02);border-color:#2A4373;color:#CFE0FF}
+/* الهيدر والشريط السفلي */
+html[data-theme=dark] :is(.top,.top.app){background:rgba(3,7,16,.75);border-bottom-color:#112038}
+html[data-theme=dark] .bn{background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.012)),rgba(6,12,24,.92);border-color:#1F3359}
+html[data-theme=dark] :is(.bn a.on,.bn button.on){background:linear-gradient(180deg,rgba(47,107,234,.28),rgba(47,107,234,.12));box-shadow:inset 0 0 0 1px rgba(110,168,255,.28)}
+html[data-theme=dark] .mdl{background:var(--glass);border-color:#22385F}
+html[data-theme=dark] .ft.ft2{background:linear-gradient(180deg,#060D1B,#02050C)}
 }
+
+/* ===== إصلاح زر الإشعارات =====
+   1) hover/focus كانوا بيفضلوا منوّرين أزرق بعد اللمس على الموبايل → الـ hover للماوس فقط
+   2) عدّاد الإشعارات بقى بادج في ركن الزر خارج الأيقونة، والنقطة الخضراء تختفي لما فيه غير مقروء */
+.tb-bell{overflow:visible;-webkit-tap-highlight-color:transparent;transition:background .15s,border-color .15s,color .15s}
+.tb-bell:focus:not(:focus-visible){outline:0}
+.tb-bell.on::after{top:auto;bottom:6px;inset-inline-end:6px;width:8px;height:8px;border-width:1.5px}
+.tb-bell.un::after{display:none}
+.tb-bell.un::before{top:-7px;inset-inline-end:-7px;min-width:20px;height:20px;padding:0 5px;border-width:2px;box-sizing:border-box;border-radius:10px;font-size:.68rem;box-shadow:0 2px 6px rgba(220,38,38,.4);z-index:2}
+@media screen{
+html[data-theme=dark] :is(.tb-out,.tb-bell,.th-btn,.mb,.ib):hover{background:rgba(255,255,255,.04);border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] :is(.tb-out,.tb-bell,.th-btn,.mb,.ib):focus:not(:focus-visible),html[data-theme=dark] :is(.tb-out,.tb-bell,.th-btn,.mb,.ib):active{background:rgba(255,255,255,.04);border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] .tb-bell.un::before{border-color:#050B17}
+html[data-theme=dark] .tb-bell.on::after{border-color:#050B17}
+}
+@media(hover:hover){
+.tb-bell:hover{background:var(--pl);color:var(--p)}
+html[data-theme=dark] .tb-bell:hover{background:var(--c3);border-color:#3A5694;color:#fff}
+}
+@media(hover:none){.tb-bell:hover{background:#fff;color:var(--navy)}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
