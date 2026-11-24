@@ -13,6 +13,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function(){var t;try{t=localStorage.getItem('dawrak_theme')}catch(e){}
+if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);
+var m=document.querySelector('meta[name=theme-color]');if(m&&t==='dark')m.setAttribute('content','#0A1324')})();
+</script>
 <style>
 :root{--p:#1b4486;--pd:#113163;--pl:#e6effd;--bg:#f2f7fe;--c:#fff;--t:#0c2753;--m:#657896;--b:#dee7f5;--ok:#15803d;--warn:#b45309;--err:#b91c1c;--sh:0 8px 24px rgba(37,99,235,.09);--navy:#07234f;--ac:#2b68ca}
 *{box-sizing:border-box;margin:0}
@@ -897,6 +903,247 @@ html,body{overflow-x:clip}
 .ip{text-align:center}.ip .pi{width:64px;height:64px;border-radius:18px;background:var(--pl);color:var(--p);display:grid;place-items:center;margin:0 auto 10px}.ip .pi svg{width:32px;height:32px}.ip h3{margin-bottom:6px}
 @media(prefers-reduced-motion:reduce){.pwab{animation:none}}
 @media(display-mode:standalone){body{-webkit-tap-highlight-color:transparent}}
+
+/* =====================================================================
+   DAWRAK — Dark Mode (Premium Navy/Blue)
+   • الوضع الفاتح لم يُمس: كل قواعد الداكن مقيّدة بـ html[data-theme=dark] وداخل @media screen
+     (فالطباعة، ومنها الروشتة، تبقى كما هي).
+   • الاختيار محفوظ في localStorage.dawrak_theme ولا يُمسح عند تسجيل الخروج.
+   ===================================================================== */
+.th-btn{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--b);border-radius:12px;background:#fff;color:var(--navy);cursor:pointer;padding:0;transition:background .2s,color .2s,border-color .2s,transform .2s}
+.th-btn svg{width:20px;height:20px;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.th-btn:hover{background:var(--pl);color:var(--p)}.th-btn:hover svg{transform:rotate(22deg)}
+.th-btn svg:first-child{display:none}
+.tb-th{position:absolute;inset-inline-end:12px;top:calc(50% + env(safe-area-inset-top,0px)/2);transform:translateY(-50%)}
+.tb-th:active{transform:translateY(-50%) scale(.94)}
+.tb-th.th2{inset-inline-end:60px}
+.th-float{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));inset-inline-end:14px;z-index:40;box-shadow:0 4px 16px rgba(15,23,42,.12)}
+.th-float:active{transform:scale(.94)}
+html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{transition:background-color .3s ease,border-color .3s ease,color .3s ease,box-shadow .3s ease,fill .3s ease,stroke .3s ease!important}
+@media(prefers-reduced-motion:reduce){html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{transition:none!important}.th-btn svg{transition:none}}
+
+@media screen{
+/* ---------- الأساس: ألوان + خلفية بتوهّج أزرق هادئ ---------- */
+html[data-theme=dark]{color-scheme:dark;
+  --p:#6EA8FF;--pd:#A9CBFF;--pl:#12264A;--lb:#27437C;--bg:#0A1324;--c:#0F1B32;--t:#E7EEFB;--m:#8FA2C4;--b:#1E2F50;
+  --ok:#4ADE80;--warn:#FBBF24;--err:#F87171;--navy:#F3F7FF;--ac:#6EA8FF;
+  --sh:inset 0 1px 0 rgba(255,255,255,.045),0 12px 30px rgba(0,0,0,.32);
+  --c2:#13223F;--c3:#1A2D52;--b2:#2A4170;--pb:#2F6BEA;
+  --ok-bg:rgba(34,197,94,.14);--ok-tx:#6EE7A0;--ok-bd:rgba(74,222,128,.28);
+  --wn-bg:rgba(245,158,11,.14);--wn-tx:#FCD34D;--wn-bd:rgba(251,191,36,.28);
+  --er-bg:rgba(239,68,68,.13);--er-tx:#FCA5A5;--er-bd:rgba(248,113,113,.3);
+  --in-bg:rgba(96,165,250,.14);--in-tx:#9CC4FF;--in-bd:rgba(110,168,255,.28);
+  --mu-bg:rgba(143,162,196,.14);--mu-tx:#A9B8D4;
+  background:radial-gradient(900px 520px at 88% -8%,rgba(47,107,234,.17),transparent 62%),radial-gradient(760px 480px at -6% 14%,rgba(30,64,140,.2),transparent 60%),radial-gradient(900px 600px at 50% 118%,rgba(20,50,110,.2),transparent 60%),var(--bg);
+  background-attachment:fixed;scrollbar-color:#2A4170 #0A1324}
+html[data-theme=dark] body{background:transparent;color:var(--t)}
+html[data-theme=dark] ::selection{background:rgba(110,168,255,.38);color:#fff}
+html[data-theme=dark] ::placeholder{color:#6B7FA3;opacity:1}
+html[data-theme=dark] :focus-visible{outline-color:rgba(110,168,255,.7)}
+html[data-theme=dark] select option{background:#0F1B32;color:#E7EEFB}
+html[data-theme=dark] :is(h1,h2,h3,h4){color:var(--navy)}
+html[data-theme=dark] .th-btn svg:first-child{display:block}
+html[data-theme=dark] .th-btn svg:last-child{display:none}
+html[data-theme=dark] .th-float{box-shadow:0 6px 20px rgba(0,0,0,.45)}
+
+/* ---------- الهيدر + أزرار الأيقونات ---------- */
+html[data-theme=dark] :is(.top,.top.app){background:rgba(9,17,32,.78);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-color:var(--b);box-shadow:0 1px 0 rgba(110,168,255,.06),0 8px 24px rgba(0,0,0,.25)}
+html[data-theme=dark] .logo .lm{filter:drop-shadow(0 0 10px rgba(110,168,255,.4))}
+html[data-theme=dark] :is(.tb-out,.tb-bell,.th-btn,.mb,.ib){background:rgba(255,255,255,.04);border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] :is(.tb-out,.tb-bell,.th-btn,.mb,.ib):hover{background:var(--c3);border-color:#3A5694;color:#fff}
+html[data-theme=dark] .tb-bell.on::after{border-color:#0A1324}
+html[data-theme=dark] .tb-bell.un::before{border-color:#0A1324}
+html[data-theme=dark] .top .mn{background:#0B1528}
+html[data-theme=dark] :is(.top .mn a.on,.top .mn a:hover){background:var(--c3);color:#fff;box-shadow:none}
+html[data-theme=dark] .dd{background:rgba(12,22,42,.97);border-color:var(--b2);box-shadow:0 20px 44px rgba(0,0,0,.55)}
+
+/* ---------- الكروت والأسطح ---------- */
+html[data-theme=dark] :is(.card,.dc2,.dc3,.tkc){background:linear-gradient(180deg,#112038,#0E1A30);border-color:var(--b);box-shadow:var(--sh)}
+html[data-theme=dark] :is(.st,.stats .st,.sbar,.ds-kp,.ds2f,.tabs,.pt-pill,.pt-v,.nx li,.rsi,.who,.dz){background:var(--c);border-color:var(--b)}
+html[data-theme=dark] :is(.st,.stats .st,.ds-kp,.ds2f,.tabs){box-shadow:var(--sh)}
+html[data-theme=dark] :is(.dz,.who,.rsi,.ql li.qc){background:var(--c2)}
+html[data-theme=dark] .dc3:hover{border-color:#34559A;box-shadow:0 18px 40px rgba(0,0,0,.5),0 0 0 1px rgba(110,168,255,.14)}
+html[data-theme=dark] .ds-kp:hover{box-shadow:0 14px 30px rgba(0,0,0,.45)}
+html[data-theme=dark] .ft3{background:rgba(255,255,255,.025);border-top-color:var(--b)}
+html[data-theme=dark] .dc3 .av3,html[data-theme=dark] .av3{background:var(--c);box-shadow:0 0 0 1px var(--lb),0 8px 22px rgba(0,0,0,.45)}
+html[data-theme=dark] :is(.av3 img,.ph2 img,.av img,.phw img){filter:brightness(.93) contrast(1.03)}
+html[data-theme=dark] :is(.phw,.ph2,.pt-av){background:linear-gradient(160deg,#17315F,#0E2147)}
+html[data-theme=dark] .ph0{background:radial-gradient(circle at 30% 20%,#1B3A70,#0E2147)}
+html[data-theme=dark] .ph0 span{background:var(--c2);color:var(--p);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+html[data-theme=dark] .tkav{background:linear-gradient(135deg,#17315F,#0F2550);color:var(--p);box-shadow:0 0 0 3px var(--c),0 0 0 4px var(--lb)}
+html[data-theme=dark] :is(.stat2,.spc){background:var(--c2)}
+html[data-theme=dark] .spc{background:var(--in-bg)}
+html[data-theme=dark] .ln{background:#3A5694}
+html[data-theme=dark] .care{background:linear-gradient(120deg,#12284F,#0E1D3B)}
+html[data-theme=dark] .brand{background:#12264A}
+html[data-theme=dark] .brand .tg{color:var(--t)}
+html[data-theme=dark] :is(.tkst>div,.bkw){background:rgba(110,168,255,.07)}
+html[data-theme=dark] .spt{background:var(--c);border-color:var(--b);box-shadow:var(--sh)}
+html[data-theme=dark] .spt.on{background:var(--in-bg);border-color:var(--lb)}
+
+/* ---------- الأزرار ---------- */
+html[data-theme=dark] .btn{background:var(--c2);border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] .btn:hover:not(:disabled){background:var(--c3);border-color:#3A5694}
+html[data-theme=dark] :is(.btn.p,.sbtn,.sbox .sbtn,.hx .sbox .sbtn,.num){background:linear-gradient(180deg,#3A78F2,#2A62DC);border-color:#4B86F5;color:#fff;box-shadow:0 8px 20px rgba(47,107,234,.32),inset 0 1px 0 rgba(255,255,255,.18)}
+html[data-theme=dark] :is(.btn.p,.sbox .sbtn,.sbtn):hover:not(:disabled){background:linear-gradient(180deg,#4A86FA,#3269E6);border-color:#6B9CFA}
+html[data-theme=dark] .num{box-shadow:0 6px 16px rgba(47,107,234,.3),inset 0 1px 0 rgba(255,255,255,.18)}
+html[data-theme=dark] :is(.btn.p,.bk):disabled{box-shadow:none}
+html[data-theme=dark] .btn.ok{background:linear-gradient(180deg,#22A559,#168A46);border-color:#2DBB6A;color:#fff}
+html[data-theme=dark] .btn.o{background:rgba(110,168,255,.06);color:var(--p);border-color:var(--lb)}
+html[data-theme=dark] .btn.o:hover:not(:disabled){background:rgba(110,168,255,.15);border-color:#3A5694}
+html[data-theme=dark] .btn.d{color:var(--er-tx);border-color:var(--er-bd)}
+html[data-theme=dark] .btn.d:hover:not(:disabled){background:var(--er-bg)}
+html[data-theme=dark] .btn:disabled{opacity:.45}
+html[data-theme=dark] .hx-cta .btn.o{background:rgba(110,168,255,.06);color:var(--p);border-color:var(--lb)}
+html[data-theme=dark] #lf .btn.lg{box-shadow:0 10px 26px rgba(47,107,234,.38)}
+html[data-theme=dark] #lf .btn.lg:hover:not(:disabled){box-shadow:0 14px 32px rgba(47,107,234,.46)}
+html[data-theme=dark] #lf .btn.ld{background:#2559C9}
+
+/* ---------- الحقول ---------- */
+html[data-theme=dark] :is(form input:not([type=radio]):not([type=checkbox]):not([type=file]),form textarea,form select){background:#0B1528;border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] :is(form input:not([type=radio]):not([type=checkbox]):not([type=file]),form textarea,form select):hover{border-color:#3A5694}
+html[data-theme=dark] :is(form input,form textarea,form select):focus{background:#0D1A33;border-color:var(--p);box-shadow:0 0 0 3px rgba(110,168,255,.2)}
+html[data-theme=dark] #lf input.in{background:#0B1528;border-color:var(--b2);color:var(--t)}
+html[data-theme=dark] #lf input.in:hover{border-color:#3A5694}
+html[data-theme=dark] #lf input.in:focus{background:#0D1A33;border-color:var(--p);box-shadow:0 0 0 4px rgba(110,168,255,.2)}
+html[data-theme=dark] #lf input.in[aria-invalid=true]{border-color:var(--err);box-shadow:0 0 0 4px rgba(248,113,113,.14)}
+html[data-theme=dark] input:-webkit-autofill,html[data-theme=dark] input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #0B1528 inset;-webkit-text-fill-color:#E7EEFB;caret-color:#E7EEFB;transition:background-color 9999s}
+html[data-theme=dark] .search{background:var(--c2);color:var(--t)}
+html[data-theme=dark] :is(.sbox .search,.hx .sbox .search){background:none}
+html[data-theme=dark] :is(.sbox,.hx .sbox){background:var(--c);border-color:var(--lb);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+html[data-theme=dark] .ds2f:focus-within{border-color:var(--p);box-shadow:0 0 0 3px rgba(110,168,255,.16)}
+html[data-theme=dark] .seg{background:#0B1528}
+html[data-theme=dark] .seg input:checked+span{background:#1B3157;color:#fff;box-shadow:0 0 0 1px var(--b2)}
+html[data-theme=dark] .ds-seg2 button.on{background:var(--c3);color:var(--p);box-shadow:none}
+html[data-theme=dark] .wd span{background:var(--c2);border-color:var(--b2)}
+html[data-theme=dark] .wd input:checked+span{background:var(--pb);border-color:#4B86F5;color:#fff}
+html[data-theme=dark] .who:has(input:checked){background:rgba(110,168,255,.1);border-color:var(--p);box-shadow:0 0 0 3px rgba(110,168,255,.16)}
+html[data-theme=dark] .who input:checked+.wv{background:var(--pb);color:#fff}
+html[data-theme=dark] .who:focus-within{outline-color:rgba(110,168,255,.5)}
+
+/* ---------- المودال + التوست ---------- */
+html[data-theme=dark] .ov{background:rgba(3,8,20,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+html[data-theme=dark] .mdl{background:linear-gradient(180deg,#112038,#0D1830);border:1px solid var(--b2);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+html[data-theme=dark] .mdl.wide:has(.rx){background:#0A1427}
+html[data-theme=dark] .toast{background:#DC2626;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+html[data-theme=dark] .toast.ok{background:#16A34A}
+html[data-theme=dark] .ds-tip{background:#1B2D52;border:1px solid var(--b2);box-shadow:0 14px 34px rgba(0,0,0,.55)}
+html[data-theme=dark] .pwab{background:var(--c2);border-color:var(--b2);box-shadow:0 18px 40px rgba(0,0,0,.55)}
+html[data-theme=dark] .rmm{background:var(--c2);border-color:var(--b2);box-shadow:0 14px 34px rgba(0,0,0,.55)}
+html[data-theme=dark] .rmm button.dg{color:var(--er-tx)}
+html[data-theme=dark] .rmm button.dg:hover{background:var(--er-bg)}
+
+/* ---------- التنقل: شريط سفلي / سايدبار / تابات ---------- */
+html[data-theme=dark] .bn{background:rgba(12,22,42,.88);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border-color:var(--b2);box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05)}
+html[data-theme=dark] :is(.bn a.on,.bn button.on){background:rgba(110,168,255,.14);color:var(--p)}
+html[data-theme=dark] .rbn{background:rgba(10,19,36,.92);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top-color:var(--b2);box-shadow:0 -10px 30px rgba(0,0,0,.4)}
+html[data-theme=dark] .rbn .add span{box-shadow:0 6px 16px rgba(47,107,234,.45)}
+html[data-theme=dark] .sbar{background:linear-gradient(180deg,#0F1B32,#0C1729)}
+html[data-theme=dark] .sbar button:hover:not(.on){background:rgba(110,168,255,.07);color:var(--t)}
+html[data-theme=dark] .sbar button.on{background:rgba(110,168,255,.14);color:var(--p)}
+html[data-theme=dark] .tabs button.on{background:linear-gradient(135deg,#2F6BEA,#4B86F5);color:#fff;box-shadow:0 6px 16px rgba(47,107,234,.4)}
+
+/* ---------- الجداول (الأدمن) ---------- */
+html[data-theme=dark] .tbl th{background:rgba(110,168,255,.05);color:#9DB0D3;font-weight:700;letter-spacing:.02em}
+html[data-theme=dark] .tbl tbody tr{transition:background .15s}
+html[data-theme=dark] .tbl tbody tr:hover{background:rgba(110,168,255,.06)}
+html[data-theme=dark] .tbl td,html[data-theme=dark] .tbl th{border-bottom-color:var(--b)}
+
+/* ---------- الحالات (شارات ملوّنة بشفافية بدل الباستيل) ---------- */
+html[data-theme=dark] :is(.chip.ok,.pill.ok,.pl2.ok,.rb.ok,.src.wi,.tkpill,.tkm.g,.pt-s.c,.bkl.on,.pt-pill.wa,.pt-ok,.pt-fu){background:var(--ok-bg);color:var(--ok-tx)}
+html[data-theme=dark] :is(.chip.ok,.pill.ok,.pl2.ok,.rb.ok,.src.wi,.tkpill,.tkm.g,.pt-pill.wa,.pt-ok){box-shadow:inset 0 0 0 1px var(--ok-bd)}
+html[data-theme=dark] :is(.chip.warn,.pill.warn,.pl2.warn,.rb.warn,.src.cl,.fb.warn,.pt-s.w,.tkpill.w,.tkm.a,.qo span.cur2){background:var(--wn-bg);color:var(--wn-tx)}
+html[data-theme=dark] :is(.chip.warn,.pill.warn,.pl2.warn,.rb.warn,.src.cl,.fb.warn,.tkpill.w,.tkm.a){box-shadow:inset 0 0 0 1px var(--wn-bd)}
+html[data-theme=dark] :is(.chip.off,.pill.off,.pl2.off,.rb.off,.pt-s){background:var(--mu-bg);color:var(--mu-tx)}
+html[data-theme=dark] :is(.src.on,.src.nx,.tkpill.p,.tkm,.pt-s.p,.pt-pills span,.fch,.fb){background:var(--in-bg);color:var(--in-tx)}
+html[data-theme=dark] :is(.src.on,.src.nx,.tkpill.p,.tkm){box-shadow:inset 0 0 0 1px var(--in-bd)}
+html[data-theme=dark] .fch{color:var(--t)}
+html[data-theme=dark] :is(.pt-ch span,.bkl){background:var(--er-bg);color:var(--er-tx);border-color:var(--er-bd)}
+html[data-theme=dark] .pt-pill.wa{border-color:var(--ok-bd)}
+html[data-theme=dark] .pt-v{border-inline-start-color:#3A5078}
+html[data-theme=dark] .pt-v.c{border-inline-start-color:var(--ok)}
+html[data-theme=dark] .pt-v.w{border-inline-start-color:#F59E0B}
+html[data-theme=dark] .pt-v.p{border-inline-start-color:var(--ac)}
+html[data-theme=dark] .fs .tot b{color:var(--ok)}
+html[data-theme=dark] :is(.tk2.hot,.ql li.qc.first){background:rgba(110,168,255,.08);border-color:#3A6FD0}
+html[data-theme=dark] :is(.fbc.on,.bkc.on){background:rgba(34,197,94,.08);border-color:var(--ok-bd)}
+html[data-theme=dark] .tkc.s2{border-color:rgba(74,222,128,.45);box-shadow:0 12px 34px rgba(22,163,74,.16)}
+html[data-theme=dark] .bkc{background:rgba(239,68,68,.08);border-color:var(--er-bd)}
+html[data-theme=dark] :is(.ql li.rq.called,.ql li.qc.called,.rcallbox,.disc,.dz.late){background:rgba(245,158,11,.1);border-color:var(--wn-bd)}
+html[data-theme=dark] .disc{color:#FCD34D}
+html[data-theme=dark] .fv:hover{color:#FB7185;border-color:rgba(251,113,133,.4)}
+html[data-theme=dark] .fv.on{color:#FB7185;background:rgba(244,63,94,.14);border-color:rgba(251,113,133,.4)}
+html[data-theme=dark] .stars{background:linear-gradient(90deg,#f59e0b calc(var(--v,0)*20%),#2A4170 0);-webkit-background-clip:text;background-clip:text}
+html[data-theme=dark] .rstar button{color:#2A4170}
+html[data-theme=dark] .rstar button.on{color:#f59e0b}
+
+/* ---------- تذكرة الحجز + متابعة الطابور ---------- */
+html[data-theme=dark] .tkp::before{background:#1E2F50}
+html[data-theme=dark] .tkn{background:var(--c);border-color:#2A4170;box-shadow:0 0 0 4px var(--c)}
+html[data-theme=dark] .tks.on .tkn{background:#16A34A;border-color:#16A34A}
+html[data-theme=dark] .tks.fl .tkn{background:#2A4170}
+html[data-theme=dark] .tks.fl.on .tkn{background:#16A34A}
+html[data-theme=dark] .tkst .i1 svg,html[data-theme=dark] .tkst .i3 svg{color:#6EA8FF}
+html[data-theme=dark] .tkst .i2 svg{color:#A78BFA}
+html[data-theme=dark] .tkw{box-shadow:0 14px 34px rgba(37,99,235,.3),inset 0 1px 0 rgba(255,255,255,.14)}
+html[data-theme=dark] .hart{background-color:var(--c);border-color:var(--lb);background-image:linear-gradient(var(--pb),var(--pb)),linear-gradient(#1E2F50,#1E2F50);box-shadow:0 18px 44px rgba(0,0,0,.45),0 0 0 1px rgba(110,168,255,.08)}
+html[data-theme=dark] .hart::after{text-shadow:0 0 36px rgba(110,168,255,.4)}
+
+/* ---------- الهيرو ---------- */
+html[data-theme=dark] :is(.hx,.hero){background:radial-gradient(620px 300px at 88% 0%,rgba(79,140,255,.24),transparent 62%),linear-gradient(160deg,#112447 0%,#0D1B36 55%,#0A1324 100%);border-color:#1F3560}
+html[data-theme=dark] .hx .eb{background:rgba(110,168,255,.1);border-color:var(--lb);color:var(--p)}
+html[data-theme=dark] :is(.hb span,.feat span){background:var(--c2);border-color:var(--lb);color:var(--p)}
+html[data-theme=dark] .feat div{background:var(--c);border-color:#1F3560;color:var(--navy)}
+html[data-theme=dark] .hb div{color:var(--navy)}
+@media(max-width:620px){html[data-theme=dark] .hb div{background:var(--c);border-color:#1F3560}}
+html[data-theme=dark] .qo span{background:rgba(110,168,255,.08);color:var(--t)}
+html[data-theme=dark] .qo span.cur2{background:var(--wn-bg);color:var(--wn-tx)}
+html[data-theme=dark] .hx-v svg [fill="#fff"]{fill:#16274A}
+html[data-theme=dark] .hx-v svg g[fill="#EFF6FF"]{fill:#1C3260}
+html[data-theme=dark] .hx-v svg [fill="#0B2D5B"]{fill:#8DB6FF}
+html[data-theme=dark] .hx-v svg [stroke="#0B2D5B"]{stroke:#8DB6FF}
+html[data-theme=dark] .hx-v svg [stroke="#BFDBFE"]{stroke:#27437C}
+html[data-theme=dark] .hx-v svg [fill="#BFDBFE"]{fill:#27437C}
+html[data-theme=dark] .hx-v svg stop[stop-color="#EFF6FF"]{stop-color:#0E1E3C}
+html[data-theme=dark] .hx-v svg stop[stop-color="#DBEAFE"]{stop-color:#17346E}
+html[data-theme=dark] .ds-dnr svg [stroke="#eef3fb"]{stroke:#1E2F50}
+
+/* ---------- صفحات الدخول ---------- */
+html[data-theme=dark] .af{background:linear-gradient(180deg,#112038,#0E1A30);border-color:var(--b2);box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
+html[data-theme=dark] .auth{--a1:#14357C;--a2:#0F2658}
+html[data-theme=dark] .auth.adm{--a1:#08142B;--a2:#123470}
+html[data-theme=dark] .auth.rec{--a1:#0A1A38;--a2:#1C4BB8}
+html[data-theme=dark] .auth.pat{--a1:#12284F;--a2:#0C1A36;--tx:#EAF1FF;--mu:#9DB2D8}
+html[data-theme=dark] .auth.pat .aside .ai{background:var(--c2);color:var(--p);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+html[data-theme=dark] .pwt:hover{background:var(--c3)}
+
+/* ---------- الفوتر ---------- */
+html[data-theme=dark] .ft.ft2{background:linear-gradient(180deg,#0C1A33,#070F1F);border-top:1px solid var(--b)}
+html[data-theme=dark] .f2-cta{background:linear-gradient(135deg,#13294F,#0F2142)!important;color:var(--t)!important;border:1px solid var(--lb)!important;box-shadow:0 18px 40px rgba(0,0,0,.35)!important}
+html[data-theme=dark] .f2-cta h3{color:#fff!important}
+html[data-theme=dark] .f2-cta p{color:var(--m)!important}
+html[data-theme=dark] .f2-btn{background:linear-gradient(180deg,#3A78F2,#2A62DC)!important;color:#fff!important;box-shadow:0 8px 20px rgba(47,107,234,.35)}
+html[data-theme=dark] .f2-btn svg{color:#CFE0FF!important}
+html[data-theme=dark] .ft.ft2 .f2-brand .logo>svg{color:#6EA8FF!important}
+html[data-theme=dark] .ft.ft2 .f2-brand .logo>svg>path:nth-of-type(2){stroke:#070F1F!important}
+
+/* ---------- الروشتة الإلكترونية على الشاشة (الطباعة تبقى فاتحة كما هي) ---------- */
+html[data-theme=dark] .rx{--rn:#EAF1FF;--rp:#6EA8FF;--rl:#102446;--rb:#27406F;--rm:#93A7CC;background:linear-gradient(180deg,#0F1D38,#0C1830);color:#DCE8FF;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 0 1px #1E3360}
+html[data-theme=dark] .rx-band{background:linear-gradient(90deg,#2F6BEA,#4F8CFF 65%,#8DB6FF)}
+html[data-theme=dark] .rx-lh{border-bottom-color:#3A5694}
+html[data-theme=dark] .rx-mh{background:#16305C;color:#EAF1FF}
+html[data-theme=dark] .rx-mi{background:#2F6BEA;color:#fff}
+html[data-theme=dark] .rx-m:nth-child(even){background:rgba(110,168,255,.05)}
+html[data-theme=dark] .rx-c.e{color:#6F83A9}
+html[data-theme=dark] .rx-nt{background:rgba(110,168,255,.05)}
+html[data-theme=dark] .rx-nt ul{color:#B9C9E8}
+html[data-theme=dark] .rx-stamp{border-color:#3A5694;color:#7F95BD}
+html[data-theme=dark] .rx-sig{border-top-color:#6EA8FF}
+
+/* ---------- عناصر تحمل ألوان inline من الجافاسكربت ---------- */
+html[data-theme=dark] [style*="background:#fffbeb"]{background:rgba(245,158,11,.1)!important;border-color:var(--wn-bd)!important}
+html[data-theme=dark] [style*="color:#15803d"]{color:var(--ok)!important}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -1007,6 +1254,26 @@ const pill = s => `<span class="pill ${PL[s][1]}">${PL[s][0]}</span>`;
 const ph0 = d => `<div class="ph0"><span>${esc([...String(d.name).replace(/^د\.?\s*/, '')][0] || '؟')}</span></div>`;
 const tm = t => new Date(t).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
+/* ---------- الوضع الفاتح/الداكن ---------- */
+Object.assign(IC, {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>' });
+const THEME_KEY = 'dawrak_theme';   // يبقى بعد تسجيل الخروج (الخروج يمسح tok/role فقط)
+const curTheme = () => document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+const themeLbl = t => t === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن';
+function applyTheme(t, save, anim) {
+  const d = document.documentElement;
+  if (anim) { d.classList.add('theme-anim'); clearTimeout(applyTheme.t); applyTheme.t = setTimeout(() => d.classList.remove('theme-anim'), 400); }
+  d.setAttribute('data-theme', t);
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', t === 'dark' ? '#0A1324' : '#1b4486');
+  if (save) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+  document.querySelectorAll('[data-theme-toggle]').forEach(b => { b.setAttribute('aria-pressed', t === 'dark'); b.setAttribute('aria-label', themeLbl(t)); b.title = themeLbl(t); });
+}
+const toggleTheme = () => applyTheme(curTheme() === 'dark' ? 'light' : 'dark', true, true);
+const themeBtn = (cls = '') => `<button type="button" class="th-btn ${cls}" data-theme-toggle onclick="toggleTheme()" aria-pressed="${curTheme() === 'dark'}" aria-label="${themeLbl(curTheme())}" title="${themeLbl(curTheme())}">${ic('sun')}${ic('moon')}</button>`;
+// لو المستخدم لم يختر يدوياً: اتبع إعداد الجهاز لحظياً
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => { let v = null; try { v = localStorage.getItem(THEME_KEY); } catch (x) {} if (v !== 'light' && v !== 'dark') applyTheme(e.matches ? 'dark' : 'light'); }); } catch (e) {}
+
 // الهيدر: الشعار + الروابط + أزرار الحساب + قائمة الموبايل
 function head() {
   const r = localStorage.role;
@@ -1014,7 +1281,8 @@ function head() {
   const oc = r === 'doctor' || r === 'admin' || r === 'receptionist' ? '' : ` onclick="return go('top')"`;
   const out = r === 'admin' || r === 'receptionist' ? `<button class="tb-out" aria-label="خروج" onclick="logout()">${ic('log-out')}</button>` : '';
   const bell = pushEligible() ? `<button class="tb-bell ${PUSHST === 'on' ? 'on' : ''}" id="bell" aria-label="الإشعارات" onclick="pushModal()">${ic('bell')}</button>` : '';
-  return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${bell}${out}</header>`;
+  const th = themeBtn('tb-th' + (out ? ' th2' : ''));
+  return `<header class="top app"><a href="${href}" class="logo"${oc}>${LOGO}<span><b>دورك</b><small>DAWRAK</small></span></a>${bell}${th}${out}</header>`;
 }
 function goMe() { closeModal(); nav(DASH.patient); }
 Object.assign(IC, { 'home': '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'list': '<path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/>', 'bar-chart': '<path d=\"M3 3v18h18\"/><path d=\"M18 17V9\"/><path d=\"M13 17V5\"/><path d=\"M8 17v-3\"/>', 'chevron-down': '<path d=\"m6 9 6 6 6-6\"/>', 'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' });
@@ -1079,7 +1347,7 @@ const AUTH_ART = `<svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice
 const authField = (id, label, icon, extra = '') => `<label for="${id}">${label}</label><div class="fld"><span class="fico" aria-hidden="true">${ic(icon)}</span>${extra}</div>`;
 function loginPage(role) {
   const P = PORTAL[role]; document.title = P.t + ' — دورك';
-  $('#app').innerHTML = `<div class="auth ${P.c}"><main class="am"><form class="af" id="lf" novalidate><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
+  $('#app').innerHTML = `<div class="auth ${P.c}">${themeBtn('th-float')}<main class="am"><form class="af" id="lf" novalidate><h2>تسجيل الدخول</h2><p class="aw">${P.w}</p>
   ${authField('lu', P.u, 'user', '<input class="in" id="lu" name="u" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="er">')}
   ${authField('lp', 'كلمة المرور', 'lock', `<input class="in" id="lp" name="p" type="password" dir="ltr" autocomplete="current-password" aria-describedby="er"><button type="button" class="pwt" id="pwt" aria-label="إظهار كلمة المرور" aria-pressed="false">${ic('eye')}</button>`)}
   <div class="err" id="er" role="alert" aria-live="polite"></div>
