@@ -28,6 +28,17 @@ CREATE TABLE IF NOT EXISTS push_guest_bookings (
   PRIMARY KEY (subscription_id, booking_id)
 );
 CREATE INDEX IF NOT EXISTS idx_push_guest_booking ON push_guest_bookings (booking_id);
+CREATE TABLE IF NOT EXISTS push_inbox (
+  id BIGSERIAL PRIMARY KEY,
+  booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  patient_id INT,
+  title VARCHAR(80) NOT NULL,
+  body VARCHAR(300) NOT NULL,
+  kind VARCHAR(12) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_push_inbox_pat ON push_inbox (patient_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_push_inbox_booking ON push_inbox (booking_id, id DESC);
 CREATE TABLE IF NOT EXISTS push_events (
   booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   kind VARCHAR(12) NOT NULL,
@@ -125,6 +136,11 @@ class Push:
                                for r, v in groups.items()))
         return True
 
+    async def note_owner(self, bid, pid, subs, title, body, kind, tag):
+        """إشعار لصاحب الحجز: يُحفظ في سجل الإشعارات (يظل ظاهراً داخل التطبيق) ثم يُرسل للأجهزة المشتركة."""
+        await self.pool.execute("INSERT INTO push_inbox(booking_id,patient_id,title,body,kind) VALUES($1,$2,$3,$4,$5)", bid, pid, title[:80], body[:300], kind)
+        return await self.send_note(subs, title, body, kind, tag)
+
     # ---------- من يستقبل ----------
     async def subs_users(self, role, ids):
         ids = [i for i in ids if i]
@@ -168,11 +184,13 @@ class Push:
             return
         if b["patient_id"]:
             subs = await self.subs_users("patient", [b["patient_id"]])
-            if subs:
-                if b["ahead"] <= self.near:   # التأكيد نفسه يذكر الترتيب، فلا نكرر بإشعار «اقترب دورك»
-                    await self._claim(bid, "near", *(("next",) if b["ahead"] == 0 else ()))
-                t, body = self.confirm_text(b)
-                await self.send_note(subs, t, body, "booked", f"q{bid}")
+            if subs and b["ahead"] <= self.near:   # التأكيد نفسه يذكر الترتيب، فلا نكرر بإشعار «اقترب دورك»
+                await self._claim(bid, "near", *(("next",) if b["ahead"] == 0 else ()))
+            t, body = self.confirm_text(b)
+            await self.note_owner(bid, b["patient_id"], subs, t, body, "booked", f"q{bid}")
+        elif b["source"] == "Online":   # ضيف: يُحفظ التأكيد في سجله؛ الإرسال لجهازه يتم عند تفعيله الإشعارات
+            t, body = self.confirm_text(b)
+            await self.note_owner(bid, None, [], t, body, "booked", f"q{bid}")
         online = b["source"] == "Online"
         await self.send_note(await self.subs_staff(b["doctor_id"], receptionists=online),
                              "حجز جديد" if online else "تسجيل حضور مباشر", f"{b['patient_name']} — دور رقم {b['queue_number']}", "staff_new", f"b{bid}-new")
@@ -181,7 +199,7 @@ class Push:
         b = await self._booking(bid)
         if not b:
             return
-        await self.send_note(await self.subs_booking(bid, b["patient_id"]), "جاء دورك الآن", f"توجّه إلى عيادة {b['dname']}", "start", f"q{bid}")
+        await self.note_owner(bid, b["patient_id"], await self.subs_booking(bid, b["patient_id"]), "جاء دورك الآن", f"توجّه إلى عيادة {b['dname']}", "start", f"q{bid}")
         await self.send_note(await self.subs_staff(b["doctor_id"], receptionists=False), "بدأ كشف مريض", f"{b['patient_name']} — دور رقم {b['queue_number']}", "staff_start", f"b{bid}-start")
         await self.ev_queue(b["doctor_id"])
 
@@ -191,7 +209,7 @@ class Push:
         if not b:
             return
         if by == "staff":
-            await self.send_note(await self.subs_booking(bid, b["patient_id"]), "تم إلغاء حجزك", f"ألغت العيادة حجزك رقم {b['queue_number']} عند {b['dname']}", "cancel", f"q{bid}")
+            await self.note_owner(bid, b["patient_id"], await self.subs_booking(bid, b["patient_id"]), "تم إلغاء حجزك", f"ألغت العيادة حجزك رقم {b['queue_number']} عند {b['dname']}", "cancel", f"q{bid}")
         else:
             await self.send_note(await self.subs_staff(b["doctor_id"]), "إلغاء حجز", f"{b['patient_name']} ألغى حجزه (دور رقم {b['queue_number']})", "staff_cancel", f"b{bid}-cancel")
         await self.ev_queue(b["doctor_id"])
@@ -206,10 +224,20 @@ class Push:
     async def ev_report(self, bid):
         """أول مرة يُحفظ فيها تقرير/روشتة الكشف. الضيف لا حساب له فلا يرى التقارير، فلا يصله شيء."""
         b = await self._booking(bid)
-        if not b or not b["patient_id"]:
+        if not b:
             return
-        await self.send_note(await self.subs_users("patient", [b["patient_id"]]), "تم إصدار الروشتة",
-                             f"كتب {b['dname']} تقرير الكشف والروشتة. افتح «حجوزاتي» لعرضها", "report", f"r{bid}")
+        await self.note_owner(bid, b["patient_id"], await self.subs_booking(bid, b["patient_id"]), "تم إصدار الروشتة",
+                             f"كتب {b['dname']} تقرير الكشف والروشتة. افتح التطبيق لعرضها", "report", f"r{bid}")
+
+    async def ev_completed(self, bid):
+        """انتهى الكشف (من الاستقبال): نخبر المريض (حساب أو ضيف) أن حجزه اكتمل وأن الروشتة تظهر فور كتابتها."""
+        b = await self._booking(bid)
+        if not b:
+            return
+        has = await self.pool.fetchval("SELECT EXISTS(SELECT 1 FROM visit_reports WHERE booking_id=$1)", bid)
+        await self.note_owner(bid, b["patient_id"], await self.subs_booking(bid, b["patient_id"]), "تم الكشف",
+                             f"انتهى كشفك عند {b['dname']}. " + ("الروشتة جاهزة، افتح التطبيق لعرضها" if has else "ستظهر الروشتة في التطبيق فور كتابتها"),
+                             "done", f"q{bid}")
 
     async def ev_queue(self, did):
         """يُستدعى بعد أي تغيير يقلّل عدد من أمامهم: «اقترب دورك» (أمامك ≤ PUSH_NEAR) و«أنت التالي» (أمامك 0)، مرة واحدة لكل حجز."""
@@ -235,14 +263,14 @@ class Push:
             else:
                 continue
             subs = await self.subs_booking(r["id"], r["patient_id"])
-            if subs and await self._claim(r["id"], *claim):
+            if await self._claim(r["id"], *claim):
                 if dname is None:
                     dname = await self.pool.fetchval("SELECT name FROM doctors WHERE id=$1", did) or ""
                 if kind == "next":
                     title, body = "أنت التالي في الدور", f"استعد، دورك رقم {r['queue_number']} هو القادم عند {dname}"
                 else:
                     title, body = "اقترب دورك", f"{ahead_ar(a)}، دورك رقم {r['queue_number']} عند {dname}"
-                await self.send_note(subs, title, body, kind, f"q{r['id']}")
+                await self.note_owner(r["id"], r["patient_id"], subs, title, body, kind, f"q{r['id']}")
 
     # ---------- الاشتراكات ----------
     async def _upsert(self, ep, p, a, role, uid, ua):
@@ -311,5 +339,6 @@ class Push:
     async def cleanup(self):
         await self.ensure()
         await self.pool.execute("DELETE FROM push_events WHERE created_at < now() - interval '3 days'")
+        await self.pool.execute("DELETE FROM push_inbox WHERE created_at < now() - interval '30 days'")
         await self.pool.execute("DELETE FROM push_guest_bookings WHERE booking_id IN (SELECT id FROM bookings WHERE booking_date < CURRENT_DATE)")
         await self.pool.execute("DELETE FROM push_subscriptions WHERE fail_count >= 5 OR (role='guest' AND NOT EXISTS (SELECT 1 FROM push_guest_bookings g WHERE g.subscription_id=push_subscriptions.id) AND created_at < now() - interval '2 days')")
