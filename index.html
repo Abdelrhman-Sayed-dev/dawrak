@@ -2330,6 +2330,7 @@ const PUSH_ROLES = ['patient', 'doctor', 'receptionist'];
 let PUSHST = '', DIP = null, BN = '', SYNC_KEY = '', SYNC_AT = 0;
 const PEP = { v: '' }, T0 = Date.now();
 const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+try { if (matchMedia('(display-mode: standalone)').matches) localStorage.pwa_installed = 1; } catch (e) {}
 const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const pushOK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const pushAcct = () => !!localStorage.tok && PUSH_ROLES.includes(localStorage.role);
@@ -2346,8 +2347,8 @@ if ('serviceWorker' in navigator) {
     if (t === 'dawrak-push') { if (cur && !$('.ov')) cur(); } else if (t === 'dawrak-resubscribe') pushSync(true);
   });
 }
-addEventListener('beforeinstallprompt', e => { e.preventDefault(); DIP = e; if (WANT) { WANT = false; closeModal(); pwaInstall(); return; } pwaTick(); });
-addEventListener('appinstalled', () => { DIP = null; toast('تم تثبيت دورك على جهازك', 1); showBn(''); });
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); DIP = e; try { localStorage.removeItem('pwa_installed'); } catch (x) {} if (WANT) { WANT = false; closeModal(); pwaInstall(); return; } pwaTick(); });
+addEventListener('appinstalled', () => { DIP = null; try { localStorage.pwa_installed = 1; } catch (x) {} toast('تم تثبيت دورك على جهازك', 1); showBn(''); });
 
 async function pushReg() { await navigator.serviceWorker.register('/sw.js'); return navigator.serviceWorker.ready; }
 async function pushSub() { try { const r = await navigator.serviceWorker.getRegistration('/'); return r ? await r.pushManager.getSubscription() : null; } catch (e) { return null; } }
@@ -2498,7 +2499,7 @@ function ipGo(b) {
     if (!WANT) return; WANT = false;
     if (!b.isConnected) return;
     b.disabled = false; b.innerHTML = ic('download') + ' تحميل التطبيق';
-    b.insertAdjacentHTML('afterend', '<p class="pm-n">لم يبدأ التحميل تلقائياً. من قائمة المتصفح ⋮ اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</p>');
+    b.insertAdjacentHTML('afterend', '<p class="pm-n">لو التطبيق مثبّت عندك بالفعل فافتحه من الشاشة الرئيسية. وإن لم يكن: من قائمة المتصفح ⋮ اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</p><button class="btn" onclick="try{localStorage.pwa_installed=1;localStorage.pwa_x_inst=Date.now()}catch(e){};closeModal()">التطبيق مثبّت عندي بالفعل</button>');
   }, 4000);
 }
 async function pwaTick() {
@@ -2508,7 +2509,7 @@ async function pwaTick() {
     if ((st === 'on' || st === 'granted') && pushEligible()) pushSync();
     let want = '';
     if (!$('.ov') && Date.now() - T0 > 6000) {
-      if (!standalone() && !bnHidden('inst') && installPopup()) return;
+      if (!standalone() && !bnHidden('inst') && (IOS ? true : !!DIP) && installPopup()) return;
       if (pushEligible() && st === 'default' && !bnHidden('push')) want = 'push';
     }
     showBn(want);

@@ -2,7 +2,7 @@
  * 1) يجعل التطبيق قابلاً للتثبيت  2) يستقبل Web Push ويعرض الإشعار حتى والتطبيق مغلق
  * 3) يعرض صفحة «لا يوجد اتصال» عند انقطاع الإنترنت.
  * لا يخزّن أي صفحة أو استجابة API (الطابور والبيانات الطبية يجب أن تكون حيّة دائماً). */
-const CACHE = 'dawrak-shell-v1';
+const CACHE = 'dawrak-shell-v2';
 const SHELL = ['/offline.html', '/icons/icon-192.png', '/icons/badge-96.png'];
 
 self.addEventListener('install', e => {
